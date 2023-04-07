@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1704.5
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1FDBC2B7-447E-4840-AE5A-21E3534782D2}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListFlow.OpenAI", "ListFlow.OpenAI\ListFlow.OpenAI.csproj", "{074D94AB-5DE0-40AB-BC83-FB18718B58E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListFlow.API", "ListFlow.API\ListFlow.API.csproj", "{9628F2BF-985B-422F-B698-A39B7C7DE792}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{074D94AB-5DE0-40AB-BC83-FB18718B58E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{074D94AB-5DE0-40AB-BC83-FB18718B58E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{074D94AB-5DE0-40AB-BC83-FB18718B58E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{074D94AB-5DE0-40AB-BC83-FB18718B58E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A9232406-223E-4267-9A6B-67D7CDA5D308}
+	EndGlobalSection
+EndGlobal
