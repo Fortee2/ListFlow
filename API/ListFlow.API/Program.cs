@@ -31,13 +31,27 @@ builder.Services.AddSingleton<IPromptService>(new PromptService(
     builder.Configuration.GetValue<string>("OpenAI:ApiKey")
 ));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("mypolicy", ops =>
+    {
+        ops.AllowAnyOrigin();
+        ops.AllowAnyMethod();
+        ops.AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
-
+app.UseCors("mypolicy");
 
 app.UseHttpLogging();
 
 app.UseFileServer();
+
+app.UseSwagger();
+
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

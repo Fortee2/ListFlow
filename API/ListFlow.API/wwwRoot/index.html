@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Recorder</title>
+
+    
+</head>
+<body onload="load()"">
+    <button id="record">Record</button>
+    <button id="stop">Stop</button>
+    <br />
+    <label id="recordStatus"></label>
+    <ul id="prompts">
+    </ul>
+    <label>Review your transcription before submitting</label>
+    <textarea id="transcription" cols="80" rows="10" ></textarea>
+    <button id="submit">Process Prompt</button>
+
+    <script>
+
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        function addEventListeners() {
+            const recordButton = document.getElementById('record');
+            const stopButton = document.getElementById('stop');
+            const submitButton = document.getElementById('submit');
+
+            // Set up event listeners
+            recordButton.addEventListener('click', () => {
+                mediaRecorder.start();
+                console.log("Recording started.");
+                document.getElementById("recordStatus").innerText = "Recording started.";
+            });
+
+            stopButton.addEventListener('click', () => {
+                mediaRecorder.stop();
+                console.log("Recording stopped.");
+                document.getElementById("recordStatus").innerText = "Recording stopped.";
+            });
+
+            submitButton.addEventListener('click', () => {
+                const previousList = document.getElementById("prompts");
+                const promptData = document.getElementById('transcription').value;
+
+                const node = document.createElement("li");
+                const textnode = document.createTextNode(promptData);
+                node.appendChild(textnode);
+
+                previousList.appendChild(node);
+
+                document.getElementById('transcription').value = "";
+
+                postPrompt(promptData);
+            })
+        }
+
+        function postAudio(audioData) {
+            
+            fetch('https://localhost:7219/api/Audio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': '*/*'
+                },
+                body: JSON.stringify(audioData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                var transPromise = response.json();
+                transPromise.then((data) => {
+                    document.getElementById("transcription").innerText = data.text;
+                })
+            })
+            .then(json => {
+                console.log(json);
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+            });
+        }
+
+        function postPrompt(transcribedData) {
+            
+            fetch('https://localhost:7219/api/Prompt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': '*/*'
+                },
+                body: JSON.stringify(transcribedData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                var transPromise = response.json();
+                transPromise.then((data) => {
+                    document.getElementById("transcription").value = data.content;
+                })
+            })
+            .then(json => {
+                console.log(json);
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+            });
+        }
+
+        function initializeMediaRecorder() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                // Create MediaRecorder object
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.addEventListener('dataavailable', e => {
+                    recordedChunks.push(e.data);
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    // Convert recorded audio to a Blob object
+                    const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+
+                    // Convert the Blob to a base64 encoded string
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+
+                    reader.onloadend = () => {
+                        // Removing the metadata from the string here instead of on the backend
+                        const audioData = reader.result.split(',')[1];
+                        postAudio(audioData);
+                    };
+                });
+            })
+            .catch(error => console.error(error));
+        }
+
+       function load(){
+            addEventListeners();
+            initializeMediaRecorder();
+
+        };
+    </script>
+</body>
+</html>

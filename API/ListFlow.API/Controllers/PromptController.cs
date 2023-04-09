@@ -15,7 +15,7 @@ using ListFlow.OpenAI.Interfaces;
 namespace ListFlow.API.Controllers
 {
     [ApiController]
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class PromptController : Controller
     {
         private IPromptService _promptService;
@@ -26,18 +26,15 @@ namespace ListFlow.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] string promptData)
+        public async Task<IActionResult> Post([FromBody] DescriptionPrompt promptData)
         {
             try
             {
-                if(promptData.Trim() == string.Empty)
-                {
-                    return BadRequest();
-                }
+                ChatCompletion completion = await _promptService.Submit(promptData.ToString());
 
-                ChatCompletion completion = await _promptService.Submit(promptData);
+                return new JsonResult(completion.choices.Count > 0 ? completion.choices[0].message : "");
 
-                return Ok(completion.choices.Count > 0 ? completion.choices[1].message : "");
+               // return Ok(completion.choices.Count > 0 ? completion.choices[0].message : "");
             }
             catch (Exception ex)
             {

@@ -9,9 +9,11 @@
   <ItemGroup>
     <None Remove="Interfaces\" />
     <None Remove="Dto\" />
+    <None Remove="Dto\OpenAI\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Interfaces\" />
     <Folder Include="Dto\" />
+    <Folder Include="Dto\OpenAI\" />
   </ItemGroup>
 </Project>
