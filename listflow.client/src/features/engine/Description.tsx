@@ -20,6 +20,8 @@ import {
     requstDescription,
 } from './listingDescriptionSlice';
 
+import  './description.css';
+
 const Description = () => {
     const dispatch = useAppDispatch();
     const desc = useAppSelector(selectDescription);
@@ -45,7 +47,7 @@ const Description = () => {
     return (
         
 
-        <div className="description">
+        <div className="description engineContent" >
             <h1>Description Engine</h1>
             
             <div>
