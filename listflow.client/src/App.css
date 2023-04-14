@@ -107,3 +107,8 @@ code {
   grid-gap: 10px;
   grid-auto-rows: minmax(100px, auto);
 }
+
+button:disabled {
+  opacity: 0.5; /* decrease opacity to make the button appear grayed out */
+  cursor: not-allowed; /* change cursor to not-allowed to indicate the button cannot be clicked */
+}
