@@ -27,8 +27,8 @@ public class PromptService: IPromptService
             var content = new StringContent(
                 (PromptObject.Load(new[] {
                     new ChatObject("system", "You are a marketing writer that creates engaging listings for ebay.  From the data provided create the item description section for a listing."),
-                    new ChatObject("user", PromptData) })).ToJson(), System.Text.Encoding.UTF8, "application/json"
-            ); ;
+                    new ChatObject("system", "You always follow the best practices for SEO and keyword placement."),
+                    new ChatObject("user", PromptData) })).ToJson(), System.Text.Encoding.UTF8, "application/json"); 
 
             // Send the API request and get the response
             var response = await client.PostAsync(endpoint, content);

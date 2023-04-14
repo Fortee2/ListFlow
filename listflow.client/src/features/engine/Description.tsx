@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import ListingDescriptionPrompt from './ListingDescriptionPrompt';
 import {
@@ -5,19 +6,22 @@ import {
     setCondition,
     setConditionDetails,
     setIntlShipping,
-    setItemLbs,
-    setItemOz,
+    setFreeShipping,
+   // setItemLbs,
+   // setItemOz,
     selectDescription,
     selectCondition,
     selectConditionDetails,
     selectIntlShipping,
-    selectItemLbs,
-    selectItemOz,
+    selectFreeShipping,
+    selectListingType,
+    setListingType
 } from './descriptionSlice';
 
 import {
     selectListingDescription,
     requstDescription,
+    setListingDescription
 } from './listingDescriptionSlice';
 
 import  './description.css';
@@ -28,31 +32,100 @@ const Description = () => {
     const condition = useAppSelector(selectCondition);
     const conditionDetails = useAppSelector(selectConditionDetails);
     const intlShipping = useAppSelector(selectIntlShipping);
-    const itemLbs = useAppSelector(selectItemLbs);
-    const itemOz = useAppSelector(selectItemOz);
+    const freeShipping = useAppSelector(selectFreeShipping);
     const listingDescription = useAppSelector(selectListingDescription);
+    const listingType = useAppSelector(selectListingType);
 
-    const handleClick = (e: any) => {
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [errors, setErrors] = useState({
+        desc: "",
+        condition: "",
+        conditionDetails: "",
+      });
+
+    const handleReset = (e: any) => {
         e.preventDefault();
-        var requstBody:ListingDescriptionPrompt ={
+        dispatch(setDescription(""));
+        dispatch(setCondition("new"));
+        dispatch(setConditionDetails(""));
+        dispatch(setIntlShipping("no"));
+        dispatch(setListingType("fixed"));
+        dispatch(setListingDescription(""));
+    }
+
+     const handleClick = async (e: any) => {
+        e.preventDefault();
+        let requstBody:ListingDescriptionPrompt ={
             description: desc,
             condition: condition,
             conditionDesc: conditionDetails,
-            listingType: "Buy It Now",
+            listingType: listingType,
+            intlShipping: intlShipping,
+            freeShipping: freeShipping
         };
 
-        dispatch(requstDescription(requstBody));
+        if (desc === "") {
+            setErrors({ ...errors, desc: "Description is required" });
+            return;
+        }
+
+        if (condition !== "new" && conditionDetails === "" ) {
+            setErrors({ ...errors, condition: "Condition Details is required" });
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            await dispatch(requstDescription(requstBody)).unwrap();
+            setIsLoading(false);
+          } catch (err) {
+            setIsLoading(false);
+            console.error("Error creating description: ", err);
+            // Handle error and display user feedback if necessary
+          }
     };
 
-    return (
-        
+    const handleCopy = (e: any) => {
+        e.preventDefault();
+        let copyText:HTMLInputElement = document.getElementById("listingDescription") as HTMLInputElement;
+        if(copyText == null) return;
+        navigator.clipboard.writeText(copyText.value)
+        .then(() => {
+          console.log("Text copied to clipboard");
+        })
+        .catch((err) => {
+          console.error("Failed to copy text: ", err);
+        });
+    }
 
+    return (
         <div className="description engineContent" >
             <h1>Description Engine</h1>
             
             <div>
+                <div className="row">
+                    <div className="col-3">
+                        <label>Listing Platform</label>
+                    </div>
+                    <div className="col-9">
+                       <label><input type='radio' name='listingPlatform' value="ebay"/>Ebay</label>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className="col-3">
+                        <label>List Type</label>
+                    </div>
+                    <div className="col-9">
+                        <select name="listing_type" value={listingType} onChange={(data) => { dispatch(setListingType(data.target.value));}}>
+                            <option value="auction">Auction</option>
+                            <option value="fixed">Fixed Price</option>
+                        </select>
+                    </div>
+                </div>
                 <div>
-                    Item Details
+                    <h3>Item Details</h3>
+                    <hr />
                 </div>
                 <div className="row">
                     <div className="col-3">
@@ -61,6 +134,7 @@ const Description = () => {
                     </div>
                     <div className="col-9">
                         <input type="text" name="item_name" value={desc} onChange={(data) => { dispatch(setDescription(data.target.value));}}  />
+                        <label className="error">{errors.desc}</label>
                     </div>
                 </div>
                 <div className="row">
@@ -82,6 +156,7 @@ const Description = () => {
                     </div>
                     <div className="col-6">
                         <input type="text" name="item_condition_details" value={conditionDetails} onChange={(ele) => {dispatch(setConditionDetails(ele.target.value));}} />
+                        <label className="error">{errors.conditionDetails}</label>
                     </div>
                 </div>
                 <div className="row" >
@@ -95,39 +170,34 @@ const Description = () => {
                         </select>
                     </div>
                 </div>
-                <div className="row">
+                <div className="row" >
                     <div className="col-6">
-                        <label>Item Weight</label>
+                        <label>Free Shipping:</label>
                     </div>
-                    <div className="col-3">
-                        <input type="text" name="item_weight_lbs" value={itemLbs} onChange={(ele) => {
-                                dispatch(setCondition(ele.target.value));
-                            }
-                        } />
-                        <label className="ml-2">lbs</label>
-                    </div>
-                    <div className="col-3">
-                        <input type="text" name="item_weight_ozs" value={itemOz} />
-                        <label className="ml-2">oz</label>
+                    <div className="col-6">
+                        <select name="free_shipping" value={freeShipping} onChange={(ele) => {dispatch(setFreeShipping(ele.target.selectedOptions[0].value));}} >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                        </select>
                     </div>
                 </div>
                 <div className="row">
-                    <button className="btn btn-primary">Create Description</button>
+                    <button className="btn btn-primary" disabled={isLoading} onClick={handleClick}>Create Description</button>
+                    <button className="btn btn-secondary" disabled={isLoading} onClick={handleReset}>Reset</button>
                 </div>
-                <div>Generated Listing</div>
+                <div>
+                    <h3>Generated Listing</h3>
+                    <hr />
+                </div>
                 <div className="row">
                     <div className="col-12">
-                        <textarea name="listing_description" id="" cols={80} rows={10} value={listingDescription}>
-
-                        </textarea>
+                        <textarea id="listing_description" cols={80} rows={10} value={listingDescription}></textarea>
                     </div>
                 </div>
                 <div className="row">
-                    <button className="btn btn-primary" onClick={handleClick}>Copy to Clipboard</button>
+                    <button className="btn btn-primary" onClick={handleCopy} disabled={isLoading} >Copy to Clipboard</button>
                 </div>
             </div>
-            
-        
         </div>
     );
 };

@@ -3,4 +3,6 @@ export default interface ListingDescriptionPrompt {
     condition:string;
     conditionDesc:string;
     listingType:string;
+    intlShipping:string;
+    freeShipping:string;
 }
