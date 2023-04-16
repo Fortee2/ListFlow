@@ -1,6 +1,8 @@
-﻿using ListFlow.OpenAI;
+﻿using ListFlow.Infrastructure;
+using ListFlow.OpenAI;
 using ListFlow.OpenAI.Interfaces;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +23,9 @@ var loggingFields = HttpLoggingFields.RequestPropertiesAndHeaders |
                                     HttpLoggingFields.ResponseStatusCode |
                                     HttpLoggingFields.RequestQuery |
                                     HttpLoggingFields.RequestBody;
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseMySQL("Server=localhost;Database=mydb;User=myuser;Password=mypassword;"));
 
 builder.Services.AddHttpLogging(options =>
 {

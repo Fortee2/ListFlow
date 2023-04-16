@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListFlow.OpenAI", "ListFlow
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListFlow.API", "ListFlow.API\ListFlow.API.csproj", "{9628F2BF-985B-422F-B698-A39B7C7DE792}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListFlow.Domain", "ListFlow.Domain\ListFlow.Domain.csproj", "{4225A254-37B0-438F-85B8-C49D5CAF0FBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListFlow.Infrastructure", "ListFlow.Infrastructure\ListFlow.Infrastructure.csproj", "{BFE0439A-F892-4CDF-BE5F-9CF87322A413}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +30,14 @@ Global
 		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9628F2BF-985B-422F-B698-A39B7C7DE792}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4225A254-37B0-438F-85B8-C49D5CAF0FBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4225A254-37B0-438F-85B8-C49D5CAF0FBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4225A254-37B0-438F-85B8-C49D5CAF0FBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4225A254-37B0-438F-85B8-C49D5CAF0FBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFE0439A-F892-4CDF-BE5F-9CF87322A413}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFE0439A-F892-4CDF-BE5F-9CF87322A413}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFE0439A-F892-4CDF-BE5F-9CF87322A413}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFE0439A-F892-4CDF-BE5F-9CF87322A413}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
