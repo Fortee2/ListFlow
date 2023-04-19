@@ -25,7 +25,7 @@ var loggingFields = HttpLoggingFields.RequestPropertiesAndHeaders |
                                     HttpLoggingFields.RequestBody;
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseMySQL("Server=localhost;Database=mydb;User=myuser;Password=mypassword;"));
+        options.UseMySQL(builder.Configuration.GetConnectionString("DBConnection")));
 
 builder.Services.AddHttpLogging(options =>
 {

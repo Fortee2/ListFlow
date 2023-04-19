@@ -65,7 +65,7 @@ namespace ListFlow.Infrastructure.Repository
             _dbContext.SaveChanges();
         }
 
-        public InvestingContext GetDbContext()
+        public ApplicationDbContext GetDbContext()
         {
             return _dbContext;
         }
