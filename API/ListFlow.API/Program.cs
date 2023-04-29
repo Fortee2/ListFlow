@@ -1,4 +1,6 @@
 ﻿using ListFlow.Infrastructure;
+using ListFlow.Infrastructure.Repository;
+using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.OpenAI;
 using ListFlow.OpenAI.Interfaces;
 using Microsoft.AspNetCore.HttpLogging;
@@ -25,7 +27,19 @@ var loggingFields = HttpLoggingFields.RequestPropertiesAndHeaders |
                                     HttpLoggingFields.RequestBody;
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseMySQL(builder.Configuration.GetConnectionString("DBConnection")));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DBConnection");
+    if (connectionString != null)
+    {
+        options.UseMySQL(connectionString);
+    }
+});
+
+builder.Services.AddHttpLogging(options =>
+{
+    // ...
+});
+
 
 builder.Services.AddHttpLogging(options =>
 {
@@ -33,8 +47,11 @@ builder.Services.AddHttpLogging(options =>
 });
 
 builder.Services.AddSingleton<IPromptService>(new PromptService(
-    builder.Configuration.GetValue<string>("OpenAI:ApiKey")
+    builder.Configuration.GetValue<string>("OpenAI:ApiKey") ?? ""
 ));
+
+builder.Services.AddScoped<ISalesChannelRepository,SalesChannelRepository>();
+
 
 builder.Services.AddCors(options =>
 {

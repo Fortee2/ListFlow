@@ -12,7 +12,7 @@ namespace ListFlow.Infrastructure.Repository
             _dbContext = context;
         }
 
-        public void Add(T obj)
+        public virtual void Add(T obj)
         {
             _dbContext.Add(obj);
             _dbContext.SaveChanges();
@@ -42,7 +42,7 @@ namespace ListFlow.Infrastructure.Repository
             _dbContext.SaveChanges();
         }
 
-        public void Delete(int id)
+        public void Delete(Guid id)
         {
             T? record = FindById(id);
             if (record != null)
@@ -53,7 +53,7 @@ namespace ListFlow.Infrastructure.Repository
 
         }
 
-        public T? FindById(int id)
+        public T? FindById(Guid id)
         {
             return _dbContext.Find<T>(id);
 

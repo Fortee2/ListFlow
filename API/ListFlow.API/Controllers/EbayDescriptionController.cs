@@ -10,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ListFlow.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class EbayController : Controller
+    [Route("api/ebay/description")]
+    public class EbayDescriptionController : Controller
     {
         // GET: /<controller>/
         [HttpGet]

@@ -5,7 +5,8 @@ namespace ListFlow.Infrastructure.Repository.Interface
     {
         ApplicationDbContext GetDbContext();
 
-        T? FindById(int Id);
+        T? FindById(Guid Id);
+        IEnumerable<T> GetAll();
     }
 }
 

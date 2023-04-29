@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Authenicate\" />
+    <None Remove="Authenicate\DTO\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Authenicate\" />
+    <Folder Include="Authenicate\DTO\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ListFlow.Domain\ListFlow.Domain.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\ListFlow.Infrastructure\ListFlow.Infrastructure.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

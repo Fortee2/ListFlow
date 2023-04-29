@@ -4,15 +4,14 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Kingsmen.WebApi.Models;
+using ListFlow.Domain.Model;
 using System.Collections.Generic;
-using Kingsmen.Domain.Entities;
-using Kingsmen.Infrastructure.Services.DataServices;
+using ListFlow.Business.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Graph.ExternalConnectors;
-using Kingsmen.Domain.Dtos;
 
-namespace Kingsmen.WebApi.Security
+using ListFlow.Business.Authenicate.DTO;
+
+namespace ListFlow.API.Security
 {
     public interface IAuthenicationService
     {
@@ -21,10 +20,10 @@ namespace Kingsmen.WebApi.Security
 
     public class AuthenicationService : IAuthenicationService
     {
-        private readonly IUserDataService _userDataService;
+        private readonly IUserService _userDataService;
         private readonly IConfiguration _config;
 
-        public AuthenicationService(IUserDataService userDataService, IConfiguration config)
+        public AuthenicationService(IUserService userDataService, IConfiguration config)
         {
             _userDataService = userDataService;
             _config = config;

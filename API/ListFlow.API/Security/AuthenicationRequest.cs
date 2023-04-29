@@ -1,5 +1,5 @@
 ﻿using System;
-namespace Kingsmen.WebApi.Models
+namespace ListFlow.API.Security
 {
     using System.ComponentModel.DataAnnotations;
 

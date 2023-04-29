@@ -1,8 +1,7 @@
 ﻿using System;
-using Kingsmen.Domain.Entities;
+using ListFlow.Domain.Model;
 
-namespace Kingsmen.WebApi.Models
-{
+namespace ListFlow.API.Security{ 
     public class AuthenticateResponse
     {
         public Guid Id { get; set; }
