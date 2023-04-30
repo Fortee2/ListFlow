@@ -13,11 +13,6 @@ using ListFlow.Business.Authenicate.DTO;
 
 namespace ListFlow.API.Security
 {
-    public interface IAuthenicationService
-    {
-        AuthenticateResponse Authenticate(AuthenticateRequest model);
-    }
-
     public class AuthenicationService : IAuthenicationService
     {
         private readonly IUserService _userDataService;
@@ -29,7 +24,7 @@ namespace ListFlow.API.Security
             _config = config;
         }
 
-        public AuthenticateResponse Authenticate(AuthenticateRequest model)
+        public AuthenticateResponse? Authenticate(AuthenticateRequest model)
         {
             //TODO: This code is just for testing.  Prod code would need to validate the password hash
             var user = _userDataService.FindByUserName(model.Username);
@@ -38,12 +33,12 @@ namespace ListFlow.API.Security
             if (user == null) return null;
 
             // authentication successful so generate jwt token
-            var token = generateJwtToken(user);
+            var token = generateJwtToken(user.Data.Email);
 
-            return new AuthenticateResponse(user, token);
+            return new AuthenticateResponse(user.Data, token);
         }
 
-        private string generateJwtToken(User user)
+        private string generateJwtToken(string userName)
         {
             string secret = _config.GetSection("Jwt:Secret").Value;
 
@@ -53,7 +48,7 @@ namespace ListFlow.API.Security
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                
-                Subject = new ClaimsIdentity(new[] { new Claim("User", "Read"), new Claim("Name", user.Email) }),
+                Subject = new ClaimsIdentity(new[] { new Claim("User", "Read"), new Claim("Name", userName) }),
                 Issuer = _config.GetSection("Jwt:Issuer").Value,
                 Audience = _config.GetSection("Jwt:Audience").Value,
                 Expires = DateTime.UtcNow.AddDays(1),

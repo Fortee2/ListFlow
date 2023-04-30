@@ -9,9 +9,9 @@ namespace ListFlow.Business.Services
 
     public class SalesChannelService : ISalesChannelService
     {
-        private readonly IUserRepository _salesChannels;
+        private readonly ISalesChannelRepository _salesChannels;
 
-        public SalesChannelService(IUserRepository salesChannelService){
+        public SalesChannelService(ISalesChannelRepository salesChannelService){
             _salesChannels = salesChannelService;
         }
 

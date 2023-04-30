@@ -1,9 +1,9 @@
 ﻿using System;
 namespace ListFlow.Business.Authenicate.DTO
 {
-	public class User
+	public class LoginUser
 	{
-		public User()
+		public LoginUser()
 		{
 		}
 	}

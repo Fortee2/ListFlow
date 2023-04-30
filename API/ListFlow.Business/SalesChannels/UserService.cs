@@ -1,7 +1,4 @@
-using System.Collections.Generic;
 using ListFlow.Domain.Model;
-using System.Linq;
-using ListFlow.Business.SalesChannels;
 using ListFlow.Infrastructure.Repository.Interface;
 
 namespace ListFlow.Business.Services
@@ -17,7 +14,7 @@ namespace ListFlow.Business.Services
 
         public ServiceResult<User> Create(string FirstName, string LastName, string Email, string Password)
         {
-            // Check if a channel with the same name already exists
+            // Check if a user with the same name already exists
             if (_Users.FindByUserName(Email.ToLower()) == null)
             {
                 return new ServiceResult<User>("A user with this name already exists.");
@@ -38,16 +35,25 @@ namespace ListFlow.Business.Services
 
         public ServiceResult<User> Delete(Guid id)
         {
-             var channel = _Users.FindById(id);
+             var user = _Users.FindById(id);
 
-            if (channel == null)
+            if (user == null)
             {
                 return new ServiceResult<User>("User not found.");
             }
 
-            
+            return new ServiceResult<User>(user);
+        }
 
-            return new ServiceResult<User>(channel);
+        public ServiceResult<User> FindByUserName(string userName)
+        {
+            var user = _Users.FindByUserName(userName);
+
+            if(user == null){
+                return new ServiceResult<User>("User not found.");
+            }
+
+            return new ServiceResult<User>(user);
         }
 
         public ServiceResult<IEnumerable<User>> GetAll()
@@ -57,17 +63,17 @@ namespace ListFlow.Business.Services
 
         public ServiceResult<User> GetById(Guid id)
         {
-            var channel = _Users.FindById(id);
+            var user = _Users.FindById(id);
 
-            if (channel == null)
+            if (user == null)
             {
                 return new ServiceResult<User>("User not found.");
             }
 
-            return new ServiceResult<User>(channel);
+            return new ServiceResult<User>(user);
         }
 
-        public ServiceResult<User> Update(User channel)
+        public ServiceResult<User> Update(User user)
         {
             throw new NotImplementedException();
         }
