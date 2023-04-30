@@ -1,4 +1,6 @@
-﻿using ListFlow.Infrastructure;
+﻿using ListFlow.Business.SalesChannels;
+using ListFlow.Business.Services;
+using ListFlow.Infrastructure;
 using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.OpenAI;
@@ -51,6 +53,12 @@ builder.Services.AddSingleton<IPromptService>(new PromptService(
 ));
 
 builder.Services.AddScoped<ISalesChannelRepository,SalesChannelRepository>();
+builder.Services.AddScoped<IListingRepository, ListingRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IListingService, ListingService>();
+builder.Services.AddScoped<ISalesChannelService, SalesChannelService>();
 
 
 builder.Services.AddCors(options =>
