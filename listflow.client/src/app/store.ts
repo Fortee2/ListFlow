@@ -2,12 +2,14 @@ import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import counterReducer from '../features/counter/counterSlice';
 import descriptionReducer from '../features/engine/descriptionSlice';
 import listingDescriptionReducer from '../features/engine/listingDescriptionSlice';
+import listingReducer from '../features/listings/listingSlice';
 
 export const store = configureStore({
   reducer: {
     counter: counterReducer,
     description: descriptionReducer,
     listingDescription: listingDescriptionReducer,
+    listing: listingReducer
   },
 });
 
