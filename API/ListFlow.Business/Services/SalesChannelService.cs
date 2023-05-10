@@ -18,7 +18,7 @@ namespace ListFlow.Business.Services
         public ServiceResult<SalesChannel> Create(string name)
         {
             // Check if a channel with the same name already exists
-            if (_salesChannels.FindByName(name.ToLower()) == null)
+            if (_salesChannels.FindByName(name.ToLower()) != null)
             {
                 return new ServiceResult<SalesChannel>("A sales channel with this name already exists.");
             }

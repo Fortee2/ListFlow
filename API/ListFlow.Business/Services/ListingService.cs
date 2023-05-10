@@ -52,8 +52,6 @@ namespace ListFlow.Business.Services
                 return new ServiceResult<Listing>("Sales channel not found.");
             }
 
-            
-
             return new ServiceResult<Listing>(channel);
         }
 

@@ -1,5 +1,7 @@
 ﻿using ListFlow.Business.SalesChannels;
 using ListFlow.Business.Services;
+using ListFlow.Business.Services.Interfaces;
+using ListFlow.Domain.Model;
 using ListFlow.Infrastructure;
 using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
@@ -55,10 +57,12 @@ builder.Services.AddSingleton<IPromptService>(new PromptService(
 builder.Services.AddScoped<ISalesChannelRepository,SalesChannelRepository>();
 builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<ISalesChannelService, SalesChannelService>();
+builder.Services.AddScoped<IBasicService<Inventory>, InventoryService>();
 
 
 builder.Services.AddCors(options =>
