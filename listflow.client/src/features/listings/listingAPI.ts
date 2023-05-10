@@ -2,7 +2,7 @@ import axios from 'axios';
 import {Listing} from './listing'
 export const getAllListings = async (): Promise<Listing[]> => {
   try {
-    const response = await axios.get('/api/listings');
+    const response = await axios.get('https://localhost:7219/api/listings');
     return response.data;
   } catch (error) {
     throw new Error(`Error fetching listings: ${error}`);
@@ -11,7 +11,7 @@ export const getAllListings = async (): Promise<Listing[]> => {
 
 export const createListing = async (newListing: Listing): Promise<Listing> => {
   try {
-    const response = await axios.post('/api/listings', newListing);
+    const response = await axios.post('https://localhost:7219/api/listings', newListing);
     return response.data;
   } catch (error) {
     throw new Error(`Error creating listing: ${error}`);
@@ -20,7 +20,7 @@ export const createListing = async (newListing: Listing): Promise<Listing> => {
 
 export const updateListing = async (updatedListing: Listing): Promise<Listing> => {
   try {
-    const response = await axios.put(`/api/listings/${updatedListing.id}`, updatedListing);
+    const response = await axios.put(`https://localhost:7219/api/listings/${updatedListing.id}`, updatedListing);
     return response.data;
   } catch (error) {
     throw new Error(`Error updating listing: ${error}`);
@@ -29,7 +29,7 @@ export const updateListing = async (updatedListing: Listing): Promise<Listing> =
 
 export const deleteListing = async (id: string): Promise<number> => {
   try {
-    const response = await axios.delete(`/api/listings/${id}`);
+    const response = await axios.delete(`https://localhost:7219/api/listings/${id}`);
     return response.status;
   } catch (error) {
     throw new Error(`Error deleting listing: ${error}`);
@@ -38,7 +38,7 @@ export const deleteListing = async (id: string): Promise<number> => {
 
 export const getListingById = async (id: string): Promise<Listing> => {
     try {
-      const response = await axios.get(`/api/listings/${id}`);
+      const response = await axios.get(`https://localhost:7219/api/listings/${id}`);
       return response.data;
     } catch (error) {
       throw new Error(`Error fetching listings: ${error}`);
