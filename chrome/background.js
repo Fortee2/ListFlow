@@ -1,60 +1,48 @@
-async function openURL(url, textareaId, content) {
-    const tab = await chrome.tabs.create({ url: url });
-  
-    function executeScriptAndSendMessage(tabId) {
-      chrome.scripting.executeScript(
-        { target: { tabId: tabId }, files: ['content.js'] },
-        () => {
-          chrome.tabs.sendMessage(tabId, {
-            type: 'populateTextarea',
-            textareaId: textareaId,
-            content: content,
-          });
-        }
-      );
-    }
-  
-    if (tab.status === 'complete') {
-      executeScriptAndSendMessage(tab.id);
-    } else {
-      chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-        if (tabId === tab.id && changeInfo.status === 'complete') {
-          executeScriptAndSendMessage(tabId);
-          chrome.tabs.onUpdated.removeListener(listener);
-        }
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  if (request.action === 'retrieveMercari') {
+    try {
+      const tab = await getActiveTab();
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: function likeAndRepostForKingsmen() {
+          function checkReadyState() {
+            if(document.readyState === 'complete') {
+              console.log('readyState is complete');
+              retrieveMercari();
+            }else{
+              console.log('readyState is not complete');
+              setTimeout(checkReadyState, 1000 );
+            }
+          }
+
+          function retrieveMercari() {
+            console.log('retrieveMercari');
+            const divs = document.querySelectorAll('div[data-testid="RowItemWithMeta"]');
+
+            console.log(divs.length); 
+
+            divs.forEach(
+              f=>{
+                const ele = f.querySelector('a'); 
+                console.log(ele.innerHTML);
+              }
+            );
+          }
+
+          checkReadyState();
+        },
       });
+    } catch (error) {
+      console.error('Error executing script:', error);
     }
   }
-  
-  
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.type === 'openURL') {
-      openURL(request.url, request.textareaId, request.content);
-    }
+});
+
+
+async function getActiveTab() {
+  return new Promise((resolve) => {
+    chrome.tabs.create({ url: 'https://www.mercari.com/mypage/listings/active/?sortBy=1&page=13' }, function(tab) {
+      resolve(tab);
+    });
   });
-  
-  function pollServer() {
-    const serverURL = 'https://your-dotnet-server.com/api/endpoint';
-  
-    fetch(serverURL)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.signal) {
-          chrome.runtime.sendMessage({
-            type: 'openURL',
-            url: data.url,
-            textareaId: data.textareaId,
-            content: data.content
-          });
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching data:', error);
-     // })
-     // .finally(() => {
-      //  setTimeout(pollServer, 5000); // Poll every 5 seconds
-      });
-  }
-  
-  pollServer();
-  
+}

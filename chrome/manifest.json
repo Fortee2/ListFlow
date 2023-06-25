@@ -1,20 +1,21 @@
 {
-    "manifest_version": 3,
-    "name": "My Chrome Extension",
-    "version": "1.0",
-    "permissions": ["tabs", "scripting", "activeTab"],
-    "host_permissions": ["<all_urls>"],
-    "action": {
-      "default_popup": "popup.html"
-    },
-    "background": {
-      "service_worker": "background.js"
-    },
-    "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["content.js"]
-      }
-    ]
+  "manifest_version": 3,
+  "name": "Listing Retrival",
+  "version": "1.01",
+  "description": "Retrive listing from a website",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.mercari.com/*",
+    "https://www.ebay.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
-  
+}
