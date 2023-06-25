@@ -21,12 +21,16 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
             console.log(divs.length); 
 
+            let data = [];
+
             divs.forEach(
               f=>{
                 const ele = f.querySelector('a'); 
-                console.log(ele.innerHTML);
+                data.push(ele.innerHTML);
               }
             );
+
+            chrome.runtime.sendMessage({ action: 'downloadData', data: data.join('\n') });
           }
 
           checkReadyState();
@@ -36,8 +40,15 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
+  else  if (request.action === 'downloadData') {
+    const blob = new Blob([request.data], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    chrome.downloads.download({
+      url: url,
+      filename: 'data.txt'
+    });
+  }
 });
-
 
 async function getActiveTab() {
   return new Promise((resolve) => {
