@@ -1,7 +1,7 @@
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.action === 'retrieveCount') {
     try {
-      const tab = await getFirstTab();
+      const tab = await getFirstTab('https://www.mercari.com/mypage/listings/active/');
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         function: function readTotalItems() {
@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log('readTotalItems');
             const div = document.querySelector('h5[data-testid="FilterCount"]');
             console.log(div.innerHTML); 
-            chrome.runtime.sendMessage({ action: 'retrieveMercari', count: div.innerHTML });
+            chrome.runtime.sendMessage({ action: 'retrieveMercari', count: div.innerHTML, pageURL: 'https://www.mercari.com/mypage/listings/active/?page=' });
           }
 
           checkReadyState();
@@ -30,44 +30,82 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
+  else if (request.action === 'retrieveCompletedCount') {
+    try {
+      const tab = await getFirstTab('https://www.mercari.com/mypage/listings/complete/');
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: function readTotalItems() {
+          function checkReadyState() {
+            if(document.readyState === 'complete') {
+              console.log('readyState is complete');
+              readTotalItems();
+            }else{
+              console.log('readyState is not complete');
+              setTimeout(checkReadyState, 1000 );
+            }
+          }
+
+          function readTotalItems() {
+            console.log('readTotalItems');
+            const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
+            console.log(div[5].innerHTML); 
+            chrome.runtime.sendMessage({ action: 'retrieveMercari', count: div[5].innerHTML, pageURL: 'https://www.mercari.com/mypage/listings/complete/?page=' });
+          }
+
+          checkReadyState();
+      }
+    });
+    } catch (error) {
+      console.error('Error executing script:', error);
+    }
+    
+  }
   else if (request.action === 'retrieveMercari') {
     try {
       const itemCount = request.count;
+      const pageURL = request.pageURL;
       const pageCount = Math.ceil(itemCount / 20);
       console.log('pageCount: ' + pageCount);
       let titles = [];
   
-      for(let i = 1; i <= pageCount; i++) {
-        const tab = await getActiveTab(i);
+      const pages = Array.from({length: pageCount}, (_, i) => i + 1);
+      for (const page of pages) {
+        const tab = await getActiveTab(pageURL, page);
+        await delay(6000);
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            function: function scrapData() {
+            function: async function scrapData() {
               let data = [];
   
               function checkReadyState() {
-                if(document.readyState === 'complete') {
-                  console.log('readyState is complete');
-                  retrieveMercari();
-                } else {
-                  console.log('readyState is not complete');
-                  setTimeout(checkReadyState, 1000 );
-                }
-              }
-  
-              function retrieveMercari() {
-                console.log('retrieveMercari');
-                const divs = document.querySelectorAll('div[data-testid="RowItemWithMeta"]');
-  
-                console.log(divs.length); 
-  
-                divs.forEach(f => {
-                  const ele = f.querySelector('a'); 
-                  data.push(ele.innerHTML);
+                return new Promise((resolve, reject) => {
+                  if(document.readyState === 'complete') {
+                    console.log('readyState is complete');
+                    retrieveMercari().then(resolve);
+                  } else {
+                    console.log('readyState is not complete');
+                    setTimeout(() => checkReadyState().then(resolve), 1000);
+                  }
                 });
               }
   
-              checkReadyState(); 
+              function retrieveMercari() {
+                return new Promise((resolve, reject) => {
+                  console.log('retrieveMercari');
+                  const divs = document.querySelectorAll('div[data-testid="RowItemWithMeta"]');
+  
+                  divs.forEach(f => {
+                    const ele = f.querySelector('a'); 
+                    data.push(ele.innerHTML);
+                  });
+
+                  resolve(data);
+                });
+              }
+  
+              await checkReadyState(); 
               return data;
             },
           }, resolve);
@@ -90,15 +128,15 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     
 });
 
-async function getFirstTab() {
+async function getFirstTab(targetUrl) {
   return new Promise((resolve) => {
-    chrome.tabs.create({ url: 'https://www.mercari.com/mypage/listings/active/' }, function(tab) {
+    chrome.tabs.create({ url: targetUrl }, function(tab) {
       resolve(tab);
     });
   });
 }
 
-async function getActiveTab(page) {
+async function getActiveTab(targetUrl, page) {
   return new Promise((resolve) => {
     
     chrome.windows.getLastFocused({ populate: true }, (focusedWindow) => {
@@ -111,7 +149,7 @@ async function getActiveTab(page) {
           currTab = focusedWindow.tabs[0];
         }
 
-        chrome.tabs.update(currTab.id, { url: 'https://www.mercari.com/mypage/listings/active/?page=' + page }, function(tab) {
+        chrome.tabs.update(currTab.id, { url: targetUrl + page }, function(tab) {
           resolve(currTab);
         });
       } else {
@@ -135,4 +173,8 @@ function downloadData(data){
     });
   }
   reader.readAsDataURL(blob);
+}
+
+function delay(time) {
+  return new Promise((resolve) => setTimeout(resolve, time));
 }
