@@ -7,7 +7,7 @@ using ListFlow.Domain.Model;
 using ListFlow.OpenAI.Dto;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ListFlow.API.Controllers.EBay{
+namespace ListFlow.API.Controllers{
 
     [ApiController]
     [Route("api/[controller]")]
@@ -41,9 +41,9 @@ namespace ListFlow.API.Controllers.EBay{
         }
 
         [HttpPost]
-        public IActionResult Create(ListingDTO listing)
+        public async Task<IActionResult> Create(ListingDTO listing)
         {
-            var result = _listingService.Create(listing);
+            var result = await _listingService.Create(listing);
 
             if (!result.Success)
             {

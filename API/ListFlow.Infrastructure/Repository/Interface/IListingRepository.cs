@@ -5,5 +5,7 @@ namespace ListFlow.Infrastructure.Repository.Interface
 {
     public interface IListingRepository: ICRUDRepo<Listing>, IRespository<Listing>{
         Listing? FindByTitle(string ListingTitle);
+
+        Listing? FindByItemNumber(string ItemNumber);
     }
 }

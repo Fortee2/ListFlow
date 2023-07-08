@@ -9,14 +9,30 @@ namespace ListFlow.Infrastructure.Repository
         {
         }
 
+        public Listing? FindByItemNumber(string ItemNumber)
+        {
+            var listing = (from list in this._dbContext.Listings
+                           where list.ItemNumber.Contains(ItemNumber)
+                           select list).FirstOrDefault();
+
+            return listing;
+        }
+
         public Listing? FindByTitle(string ListingTitle)
         {
-            throw new NotImplementedException();
+            var listing = (from list in this._dbContext.Listings
+                           where list.ItemTitle.Contains(ListingTitle)
+                           select list).FirstOrDefault();
+
+            return listing;
         }
 
         public IEnumerable<Listing> GetAll()
         {
-            throw new NotImplementedException();
+            var listing = (from list in this._dbContext.Listings
+                           select list).AsEnumerable();
+
+            return listing;
         }
     }
 }

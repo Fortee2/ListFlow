@@ -4,8 +4,8 @@ using ListFlow.Domain.Model;
 
 public interface IListingService
 {
-    ServiceResult<Listing> Create(ListingDTO listing);
-
+    Task<ServiceResult<Listing>> Create(ListingDTO listing);
+    Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listings);
     ServiceResult<Listing> Delete(Guid id);
 
     ServiceResult<IEnumerable<Listing>> GetAll();
@@ -15,4 +15,6 @@ public interface IListingService
     ServiceResult<Listing> Update(Listing Listing);
 
     ServiceResult<Listing> FindListingsByTitle(string Title);
+
+    ServiceResult<Listing> FindListingsByItemNumber(string Title);
 }

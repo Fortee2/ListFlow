@@ -41,5 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Security\" />
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="wwwroot\" />
   </ItemGroup>
 </Project>

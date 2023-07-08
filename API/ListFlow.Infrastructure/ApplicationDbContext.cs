@@ -26,10 +26,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SalesChannel>().ToTable("SalesChannel");
         modelBuilder.Entity<Listing>().ToTable("Listing");
 
-        modelBuilder.Entity<Listing>()
-            .HasOne(l => l.Inventory)
-            .WithMany()
-            .HasForeignKey(l => l.InventoryId);
 
         modelBuilder.Entity<Listing>()
             .HasOne(l => l.SalesChannel)

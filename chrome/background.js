@@ -39,6 +39,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             target: { tabId: tab.id },
             function: async function scrapData() {
               let data = [];
+              let bulkData = [];
   
               function checkReadyState() {
                 return new Promise((resolve, reject) => {
@@ -54,7 +55,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
               async function saveItemToDatabase(item) {
                 try {
-                  const response = await fetch('https://localhost:7219/api/Listing', {
+                  const response = await fetch('https://localhost:7219/api/BulkListing', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
@@ -80,12 +81,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                   divs.forEach(f => {
                     const ele = f.querySelector('a'); 
                     data.push(ele.innerHTML + '|' + ele.href);
-                    saveItemToDatabase({ 
+                    bulkData.push({ 
                       itemTitle: ele.innerHTML,
                       itemNumber: ele.href.split('/')[5],
                       description: ele.innerHTML,
                       salesChannel: 'Mercari',
-                     }).then((response) => {console.log(response);}); 
+                     });
                   });
 
                   resolve(data);
@@ -93,6 +94,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
               }
   
               await checkReadyState(); 
+              await saveItemToDatabase(bulkData);
               return data;
             },
           }, resolve);
