@@ -4,28 +4,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       const tab = await getFirstTab('https://www.mercari.com/mypage/listings/active/');
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        function: function readTotalItems() {
-          function checkReadyState() {
-            if(document.readyState === 'complete') {
-              console.log('readyState is complete');
-              readTotalItems();
-            }else{
-              console.log('readyState is not complete');
-              setTimeout(checkReadyState, 1000 );
-            }
-          }
-
-          function readTotalItems() {
-            console.log('readTotalItems');
-            const div = document.querySelector('h5[data-testid="FilterCount"]');
-            console.log(div.innerHTML); 
-            chrome.runtime.sendMessage({ action: 'retrieveMercari', count: div.innerHTML, pageURL: 'https://www.mercari.com/mypage/listings/active/?page=' });
-          }
-
-          checkReadyState();
-        }
-      }
-      );
+        files: ['retrieveCount.js'],
+      });
     } catch (error) {
       console.error('Error executing script:', error);
     }
@@ -35,26 +15,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       const tab = await getFirstTab('https://www.mercari.com/mypage/listings/complete/');
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        function: function readTotalItems() {
-          function checkReadyState() {
-            if(document.readyState === 'complete') {
-              console.log('readyState is complete');
-              readTotalItems();
-            }else{
-              console.log('readyState is not complete');
-              setTimeout(checkReadyState, 1000 );
-            }
-          }
-
-          function readTotalItems() {
-            console.log('readTotalItems');
-            const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
-            console.log(div[5].innerHTML); 
-            chrome.runtime.sendMessage({ action: 'retrieveMercari', count: div[5].innerHTML, pageURL: 'https://www.mercari.com/mypage/listings/complete/?page=' });
-          }
-
-          checkReadyState();
-      }
+        files: ['retrieveCompletedCount.js'],
     });
     } catch (error) {
       console.error('Error executing script:', error);
@@ -65,7 +26,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     try {
       const itemCount = request.count;
       const pageURL = request.pageURL;
-      const pageCount = Math.ceil(itemCount / 20);
+      const pageCount =  Math.ceil(itemCount / 20);
       console.log('pageCount: ' + pageCount);
       let titles = [];
   
@@ -90,6 +51,26 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                   }
                 });
               }
+
+              async function saveItemToDatabase(item) {
+                try {
+                  const response = await fetch('https://localhost:7219/api/Listing', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(item),
+                  });
+              
+                  if (response.ok) {
+                    console.log('Item saved to the database successfully:', item);
+                  } else {
+                    console.error('Failed to save item to the database:', item);
+                  }
+                } catch (error) {
+                  console.error('Error saving item to the database:', error);
+                }
+              }
   
               function retrieveMercari() {
                 return new Promise((resolve, reject) => {
@@ -98,7 +79,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   
                   divs.forEach(f => {
                     const ele = f.querySelector('a'); 
-                    data.push(ele.innerHTML);
+                    data.push(ele.innerHTML + '|' + ele.href);
+                    saveItemToDatabase({ 
+                      itemTitle: ele.innerHTML,
+                      itemNumber: ele.href.split('/')[5],
+                      description: ele.innerHTML,
+                      salesChannel: 'Mercari',
+                     }).then((response) => {console.log(response);}); 
                   });
 
                   resolve(data);
@@ -156,8 +143,6 @@ async function getActiveTab(targetUrl, page) {
         console.error("No focused window found.");
       }
     });
-
-
   });
 }
 
