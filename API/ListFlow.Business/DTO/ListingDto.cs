@@ -13,6 +13,8 @@ namespace ListFlow.Business.DTO
         public required string ItemTitle { get; set; }
         public string Description { get; set; }
         public required string SalesChannel { get; set; }
+
+        public bool Active { get; set; }
     }
 }
 

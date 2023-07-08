@@ -14,6 +14,8 @@ namespace ListFlow.Domain.Model
         //public Inventory? Inventory { get; set; }
         public required SalesChannel SalesChannel { get; set; }
 
+        public bool Active { get; set; }
+
         // Foreign keys
         //public Guid InventoryId { get; set; }
         public Guid SalesChannelId { get; set; }
