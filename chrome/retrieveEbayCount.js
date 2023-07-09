@@ -14,7 +14,7 @@ function checkReadyState() {
     console.log(div.innerHTML); 
     let count = div.innerHTML.split('of')[1].trim();
     console.log(count);
-    chrome.runtime.sendMessage({ action: 'retrieveEbay', count: count, pageURL: 'https://www.ebay.com/sh/lst/active?offset=0&limit=200&sort=availableQuantity' });
+    chrome.runtime.sendMessage({ action: 'retrieveEbay', count: count, pageURL: 'https://www.ebay.com/sh/lst/active' });
   }
 
   checkReadyState();

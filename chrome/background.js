@@ -37,62 +37,69 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     try {
       const itemCount = request.count;
       const pageURL = request.pageURL;
-      const pageCount =  1; //(itemCount < 200)? 1 :  Math.ceil(itemCount / 200);
+      const pageCount =  (itemCount < 200)? 1 :  Math.ceil(itemCount / 200);
       console.log('pageCount: ' + pageCount);
       let titles = [];
 
       const pages = Array.from({length: pageCount}, (_, i) => i + 1);
       for (const page of pages) {
-        const tab = await getActiveTab(pageURL, page);
+        const tab = await getActiveTab(pageURL, page, 'eBay');
         await delay(6000);
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
             function: async function scrapData() {
-              let data = [];
               let bulkData = [];
-  
+             
               function checkReadyState() {
                 return new Promise((resolve, reject) => {
                   if(document.readyState === 'complete') {
                     console.log('readyState is complete');
-                    retrieveEbay();
-                    resolve();
+                    retrieveEbay().then(resolve);
                   }else{
                     console.log('readyState is not complete');
-                    setTimeout(checkReadyState, 1000 );
+                    setTimeout(() => checkReadyState().then(resolve), 1000);
                   }
                 });
               }
   
               function retrieveEbay() {
-                console.log('retrieveEbay');
-                const trs = document.querySelector('tr[class="grid-row"]');
+                return new Promise((resolve, reject) => {
+                  console.log('retrieveEbay');
+                  const trs = document.querySelectorAll('tr[class="grid-row"]');
+                
+                  trs.forEach(f => {
+                    let div = f.querySelector('div[class="column-title__text"]');
+                    let a = div.querySelector('a');
+                    console.log(a.innerHTML + '|' + a.href.split('/')[4]);
                
-                trs.forEach(f => {
-                  let div = f.querySelector('div[class="column-title__text"]');
-                  let a = div.querySelector('a');
-                  data.push(a.innerHTML + '|' + a.href);
-                });
+                    bulkData.push({ 
+                      itemTitle: a.innerHTML,
+                      itemNumber: a.href.split('/')[4],
+                      description: a.innerHTML,
+                      salesChannel: 'eBay',
+                     }); 
+                  });
 
-                chrome.runtime.sendMessage({ action: 'retrieveEbay', count: count, pageURL: 'https://www.ebay.com/sh/lst/active?offset=0&limit=200&sort=availableQuantity' });
+                  resolve(bulkData);
+                });
               }
-  
+
               await checkReadyState();
+              return bulkData;
             },
           }, resolve);
         });
  
-        if(result[0].result.length > 0) {
-          titles.push(...result[0].result);
+        if(result[0].result) {
+          saveItemToDatabase(result[0].result);
         }
-
       }
 
       if(titles.length > 0) {
         downloadData(titles.join('\n') );
       }
-      
+
     } catch (error) {
       console.error('Error executing script:', error);
     }
@@ -106,14 +113,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       let titles = [];
   
       const pages = Array.from({length: pageCount}, (_, i) => i + 1);
+
       for (const page of pages) {
-        const tab = await getActiveTab(pageURL, page);
+        const tab = await getActiveTab(pageURL, page, 'Mercari');
         await delay(6000);
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
             function: async function scrapData() {
-              let data = [];
               let bulkData = [];
   
               function checkReadyState() {
@@ -127,26 +134,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                   }
                 });
               }
-
-              async function saveItemToDatabase(item) {
-                try {
-                  const response = await fetch('https://localhost:7219/api/BulkListing', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(item),
-                  });
-              
-                  if (response.ok) {
-                    console.log('Item saved to the database successfully:', item);
-                  } else {
-                    console.error('Failed to save item to the database:', item);
-                  }
-                } catch (error) {
-                  console.error('Error saving item to the database:', error);
-                }
-              }
   
               function retrieveMercari() {
                 return new Promise((resolve, reject) => {
@@ -155,7 +142,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   
                   divs.forEach(f => {
                     const ele = f.querySelector('a'); 
-                    data.push(ele.innerHTML + '|' + ele.href);
+                   
                     bulkData.push({ 
                       itemTitle: ele.innerHTML,
                       itemNumber: ele.href.split('/')[5],
@@ -164,19 +151,18 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                      });
                   });
 
-                  resolve(data);
+                  resolve(bulkData);
                 });
               }
   
               await checkReadyState(); 
-              await saveItemToDatabase(bulkData);
-              return data;
+              return bulkData;
             },
           }, resolve);
         });
         
-        if(result[0].result.length > 0) {
-          titles.push(...result[0].result);
+        if(result[0].result) {
+          saveItemToDatabase(result[0].result);
         }
       }
   
@@ -188,8 +174,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
-
-    
 });
 
 async function getFirstTab(targetUrl) {
@@ -200,7 +184,7 @@ async function getFirstTab(targetUrl) {
   });
 }
 
-async function getActiveTab(targetUrl, page) {
+async function getActiveTab(targetUrl, page, salesChannel) {
   return new Promise((resolve) => {
     
     chrome.windows.getLastFocused({ populate: true }, (focusedWindow) => {
@@ -213,7 +197,16 @@ async function getActiveTab(targetUrl, page) {
           currTab = focusedWindow.tabs[0];
         }
 
-        chrome.tabs.update(currTab.id, { url: targetUrl + page }, function(tab) {
+        let updatedURL = targetUrl;
+
+        if(salesChannel === 'Mercari') {
+          updatedURL = targetUrl + page;
+        } else if(salesChannel === 'eBay') {
+          let offset = (page - 1) * 200;
+          updatedURL = targetUrl + '?offset=' + offset +  '&limit=200&sort=availableQuantity';
+        }
+
+        chrome.tabs.update(currTab.id, { url: updatedURL }, function(tab) {
           resolve(currTab);
         });
       } else {
@@ -239,4 +232,26 @@ function downloadData(data){
 
 function delay(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+async function saveItemToDatabase(item) {
+  try {
+    console.log('Saving item to the database:', item);
+    
+    const response = await fetch('https://localhost:7219/api/BulkListing', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(item),
+    });
+
+    if (response.ok) {
+      console.log('Item saved to the database successfully:', item);
+    } else {
+      console.error('Failed to save item to the database:', item);
+    }
+  } catch (error) {
+    console.error('Error saving item to the database:', error);
+  }
 }
