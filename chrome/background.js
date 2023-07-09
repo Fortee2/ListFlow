@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     try {
       const itemCount = request.count;
       const pageURL = request.pageURL;
-      const pageCount =  Math.ceil(itemCount / 20);
+      const pageCount =  (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
       console.log('pageCount: ' + pageCount);
       let titles = [];
   
