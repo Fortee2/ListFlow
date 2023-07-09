@@ -10,6 +10,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
+  else if (request.action === 'retrieveEbayCount') {
+    try {
+      const tab = await getFirstTab('https://www.ebay.com/sh/lst/active');
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['retrieveEbayCount.js'],
+      });
+    } catch (error) {
+      console.error('Error executing script:', error);
+    }
+  }
   else if (request.action === 'retrieveCompletedCount') {
     try {
       const tab = await getFirstTab('https://www.mercari.com/mypage/listings/complete/');
@@ -21,6 +32,70 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
     
+  }
+  else if (request.action === 'retrieveEbay') {
+    try {
+      const itemCount = request.count;
+      const pageURL = request.pageURL;
+      const pageCount =  1; //(itemCount < 200)? 1 :  Math.ceil(itemCount / 200);
+      console.log('pageCount: ' + pageCount);
+      let titles = [];
+
+      const pages = Array.from({length: pageCount}, (_, i) => i + 1);
+      for (const page of pages) {
+        const tab = await getActiveTab(pageURL, page);
+        await delay(6000);
+        const result = await new Promise(resolve => {
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            function: async function scrapData() {
+              let data = [];
+              let bulkData = [];
+  
+              function checkReadyState() {
+                return new Promise((resolve, reject) => {
+                  if(document.readyState === 'complete') {
+                    console.log('readyState is complete');
+                    retrieveEbay();
+                    resolve();
+                  }else{
+                    console.log('readyState is not complete');
+                    setTimeout(checkReadyState, 1000 );
+                  }
+                });
+              }
+  
+              function retrieveEbay() {
+                console.log('retrieveEbay');
+                const trs = document.querySelector('tr[class="grid-row"]');
+               
+                trs.forEach(f => {
+                  let div = f.querySelector('div[class="column-title__text"]');
+                  let a = div.querySelector('a');
+                  data.push(a.innerHTML + '|' + a.href);
+                });
+
+                chrome.runtime.sendMessage({ action: 'retrieveEbay', count: count, pageURL: 'https://www.ebay.com/sh/lst/active?offset=0&limit=200&sort=availableQuantity' });
+              }
+  
+              await checkReadyState();
+            },
+          }, resolve);
+        });
+ 
+        if(result[0].result.length > 0) {
+          titles.push(...result[0].result);
+        }
+
+      }
+
+      if(titles.length > 0) {
+        downloadData(titles.join('\n') );
+      }
+      
+    } catch (error) {
+      console.error('Error executing script:', error);
+    }
   }
   else if (request.action === 'retrieveMercari') {
     try {
