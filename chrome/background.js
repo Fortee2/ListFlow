@@ -23,16 +23,20 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
   else if (request.action === 'retrieveEbay') {
     try {
-      const itemCount = request.count;
       const pageURL = request.pageURL;
-      const pageCount =  (itemCount < 200)? 1 :  Math.ceil(itemCount / 200);
-      console.log('pageCount: ' + pageCount);
+      let pageCount =  1;
+
       let titles = [];
 
       const pages = Array.from({length: pageCount}, (_, i) => i + 1);
       for (const page of pages) {
         const tab = await getActiveTab(pageURL, page, 'eBay');
         await delay(6000);
+        if(pageCount == 1){
+          const itemCount = retrieveEbayCounts();
+          pageCount = Math.ceil(itemCount / 200);
+          console.log('pageCount: ' + pageCount);
+        }
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
@@ -237,6 +241,14 @@ async function getActiveTab(targetUrl, page, salesChannel) {
   });
 }
 
+function getEbayURLs() {
+  const urls = [
+      {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true},  
+      {'type': 'unsold', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': false},
+      {'type': 'sold', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': true},
+      ];  
+}
+
 function downloadData(data){
   const blob = new Blob([data], { type: 'text/plain' });
   
@@ -275,4 +287,28 @@ async function saveItemToDatabase(item) {
   } catch (error) {
     console.error('Error saving item to the database:', error);
   }
+}
+
+
+function retrieveEbayCounts (){
+  function checkReadyState() {
+    if(document.readyState === 'complete') {
+      console.log('readyState is complete');
+      return readTotalItems();
+    }else{
+      console.log('readyState is not complete');
+      setTimeout(checkReadyState, 1000 );
+    }
+  }
+
+  function readTotalItems() {
+    console.log('readTotalItems');
+    const div = document.querySelector('span[class="result-range"]');
+    console.log(div.innerHTML); 
+    let count = div.innerHTML.split('of')[1].trim();
+    console.log(count);
+    return count;
+  }
+
+  return checkReadyState();
 }
