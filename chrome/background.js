@@ -21,18 +21,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
-  else if (request.action === 'retrieveCompletedCount') {
-    try {
-      const tab = await getFirstTab('https://www.mercari.com/mypage/listings/complete/');
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['retrieveCompletedCount.js'],
-    });
-    } catch (error) {
-      console.error('Error executing script:', error);
-    }
-    
-  }
   else if (request.action === 'retrieveEbay') {
     try {
       const itemCount = request.count;
@@ -48,47 +36,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            function: async function scrapData() {
-              let bulkData = [];
-             
-              function checkReadyState() {
-                return new Promise((resolve, reject) => {
-                  if(document.readyState === 'complete') {
-                    console.log('readyState is complete');
-                    retrieveEbay().then(resolve);
-                  }else{
-                    console.log('readyState is not complete');
-                    setTimeout(() => checkReadyState().then(resolve), 1000);
-                  }
-                });
-              }
-  
-              function retrieveEbay() {
-                return new Promise((resolve, reject) => {
-                  console.log('retrieveEbay');
-                  const trs = document.querySelectorAll('tr[class="grid-row"]');
-                
-                  trs.forEach(f => {
-                    let div = f.querySelector('div[class="column-title__text"]');
-                    let a = div.querySelector('a');
-                    console.log(a.innerHTML + '|' + a.href.split('/')[4]);
-               
-                    bulkData.push({ 
-                      itemTitle: a.innerHTML,
-                      itemNumber: a.href.split('/')[4],
-                      description: a.innerHTML,
-                      salesChannel: 'eBay',
-                      active: true,
-                     }); 
-                  });
-
-                  resolve(bulkData);
-                });
-              }
-
-              await checkReadyState();
-              return bulkData;
-            },
+            function: scrapDataEbay,
           }, resolve);
         });
  
@@ -212,6 +160,48 @@ async function scrapData(completedListings) {
   }
 
   await checkReadyState(); 
+  return bulkData;
+}
+
+async function scrapDataEbay() {
+  let bulkData = [];
+ 
+  function checkReadyState() {
+    return new Promise((resolve, reject) => {
+      if(document.readyState === 'complete') {
+        console.log('readyState is complete');
+        retrieveEbay().then(resolve);
+      }else{
+        console.log('readyState is not complete');
+        setTimeout(() => checkReadyState().then(resolve), 1000);
+      }
+    });
+  }
+
+  function retrieveEbay() {
+    return new Promise((resolve, reject) => {
+      console.log('retrieveEbay');
+      const trs = document.querySelectorAll('tr[class="grid-row"]');
+    
+      trs.forEach(f => {
+        let div = f.querySelector('div[class="column-title__text"]');
+        let a = div.querySelector('a');
+        console.log(a.innerHTML + '|' + a.href.split('/')[4]);
+   
+        bulkData.push({ 
+          itemTitle: a.innerHTML,
+          itemNumber: a.href.split('/')[4],
+          description: a.innerHTML,
+          salesChannel: 'eBay',
+          active: true,
+         }); 
+      });
+
+      resolve(bulkData);
+    });
+  }
+
+  await checkReadyState();
   return bulkData;
 }
 

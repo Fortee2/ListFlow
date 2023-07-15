@@ -14,10 +14,6 @@ document.getElementById('mercariButton').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'retrieveCount' });
 });
 
-document.getElementById('mCompletedButton').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'retrieveCompletedCount' });
-});
-
 document.getElementById('eBayButton').addEventListener('click', () => {
   sendMessageWithPromise({ action: 'retrieveEbayCount' }).then((countResponse) => {
     console.log("Total Item Count: " + countResponse);
