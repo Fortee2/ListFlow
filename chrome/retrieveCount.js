@@ -10,9 +10,9 @@ function checkReadyState() {
 
   function readTotalItems() {
     console.log('readTotalItems');
-    const div = document.querySelector('h5[data-testid="FilterCount"]');
-    console.log(div.innerHTML); 
-    chrome.runtime.sendMessage({ action: 'retrieveMercari', count: div.innerHTML, pageURL: 'https://www.mercari.com/mypage/listings/active/?page=' });
+    const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
+    let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
+    chrome.runtime.sendMessage({ action: 'retrieveMercari', countData: counts, pageURL: 'https://www.mercari.com/mypage/listings/active/?page=' , activeListings: true});
   }
 
   checkReadyState();

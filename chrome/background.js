@@ -78,6 +78,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                       itemNumber: a.href.split('/')[4],
                       description: a.innerHTML,
                       salesChannel: 'eBay',
+                      active: true,
                      }); 
                   });
 
@@ -106,68 +107,58 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
   else if (request.action === 'retrieveMercari') {
     try {
-      const itemCount = request.count;
-      const pageURL = request.pageURL;
-      const pageCount =  (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
-      console.log('pageCount: ' + pageCount);
-      let titles = [];
-  
-      const pages = Array.from({length: pageCount}, (_, i) => i + 1);
+      const urls = [
+        {'type': 'complete', 'url':'https://www.mercari.com/mypage/listings/complete/?page=', 'activeListings': false}, 
+        {'type': 'active', 'url': 'https://www.mercari.com/mypage/listings/active/?page=', 'activeListings': true}, 
+        {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false},
+        {'type':'inprogress','url':'https://www.mercari.com/mypage/listings/in_progress/?page=', 'activeListings': false}
+      ];
 
-      for (const page of pages) {
-        const tab = await getActiveTab(pageURL, page, 'Mercari');
-        await delay(6000);
-        const result = await new Promise(resolve => {
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: async function scrapData() {
-              let bulkData = [];
-  
-              function checkReadyState() {
-                return new Promise((resolve, reject) => {
-                  if(document.readyState === 'complete') {
-                    console.log('readyState is complete');
-                    retrieveMercari().then(resolve);
-                  } else {
-                    console.log('readyState is not complete');
-                    setTimeout(() => checkReadyState().then(resolve), 1000);
-                  }
-                });
-              }
-  
-              function retrieveMercari() {
-                return new Promise((resolve, reject) => {
-                  console.log('retrieveMercari');
-                  const divs = document.querySelectorAll('div[data-testid="RowItemWithMeta"]');
-  
-                  divs.forEach(f => {
-                    const ele = f.querySelector('a'); 
-                   
-                    bulkData.push({ 
-                      itemTitle: ele.innerHTML,
-                      itemNumber: ele.href.split('/')[5],
-                      description: ele.innerHTML,
-                      salesChannel: 'Mercari',
-                     });
-                  });
+      for (const url of urls) {
+        let titles = [];
+        let itemCount = 0;
 
-                  resolve(bulkData);
-                });
-              }
-  
-              await checkReadyState(); 
-              return bulkData;
-            },
-          }, resolve);
-        });
-        
-        if(result[0].result) {
-          saveItemToDatabase(result[0].result);
+        switch(url.type) {
+          case 'complete':
+            itemCount = request.countData[3];
+            break;
+          case 'active':
+            itemCount = request.countData[0];
+            break;
+          case 'inactive':
+            itemCount = request.countData[1];
+            break;
+          case 'inprogress':
+            itemCount = request.countData[2];
+            break;
         }
-      }
+
+        const pageURL = url.url;
+        const activeListings = url.activeListings;
+        const pageCount =  (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
+        console.log('pageCount: ' + pageCount);
   
-      if(titles.length > 0) {
-        downloadData(titles.join('\n') );
+        const pages = Array.from({length: pageCount}, (_, i) => i + 1);
+        
+        for (const page of pages) {
+          const tab = await getActiveTab(pageURL, page, 'Mercari');
+          await delay(6000);
+          const result = await new Promise(resolve => {
+            chrome.scripting.executeScript({
+              args:[activeListings],
+              target: { tabId: tab.id },
+              function: scrapData,
+            }, resolve);
+          });
+          
+          if(result[0].result) {
+            saveItemToDatabase(result[0].result);
+          }
+        }
+    
+        if(titles.length > 0) {
+          downloadData(titles.join('\n') );
+        }
       }
   
     } catch (error) {
@@ -182,6 +173,46 @@ async function getFirstTab(targetUrl) {
       resolve(tab);
     });
   });
+}
+
+async function scrapData(completedListings) {
+  let bulkData = [];
+
+  function checkReadyState() {
+    return new Promise((resolve, reject) => {
+      if(document.readyState === 'complete') {
+        console.log('readyState is complete');
+        retrieveMercari().then(resolve);
+      } else {
+        console.log('readyState is not complete');
+        setTimeout(() => checkReadyState().then(resolve), 1000);
+      }
+    });
+  }
+
+  function retrieveMercari() {
+    return new Promise((resolve, reject) => {
+      console.log('retrieveMercari');
+      const divs = document.querySelectorAll('div[data-testid="RowItemWithMeta"]');
+
+      divs.forEach(f => {
+        const ele = f.querySelector('a'); 
+       
+        bulkData.push({ 
+          itemTitle: ele.innerHTML,
+          itemNumber: ele.href.split('/')[5],
+          description: ele.innerHTML,
+          salesChannel: 'Mercari',
+          active: completedListings,
+         });
+      });
+
+      resolve(bulkData);
+    });
+  }
+
+  await checkReadyState(); 
+  return bulkData;
 }
 
 async function getActiveTab(targetUrl, page, salesChannel) {

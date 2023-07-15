@@ -22,9 +22,8 @@ namespace ListFlow.Business.Services
             if ( existing != null)
             {
                 existing.ItemNumber = listing.ItemNumber;
-                _listings.Update(existing);
+                UpdateListing(existing, listing);
                 return new ServiceResult<Listing>(existing);
-                //return new ServiceResult<Listing>("A listing with this title already exists.");
             }
 
             var salesChannel = _salesChannels.FindByName(listing.SalesChannel);
@@ -40,7 +39,8 @@ namespace ListFlow.Business.Services
                 ItemTitle = listing.ItemTitle,
                 ItemNumber = listing.ItemNumber,
                 Description = listing.Description,
-                SalesChannel = salesChannel
+                SalesChannel = salesChannel,
+                Active = listing.Active
             };
 
             await _listings.AddAsync(newListing);
@@ -70,7 +70,10 @@ namespace ListFlow.Business.Services
                 if (existing == null)
                 {
                     newListings.Add(listingDto);
+                    continue;
                 }
+
+                UpdateListing(existing, listingDto);
             }
 
             var listings = newListings.Select(dto => new Listing {
@@ -79,6 +82,7 @@ namespace ListFlow.Business.Services
                 ItemNumber = dto.ItemNumber,
                 Description = dto.Description,
                 SalesChannel = salesChannel,
+                Active = dto.Active
             });
 
             await _listings.AddRangeAsync(listings.ToList());
@@ -142,6 +146,16 @@ namespace ListFlow.Business.Services
             _listings.Update(item);
 
             return new ServiceResult<Listing>(item);
+        }
+
+        private void UpdateListing(Listing existing, ListingDTO listingDto)
+        {
+            existing.ItemTitle = listingDto.ItemTitle;
+            existing.ItemNumber = listingDto.ItemNumber;
+            existing.Description = listingDto.Description;
+            existing.Active = listingDto.Active;
+
+            Update(existing);
         }
     }
 }
