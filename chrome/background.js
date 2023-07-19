@@ -10,49 +10,25 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
-  else if (request.action === 'retrieveEbayCount') {
-    try {
-      const tab = await getFirstTab('https://www.ebay.com/sh/lst/active');
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['retrieveEbayCount.js'],
-      });
-    } catch (error) {
-      console.error('Error executing script:', error);
-    }
-  }
   else if (request.action === 'retrieveEbay') {
     try {
-      const pageURL = request.pageURL;
-      let pageCount =  1;
+      const urls =  getEbayURLs();
 
-      let titles = [];
-
-      const pages = Array.from({length: pageCount}, (_, i) => i + 1);
-      for (const page of pages) {
-        const tab = await getActiveTab(pageURL, page, 'eBay');
+      for(const url of urls){
+        const tab = await getActiveTab(url.url, 1, 'eBay');
         await delay(6000);
-        if(pageCount == 1){
-          const itemCount = retrieveEbayCounts();
-          pageCount = Math.ceil(itemCount / 200);
-          console.log('pageCount: ' + pageCount);
-        }
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
+            args:[url.activeListings],
             target: { tabId: tab.id },
             function: scrapDataEbay,
           }, resolve);
         });
- 
+        
         if(result[0].result) {
           saveItemToDatabase(result[0].result);
         }
       }
-
-      if(titles.length > 0) {
-        downloadData(titles.join('\n') );
-      }
-
     } catch (error) {
       console.error('Error executing script:', error);
     }
@@ -167,10 +143,10 @@ async function scrapData(completedListings) {
   return bulkData;
 }
 
-async function scrapDataEbay() {
+async function scrapDataEbay(completedListings) {
   let bulkData = [];
  
-  function checkReadyState() {
+   function checkReadyState() {
     return new Promise((resolve, reject) => {
       if(document.readyState === 'complete') {
         console.log('readyState is complete');
@@ -180,7 +156,7 @@ async function scrapDataEbay() {
         setTimeout(() => checkReadyState().then(resolve), 1000);
       }
     });
-  }
+  } 
 
   function retrieveEbay() {
     return new Promise((resolve, reject) => {
@@ -197,7 +173,7 @@ async function scrapDataEbay() {
           itemNumber: a.href.split('/')[4],
           description: a.innerHTML,
           salesChannel: 'eBay',
-          active: true,
+          active: completedListings,
          }); 
       });
 
@@ -209,7 +185,7 @@ async function scrapDataEbay() {
   return bulkData;
 }
 
-async function getActiveTab(targetUrl, page, salesChannel) {
+async function getActiveTab(targetUrl, page, salesChannel, activeListings = true) {
   return new Promise((resolve) => {
     
     chrome.windows.getLastFocused({ populate: true }, (focusedWindow) => {
@@ -228,7 +204,8 @@ async function getActiveTab(targetUrl, page, salesChannel) {
           updatedURL = targetUrl + page;
         } else if(salesChannel === 'eBay') {
           let offset = (page - 1) * 200;
-          updatedURL = targetUrl + '?offset=' + offset +  '&limit=200&sort=availableQuantity';
+          let qs = (activeListings)? '?' : '&';
+          updatedURL = targetUrl + qs + 'offset=' + offset +  '&limit=200&sort=availableQuantity';
         }
 
         chrome.tabs.update(currTab.id, { url: updatedURL }, function(tab) {
@@ -243,10 +220,12 @@ async function getActiveTab(targetUrl, page, salesChannel) {
 
 function getEbayURLs() {
   const urls = [
-      {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true},  
-      {'type': 'unsold', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': false},
-      {'type': 'sold', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': true},
-      ];  
+    {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true},  
+    {'type': 'unsold', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': false},
+    {'type': 'sold', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': true},
+  ];  
+
+  return urls;
 }
 
 function downloadData(data){
@@ -290,7 +269,7 @@ async function saveItemToDatabase(item) {
 }
 
 
-function retrieveEbayCounts (){
+function retrieveEbayCounts (document){
   function checkReadyState() {
     if(document.readyState === 'complete') {
       console.log('readyState is complete');
