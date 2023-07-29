@@ -83,7 +83,10 @@ namespace ListFlow.Business.Services
                 Description = dto.Description,
                 SalesChannel = salesChannel,
                 Active = dto.Active
+            
             });
+
+           
 
             await _listings.AddRangeAsync(listings.ToList());
 
@@ -154,6 +157,8 @@ namespace ListFlow.Business.Services
             existing.ItemNumber = listingDto.ItemNumber;
             existing.Description = listingDto.Description;
             existing.Active = listingDto.Active;
+            existing.DateEnded = listingDto.EndedDate;
+            existing.DateListed = listingDto.ListingDate;
 
             Update(existing);
         }

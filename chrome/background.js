@@ -13,21 +13,36 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   else if (request.action === 'retrieveEbay') {
     try {
       const urls =  getEbayURLs();
+      let titles = [];
 
       for(const url of urls){
-        const tab = await getActiveTab(url.url, 1, 'eBay');
-        await delay(6000);
-        const result = await new Promise(resolve => {
-          chrome.scripting.executeScript({
-            args:[url.activeListings],
-            target: { tabId: tab.id },
-            function: scrapDataEbay,
-          }, resolve);
-        });
-        
-        if(result[0].result) {
-          saveItemToDatabase(result[0].result);
-        }
+        let pageCount = 1;
+        let totalPages = 0;
+
+        do{
+          const tab = await getActiveTab(url.url, pageCount, 'eBay');
+          await delay(6000);
+          const result = await new Promise(resolve => {
+            chrome.scripting.executeScript({
+              args:[url.activeListings],
+              target: { tabId: tab.id },
+              function: scrapDataEbay,
+            }, resolve);
+          });
+          
+          if(result[0].result) {
+            console.log(result[0].result);
+            if(pageCount === 1) {
+              totalPages = Math.ceil(result[0].result.count / 200);
+            }
+            pageCount++;
+
+            
+            if(result[0].result.result.length > 0) {
+              saveItemToDatabase(result[0].result.result);
+            }
+          }
+        }while(pageCount <= totalPages );
       }
     } catch (error) {
       console.error('Error executing script:', error);
@@ -35,12 +50,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
   else if (request.action === 'retrieveMercari') {
     try {
-      const urls = [
-        {'type': 'complete', 'url':'https://www.mercari.com/mypage/listings/complete/?page=', 'activeListings': false}, 
-        {'type': 'active', 'url': 'https://www.mercari.com/mypage/listings/active/?page=', 'activeListings': true}, 
-        {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false},
-        {'type':'inprogress','url':'https://www.mercari.com/mypage/listings/in_progress/?page=', 'activeListings': false}
-      ];
+      const urls = getMercariURLs();
 
       for (const url of urls) {
         let titles = [];
@@ -143,13 +153,15 @@ async function scrapData(completedListings) {
   return bulkData;
 }
 
-async function scrapDataEbay(completedListings) {
+async function scrapDataEbay(activeListings) {
   let bulkData = [];
- 
-   function checkReadyState() {
+  let itemCount = 0;
+
+  function checkReadyState() {
     return new Promise((resolve, reject) => {
       if(document.readyState === 'complete') {
         console.log('readyState is complete');
+        readTotalItems();
         retrieveEbay().then(resolve);
       }else{
         console.log('readyState is not complete');
@@ -158,6 +170,33 @@ async function scrapDataEbay(completedListings) {
     });
   } 
 
+  function readTotalItems() {
+    console.log('readTotalItems');
+    const div = document.querySelector('span[class="result-range"]');
+    itemCount = div.innerHTML.split('of')[1].trim();
+    console.log(itemCount);
+  }
+
+
+  function parseEbayDate(dateString) {
+    console.log('parseEbayDate' );
+    let testString = dateString.replace(' at ', ' ');
+    console.log(testString);
+    let idx = testString.indexOf('am');
+
+    if(idx === -1) {
+      idx = testString.indexOf('pm');
+    }
+
+    testString = testString.substring(0, idx) +  ' ' + testString.substring(idx + 2);; 
+    console.log(testString);
+
+    let date = new Date(testString);
+    console.log(date);
+
+    return date;
+  }
+
   function retrieveEbay() {
     return new Promise((resolve, reject) => {
       console.log('retrieveEbay');
@@ -165,24 +204,29 @@ async function scrapDataEbay(completedListings) {
     
       trs.forEach(f => {
         let div = f.querySelector('div[class="column-title__text"]');
+        let divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+    
         let a = div.querySelector('a');
         console.log(a.innerHTML + '|' + a.href.split('/')[4]);
+   
+        let dateContainer = divDate.querySelector('div');
+        console.log(dateContainer.innerHTML);
    
         bulkData.push({ 
           itemTitle: a.innerHTML,
           itemNumber: a.href.split('/')[4],
           description: a.innerHTML,
           salesChannel: 'eBay',
-          active: completedListings,
+          active: activeListings
          }); 
       });
 
-      resolve(bulkData);
+      resolve();
     });
   }
 
   await checkReadyState();
-  return bulkData;
+  return  {'result': bulkData, 'count': itemCount};
 }
 
 async function getActiveTab(targetUrl, page, salesChannel, activeListings = true) {
@@ -218,11 +262,21 @@ async function getActiveTab(targetUrl, page, salesChannel, activeListings = true
   });
 }
 
+function getMercariURLs() {
+  const urls = [
+    {'type': 'complete', 'url':'https://www.mercari.com/mypage/listings/complete/?page=', 'activeListings': false}, 
+    {'type': 'active', 'url': 'https://www.mercari.com/mypage/listings/active/?page=', 'activeListings': true}, 
+    {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false}, 
+    {'type':'inprogress','url':'https://www.mercari.com/mypage/listings/in_progress/?page=', 'activeListings': false}
+  ];
+
+  return urls;
+}
+
 function getEbayURLs() {
   const urls = [
-    {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true},  
-    {'type': 'unsold', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': false},
-    {'type': 'sold', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': true},
+    {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
+    {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
   ];  
 
   return urls;
@@ -267,7 +321,6 @@ async function saveItemToDatabase(item) {
     console.error('Error saving item to the database:', error);
   }
 }
-
 
 function retrieveEbayCounts (document){
   function checkReadyState() {
