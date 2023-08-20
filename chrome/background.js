@@ -33,7 +33,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           if(result[0].result) {
             console.log(result[0].result);
             if(pageCount === 1) {
-              totalPages = Math.ceil(result[0].result.count / 200);
+              let itemCount = new Number(result[0].result.count.replace(',', ''));
+              totalPages = Math.ceil(itemCount / 200);
             }
             pageCount++;
 
@@ -71,7 +72,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             break;
         }
 
-        const pageURL = url.url;
+        const pageURL = url.url;  
         const activeListings = url.activeListings;
         const pageCount =  (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
         console.log('pageCount: ' + pageCount);
@@ -94,9 +95,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           }
         }
     
-        if(titles.length > 0) {
+/*         if(titles.length > 0) {
           downloadData(titles.join('\n') );
-        }
+        } */
       }
   
     } catch (error) {
@@ -188,10 +189,10 @@ async function scrapDataEbay(activeListings) {
       idx = testString.indexOf('pm');
     }
 
-    testString = testString.substring(0, idx) +  ' ' + testString.substring(idx + 2);; 
+    testString = testString.substring(0, idx) +  ' ' + testString.substring(idx);; 
     console.log(testString);
 
-    let date = new Date(testString);
+    let date = new Date(testString).toISOString();
     console.log(date);
 
     return date;
@@ -210,22 +211,24 @@ async function scrapDataEbay(activeListings) {
         console.log(a.innerHTML + '|' + a.href.split('/')[4]);
    
         let dateContainer = divDate.querySelector('div');
-        console.log(dateContainer.innerHTML);
+        console.log(parseEbayDate(dateContainer.innerHTML));
    
         bulkData.push({ 
           itemTitle: a.innerHTML,
           itemNumber: a.href.split('/')[4],
           description: a.innerHTML,
           salesChannel: 'eBay',
-          active: activeListings
+          active: activeListings,
+          listingDate: parseEbayDate(dateContainer.innerHTML),
+          listDateType: 0
          }); 
       });
-
       resolve();
     });
   }
 
   await checkReadyState();
+  console.log(bulkData + '|' + itemCount );
   return  {'result': bulkData, 'count': itemCount};
 }
 

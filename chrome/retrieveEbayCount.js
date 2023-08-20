@@ -16,5 +16,6 @@ function checkReadyState() {
     console.log(count);
     chrome.runtime.sendMessage({ action: 'retrieveEbay', count: count, pageURL: 'https://www.ebay.com/sh/lst/active' });
   }
+  
 
   checkReadyState();

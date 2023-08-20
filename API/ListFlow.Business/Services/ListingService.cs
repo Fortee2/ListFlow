@@ -82,8 +82,8 @@ namespace ListFlow.Business.Services
                 ItemNumber = dto.ItemNumber,
                 Description = dto.Description,
                 SalesChannel = salesChannel,
-                Active = dto.Active
-            
+                Active = dto.Active,
+                DateListed = dto.ListedDate
             });
 
            
