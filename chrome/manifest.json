@@ -18,5 +18,9 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "icons":{
+    "128": "ListFlow_icon.png"
   }
+
 }
