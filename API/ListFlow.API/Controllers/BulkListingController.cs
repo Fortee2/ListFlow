@@ -23,8 +23,6 @@ namespace ListFlow.API.Controllers
 
         [HttpPost]
         public async Task<IActionResult> Create(ListingDTO[] listingDtos) {
-
-
             await _listingService.CreateListings(listingDtos);
 
             return Ok();

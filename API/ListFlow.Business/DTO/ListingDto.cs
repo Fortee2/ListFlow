@@ -34,6 +34,14 @@ namespace ListFlow.Business.DTO
             }
         }
 
+        public DateTime? SoldDate
+        {
+            get
+            {
+                return (ListingDateType == 2) ? ListingDate : null;
+            }
+        }
+
     }
 
 }

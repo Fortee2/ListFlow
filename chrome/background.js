@@ -13,7 +13,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   else if (request.action === 'retrieveEbay') {
     try {
       const urls =  getEbayURLs();
-      let titles = [];
 
       for(const url of urls){
         let pageCount = 1;
@@ -92,12 +91,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           
           if(result[0].result) {
             saveItemToDatabase(result[0].result);
+            titles.push(result[0].result)
           }
         }
     
-/*         if(titles.length > 0) {
+        if(titles.length > 0) {
           downloadData(titles.join('\n') );
-        } */
+        } 
       }
   
     } catch (error) {
@@ -163,7 +163,7 @@ async function scrapDataEbay(activeListings) {
       if(document.readyState === 'complete') {
         console.log('readyState is complete');
         readTotalItems();
-        retrieveEbay().then(resolve);
+        retrieveEbay(activeListings).then(resolve);
       }else{
         console.log('readyState is not complete');
         setTimeout(() => checkReadyState().then(resolve), 1000);
@@ -178,11 +178,8 @@ async function scrapDataEbay(activeListings) {
     console.log(itemCount);
   }
 
-
   function parseEbayDate(dateString) {
-    console.log('parseEbayDate' );
     let testString = dateString.replace(' at ', ' ');
-    console.log(testString);
     let idx = testString.indexOf('am');
 
     if(idx === -1) {
@@ -190,29 +187,49 @@ async function scrapDataEbay(activeListings) {
     }
 
     testString = testString.substring(0, idx) +  ' ' + testString.substring(idx);; 
-    console.log(testString);
 
     let date = new Date(testString).toISOString();
-    console.log(date);
 
     return date;
   }
 
-  function retrieveEbay() {
+  function retrieveEbay(activeListings) {
     return new Promise((resolve, reject) => {
       console.log('retrieveEbay');
+      console.log(`Listings are: ${activeListings}`);
+
       const trs = document.querySelectorAll('tr[class="grid-row"]');
     
       trs.forEach(f => {
         let div = f.querySelector('div[class="column-title__text"]');
-        let divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+        let divDate =  null;
+        let endedStatus = 'Unsold';
+      
+        if(activeListings){
+          divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+        }else{
+          divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+          endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').innerHTML;
+        }
     
+        console.log(endedStatus);
+
+
+        let listingType;
+        if (activeListings) {
+          listingType = 0;
+        } else if (endedStatus === "Unsold") {
+          listingType = 1;
+        } else {
+          listingType = 2;
+        }
+
         let a = div.querySelector('a');
-        console.log(a.innerHTML + '|' + a.href.split('/')[4]);
-   
         let dateContainer = divDate.querySelector('div');
+
         console.log(parseEbayDate(dateContainer.innerHTML));
-   
+        console.log(`ListingType: ${listingType}`);
+        
         bulkData.push({ 
           itemTitle: a.innerHTML,
           itemNumber: a.href.split('/')[4],
@@ -220,7 +237,7 @@ async function scrapDataEbay(activeListings) {
           salesChannel: 'eBay',
           active: activeListings,
           listingDate: parseEbayDate(dateContainer.innerHTML),
-          listDateType: 0
+          listingDateType: listingType
          }); 
       });
       resolve();
@@ -278,7 +295,7 @@ function getMercariURLs() {
 
 function getEbayURLs() {
   const urls = [
-    {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
+   // {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
     {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
   ];  
 
