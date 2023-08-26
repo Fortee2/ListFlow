@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         const pageURL = url.url;  
         const activeListings = url.activeListings;
-        const pageCount =  (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
+        const pageCount = 1; // (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
         console.log('pageCount: ' + pageCount);
   
         const pages = Array.from({length: pageCount}, (_, i) => i + 1);
@@ -90,14 +90,20 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           });
           
           if(result[0].result) {
-            saveItemToDatabase(result[0].result);
-            titles.push(result[0].result)
+            //saveItemToDatabase(result[0].result);
+            result[0].result.forEach(element => {
+              titles.push(element)  
+            });
           }
         }
-    
+        
+        console.log('dump titles');
+        console.log(titles);
+        
+
         if(titles.length > 0) {
-          downloadData(titles.join('\n') );
-        } 
+          downloadData(titles);
+        }         
       }
   
     } catch (error) {
@@ -295,7 +301,7 @@ function getMercariURLs() {
 
 function getEbayURLs() {
   const urls = [
-   // {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
+    {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
     {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
   ];  
 
@@ -303,6 +309,12 @@ function getEbayURLs() {
 }
 
 function downloadData(data){
+  console.log('downloadData');
+
+  if (typeof data === 'object') {
+    data = JSON.stringify(data, null, 2); // Pretty print the JSON
+  }
+
   const blob = new Blob([data], { type: 'text/plain' });
   
   const reader = new FileReader();
