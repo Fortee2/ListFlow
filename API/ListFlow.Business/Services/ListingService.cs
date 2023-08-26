@@ -157,9 +157,12 @@ namespace ListFlow.Business.Services
             existing.ItemNumber = listingDto.ItemNumber;
             existing.Description = listingDto.Description;
             existing.Active = listingDto.Active;
-            existing.DateEnded = listingDto.EndedDate;
-            existing.DateSold = listingDto.SoldDate;
-            existing.DateListed = listingDto.ListingDate;
+            if(listingDto.EndedDate != null)
+                existing.DateEnded = listingDto.EndedDate;
+            if(listingDto.SoldDate != null)
+                existing.DateSold = listingDto.SoldDate;
+            if(listingDto.ListingDate != null)
+                existing.DateListed = listingDto.ListingDate;
 
             Update(existing);
         }
