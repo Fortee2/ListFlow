@@ -161,8 +161,8 @@ namespace ListFlow.Business.Services
                 existing.DateEnded = listingDto.EndedDate;
             if(listingDto.SoldDate != null)
                 existing.DateSold = listingDto.SoldDate;
-            if(listingDto.ListingDate != null)
-                existing.DateListed = listingDto.ListingDate;
+            if(listingDto.ListedDate != null)
+                existing.DateListed = listingDto.ListedDate;
 
             Update(existing);
         }
