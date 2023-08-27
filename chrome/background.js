@@ -83,7 +83,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           await delay(6000);
           const result = await new Promise(resolve => {
             chrome.scripting.executeScript({
-              args:[activeListings],
+              args:[activeListings, url.type],
               target: { tabId: tab.id },
               function: scrapData,
             }, resolve);
@@ -120,7 +120,7 @@ async function getFirstTab(targetUrl) {
   });
 }
 
-async function scrapData(completedListings) {
+async function scrapData(completedListings, listingType) {
   let bulkData = [];
 
   function checkReadyState() {
@@ -135,6 +135,39 @@ async function scrapData(completedListings) {
     });
   }
 
+  function parseDate(dateString) {
+    if (dateString.includes('ago')) {
+      let timeportion = dateString.split('ago')[0].trim();
+      console.log(timeportion);
+
+      if (timeportion.includes('h')) {
+        let hours = timeportion.split('h')[0].trim();
+        let date = new Date();
+        date.setHours(date.getHours() - hours);
+        return date.toISOString();
+      }
+
+      if (timeportion.includes('d')) {  
+        let days = timeportion.split('d')[0].trim();
+        let date = new Date();
+        date.setDate(date.getDate() - days);
+        return date.toISOString();
+      }
+
+      if (timeportion.includes('m')) {
+        let minutes = timeportion.split('m')[0].trim();
+        let date = new Date();
+        date.setMinutes(date.getMinutes() - minutes);
+        return date.toISOString();
+      }
+
+      console.log('Unable to parse date');
+      return null;
+    }
+
+    return new Date(dateString).toISOString();
+  }
+
   function retrieveMercari() {
     return new Promise((resolve, reject) => {
       console.log('retrieveMercari');
@@ -146,6 +179,21 @@ async function scrapData(completedListings) {
         const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p');
         const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
 
+        let listingDateType;
+
+        switch(listingType) {
+          case 'active':
+            listingDateType = 0;
+            break;
+          case 'inactive':
+            listingDateType = 1;
+            break;
+          case 'inprogress':
+          case 'complete':
+            listingDateType = 2;
+            break;
+        }
+        
         bulkData.push({ 
           itemTitle: ele.innerHTML,
           itemNumber: ele.href.split('/')[5],
@@ -154,7 +202,8 @@ async function scrapData(completedListings) {
           active: completedListings,
           likes: divLike.innerHTML,
           views: divViews.innerHTML,
-          lastUpdated: divLastUpdated.innerHTML
+          listingDate: parseDate(divLastUpdated.innerHTML),
+          listingDateType: listingDateType
          });
       });
 

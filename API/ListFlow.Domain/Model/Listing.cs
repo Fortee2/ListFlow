@@ -23,6 +23,7 @@ namespace ListFlow.Domain.Model
         public DateTime? DateListed { get; set; }
         public DateTime? DateEnded { get; set; }
         public DateTime? DateSold { get; set; }
+        public DateTime? LastUpdated { get; set; }
     }
 }
 

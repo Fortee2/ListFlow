@@ -85,7 +85,8 @@ namespace ListFlow.Business.Services
                 Active = dto.Active,
                 DateListed = dto.ListedDate,
                 DateEnded = dto.EndedDate,
-                DateSold = dto.SoldDate
+                DateSold = dto.SoldDate,
+                LastUpdated = DateTime.Now
             });
 
             await _listings.AddRangeAsync(listings.ToList());
@@ -163,6 +164,8 @@ namespace ListFlow.Business.Services
                 existing.DateSold = listingDto.SoldDate;
             if(listingDto.ListedDate != null)
                 existing.DateListed = listingDto.ListedDate;
+
+            existing.LastUpdated = DateTime.Now;
 
             Update(existing);
         }
