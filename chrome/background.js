@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         const pageURL = url.url;  
         const activeListings = url.activeListings;
-        const pageCount = 1; // (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
+        const pageCount = (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
         console.log('pageCount: ' + pageCount);
   
         const pages = Array.from({length: pageCount}, (_, i) => i + 1);
@@ -90,7 +90,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           });
           
           if(result[0].result) {
-            //saveItemToDatabase(result[0].result);
+            saveItemToDatabase(result[0].result);
             result[0].result.forEach(element => {
               titles.push(element)  
             });
@@ -138,17 +138,23 @@ async function scrapData(completedListings) {
   function retrieveMercari() {
     return new Promise((resolve, reject) => {
       console.log('retrieveMercari');
-      const divs = document.querySelectorAll('div[data-testid="RowItemWithMeta"]');
+      const lis = document.querySelectorAll('li[data-testid="ListingRow"]');
 
-      divs.forEach(f => {
-        const ele = f.querySelector('a'); 
-       
+      lis.forEach(f => {
+        const ele = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('a'); 
+        const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
+        const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p');
+        const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
+
         bulkData.push({ 
           itemTitle: ele.innerHTML,
           itemNumber: ele.href.split('/')[5],
           description: ele.innerHTML,
           salesChannel: 'Mercari',
           active: completedListings,
+          likes: divLike.innerHTML,
+          views: divViews.innerHTML,
+          lastUpdated: divLastUpdated.innerHTML
          });
       });
 
@@ -215,11 +221,10 @@ async function scrapDataEbay(activeListings) {
           divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
         }else{
           divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
-          endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').innerHTML;
+          endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
         }
-    
-        console.log(endedStatus);
 
+        console.log(endedStatus);
 
         let listingType;
         if (activeListings) {
