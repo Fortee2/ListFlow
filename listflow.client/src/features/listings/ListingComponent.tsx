@@ -1,4 +1,3 @@
-import { useDispatch, useSelector } from 'react-redux';
 import { FormEventHandler, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import { getListingById, createListing, updateListing, deleteListing, getListings, getAllListings, getSelectedListing } from './listingSlice';
@@ -12,7 +11,7 @@ const ListingComponent = () => {
   useEffect(() => {
     // Fetch all listings on mount
     dispatch(getAllListings());
-  }, []);
+  }, [dispatch]);
 
   const handleSelectListing = (id: string) => {
     // Fetch a single listing by ID
@@ -29,9 +28,13 @@ const ListingComponent = () => {
     const listingDTO: Listing = {
       id: '',
       itemNumber: target.itemNumber.value,
-      title: target.title.value,
-      description: target.description.value,
+      itemTitle: target.title.value,
       salesChannel: 'EBAY',
+      active: '1',
+      dateEnded: '',  
+      dateListed: '',
+      dateSold: '',
+
     };
     dispatch(createListing(listingDTO));
   };
@@ -49,20 +52,32 @@ const ListingComponent = () => {
   return (
     <div>
       <h2>All Listings</h2>
-      <ul>
-        {listings.map(listing => (
-          <li key={listing.id} onClick={() => handleSelectListing(listing.id)}>
-            {listing.title}
-          </li>
-        ))}
-      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>Sales Channel</th>
+            <th>Item Number</th>
+            <th>Title</th>
+            </tr>
+          </thead>
+          <tbody>
+            {listings.map(listing => (
+              <tr key={listing.id}>
+                <td>{listing.salesChannel}</td>
+                <td>{listing.itemNumber}</td>
+                <td>{listing.itemTitle}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
 
       <hr />
 
       <h2>Selected Listing</h2>
       {selectedListing && (
         <>
-          <p>{selectedListing.title}</p>
+          <p>{selectedListing.itemTitle}</p>
           <button onClick={() => handleUpdateListing(selectedListing)}>Save Changes</button>
           <button onClick={() => handleDeleteListing(selectedListing.id)}>Delete Listing</button>
         </>

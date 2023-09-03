@@ -64,6 +64,7 @@ const listingSlice = createSlice({
       })
       .addCase(getAllListings.fulfilled, (state, action) => {
         state.status = 'succeeded';
+        console.log(action.payload);
         state.allListings = action.payload;
       })
       .addCase(getAllListings.rejected, (state, action) => {
