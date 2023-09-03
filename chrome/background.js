@@ -110,6 +110,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
+  else if (request.action === 'saveToListingAPI') {
+    saveItemToDatabase(request.item);
+  }
 });
 
 async function getFirstTab(targetUrl) {
@@ -175,7 +178,7 @@ async function scrapData(completedListings, listingType) {
 
       lis.forEach(f => {
         const ele = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('a'); 
-        let price = "0"; 
+        let price; 
         const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
         const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p');
         const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
@@ -200,7 +203,7 @@ async function scrapData(completedListings, listingType) {
             listingDateType = 2;
             break;
         }
-        
+
         bulkData.push({ 
           itemTitle: ele.innerHTML,
           itemNumber: ele.href.split('/')[5],
@@ -213,6 +216,11 @@ async function scrapData(completedListings, listingType) {
           listingDate: parseDate(divLastUpdated.innerHTML),
           listingDateType: listingDateType
          });
+      });
+
+      chrome.runtime.sendMessage({ 
+        action: 'saveToListingAPI',
+        item: bulkData
       });
 
       resolve(bulkData);
@@ -396,6 +404,10 @@ function delay(time) {
 
 async function saveItemToDatabase(item) {
   try {
+    if (typeof item === 'object') {
+      item = JSON.stringify(item, null, 2); // Pretty print the JSON
+    }
+
     console.log('Saving item to the database:', item);
     
     const response = await fetch('https://localhost:7219/api/BulkListing', {
@@ -403,7 +415,7 @@ async function saveItemToDatabase(item) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(item),
+      body: item,
     });
 
     if (response.ok) {

@@ -17,4 +17,6 @@ public interface IListingService
     ServiceResult<Listing> FindListingsByTitle(string Title);
 
     ServiceResult<Listing> FindListingsByItemNumber(string Title);
+
+    Task CreateMetrics(ListingDTO[] listingDtos);
 }

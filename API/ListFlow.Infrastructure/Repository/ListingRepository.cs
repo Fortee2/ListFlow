@@ -30,6 +30,8 @@ namespace ListFlow.Infrastructure.Repository
         public IEnumerable<Listing> GetAll()
         {
             var listing = (from list in this._dbContext.Listings
+                           where list.Active == true
+                           orderby list.DateListed descending
                            select list).AsEnumerable();
 
             return listing;

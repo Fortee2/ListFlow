@@ -1,5 +1,6 @@
 using ListFlow.Business.DTO;
 using ListFlow.Domain.Model;
+using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
 
 namespace ListFlow.Business.Services
@@ -9,9 +10,11 @@ namespace ListFlow.Business.Services
     {
         private readonly IListingRepository _listings;
         private readonly ISalesChannelRepository _salesChannels;
+        private readonly IListingMetricRepository _listingMetrics;
 
-        public ListingService(IListingRepository listingRepository, ISalesChannelRepository salesChannelRepository){
+        public ListingService(IListingRepository listingRepository, ISalesChannelRepository salesChannelRepository, IListingMetricRepository listingMetricRepository){
             _listings = listingRepository;
+            _listingMetrics = listingMetricRepository;
             _salesChannels = salesChannelRepository;
         }
 
@@ -50,7 +53,8 @@ namespace ListFlow.Business.Services
 
         public async Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listingDtos)
         {
-            List<ListingDTO> newListings = new List<ListingDTO>();
+            List<Listing> newListings = new List<Listing>();
+
 
             if (listingDtos == null || listingDtos.Count() == 0)
             {
@@ -67,31 +71,70 @@ namespace ListFlow.Business.Services
             foreach (var listingDto in listingDtos)
             {
                 var existing = _listings.FindByItemNumber(listingDto.ItemNumber);
+
                 if (existing == null)
                 {
-                    newListings.Add(listingDto);
+                    newListings.Add(new Listing{
+                        Id = Guid.NewGuid(),
+                        ItemTitle = listingDto.ItemTitle,
+                        ItemNumber = listingDto.ItemNumber,
+                        Description = listingDto.Description,
+                        SalesChannel = salesChannel,
+                        Active = listingDto.Active,
+                        DateListed = listingDto.ListedDate,
+                        DateEnded = listingDto.EndedDate,
+                        DateSold = listingDto.SoldDate,
+                        LastUpdated = DateTime.Now
+                    });
                     continue;
                 }
 
-                UpdateListing(existing, listingDto);
+
             }
 
-            var listings = newListings.Select(dto => new Listing {
-                Id = Guid.NewGuid(),
-                ItemTitle = dto.ItemTitle,
-                ItemNumber = dto.ItemNumber,
-                Description = dto.Description,
-                SalesChannel = salesChannel,
-                Active = dto.Active,
-                DateListed = dto.ListedDate,
-                DateEnded = dto.EndedDate,
-                DateSold = dto.SoldDate,
-                LastUpdated = DateTime.Now
-            });
+            await _listings.AddRangeAsync(newListings);
 
-            await _listings.AddRangeAsync(listings.ToList());
+            return new ServiceResult<Listing[]>(newListings.ToArray());
+        }
 
-            return new ServiceResult<Listing[]>(listings.ToArray());
+        public async Task CreateMetrics(ListingDTO[] listingDtos){
+            List<ListingMetric> newMetrics = new List<ListingMetric>();
+
+            foreach (var listingDto in listingDtos){
+                var existing = _listings.FindByItemNumber(listingDto.ItemNumber);
+                if ( existing == null)
+                {
+                    continue;
+                }
+
+                var existingMetric = _listingMetrics.FindByItemNumber(listingDto.ItemNumber);
+
+                if(existingMetric == null){
+                    newMetrics.Add(new ListingMetric
+                    {
+                        Id = Guid.NewGuid(),
+                        Listing = existing,
+                        Views = listingDto.ConvertedViews,
+                        Likes = listingDto.ConvertedLikes,
+                        LastUpdated = DateTime.Now,
+                    });
+
+                    continue;
+                }
+
+                UpdateMeteric(listingDto, existingMetric);
+            }
+
+            await _listingMetrics.AddRangeAsync(newMetrics);
+        }
+
+        private void UpdateMeteric(ListingDTO listingDto, ListingMetric existingMetric)
+        {
+            existingMetric.Views = listingDto.ConvertedViews;
+            existingMetric.Likes = listingDto.ConvertedLikes;
+            existingMetric.LastUpdated = DateTime.Now;
+
+            _listingMetrics.Update(existingMetric);
         }
 
         public ServiceResult<Listing> Delete(Guid id)

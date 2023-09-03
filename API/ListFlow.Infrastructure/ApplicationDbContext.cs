@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Inventory> Inventories { get; set; }
     public DbSet<SalesChannel> SalesChannels { get; set; }
     public DbSet<Listing> Listings { get; set; }
+    public DbSet<ListingMetric> ListingMetrics { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,10 +26,16 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Inventory>().ToTable("Inventory");
         modelBuilder.Entity<SalesChannel>().ToTable("SalesChannel");
         modelBuilder.Entity<Listing>().ToTable("Listing");
+        modelBuilder.Entity<ListingMetric>().ToTable("ListingMetric");
 
         modelBuilder.Entity<Listing>()
             .HasOne(l => l.SalesChannel)
             .WithMany()
             .HasForeignKey(l => l.SalesChannelId);
+
+        modelBuilder.Entity<ListingMetric>()
+            .HasOne(l => l.Listing)
+            .WithMany()
+            .HasForeignKey(l => l.ListingId);
     }
 }
