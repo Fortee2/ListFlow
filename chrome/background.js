@@ -175,9 +175,16 @@ async function scrapData(completedListings, listingType) {
 
       lis.forEach(f => {
         const ele = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('a'); 
+        let price = "0"; 
         const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
         const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p');
         const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
+
+        if(listingType === 'active') {
+          price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
+        } else {
+          price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelectorAll('a')[1].innerHTML.replace('$', '').trim();
+        }
 
         let listingDateType;
 
@@ -202,6 +209,7 @@ async function scrapData(completedListings, listingType) {
           active: completedListings,
           likes: divLike.innerHTML,
           views: divViews.innerHTML,
+          price: price,
           listingDate: parseDate(divLastUpdated.innerHTML),
           listingDateType: listingDateType
          });
