@@ -37,10 +37,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             }
             pageCount++;
 
-            
-            if(result[0].result.result.length > 0) {
-              saveItemToDatabase(result[0].result.result);
-            }
           }
         }while(pageCount <= totalPages );
       }
