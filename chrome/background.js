@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         do{
           const tab = await getActiveTab(url.url, pageCount, 'eBay');
-          await delay(6000);
+          await delay(getRandomInt(5000, 30000));
           const result = await new Promise(resolve => {
             chrome.scripting.executeScript({
               args:[url.activeListings],
@@ -76,7 +76,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         
         for (const page of pages) {
           const tab = await getActiveTab(pageURL, page, 'Mercari');
-          await delay(6000);
+          await delay(getRandomInt(5000, 30000));
           const result = await new Promise(resolve => {
             chrome.scripting.executeScript({
               args:[activeListings, url.type],
@@ -277,14 +277,21 @@ async function scrapDataEbay(activeListings) {
         let div = f.querySelector('div[class="column-title__text"]');
         let divDate =  null;
         let endedStatus = 'Unsold';
-      
+        let views =  "0";
+        let watchers = "0";
+        let listPrice = "0";
+
         if(activeListings){
           divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+          views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
+          watchers = f.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+          listPrice = f.querySelector('td[class="shui-dt-column__price shui-dt--right inline-editable"]').querySelector('div[class="col-price__current"]').querySelector('span').innerHTML.replace('$', '').trim();
         }else{
           divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
           endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+          listPrice = f.querySelector('td[class="shui-dt-column__price shui-dt--right"]').querySelector('div[class="col-price__current"]').querySelector('span').innerHTML.replace('$', '').trim();
         }
-
+  
         console.log(endedStatus);
 
         let listingType;
@@ -309,9 +316,18 @@ async function scrapDataEbay(activeListings) {
           salesChannel: 'eBay',
           active: activeListings,
           listingDate: parseEbayDate(dateContainer.innerHTML),
-          listingDateType: listingType
+          listingDateType: listingType,
+          views: views,
+          likes: watchers,
+          price: listPrice
          }); 
       });
+
+      chrome.runtime.sendMessage({ 
+        action: 'saveToListingAPI',
+        item: bulkData
+      });
+
       resolve();
     });
   }
@@ -356,9 +372,9 @@ async function getActiveTab(targetUrl, page, salesChannel, activeListings = true
 
 function getMercariURLs() {
   const urls = [
+    {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false}, 
     {'type': 'complete', 'url':'https://www.mercari.com/mypage/listings/complete/?page=', 'activeListings': false}, 
     {'type': 'active', 'url': 'https://www.mercari.com/mypage/listings/active/?page=', 'activeListings': true}, 
-    {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false}, 
     {'type':'inprogress','url':'https://www.mercari.com/mypage/listings/in_progress/?page=', 'activeListings': false}
   ];
 
@@ -367,29 +383,41 @@ function getMercariURLs() {
 
 function getEbayURLs() {
   const urls = [
-    {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
+   // {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
     {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
   ];  
 
   return urls;
 }
 
-function downloadData(data){
+function downloadData(data) {
   console.log('downloadData');
 
-  if (typeof data === 'object') {
-    data = JSON.stringify(data, null, 2); // Pretty print the JSON
+  if (Array.isArray(data) && data.length > 0) {
+      let csvContent = '';
+
+      // Header row
+      const header = Object.keys(data[0]).join(',');
+      csvContent += header + '\n';
+
+      // Data rows
+      data.forEach(row => {
+          const rowData = Object.values(row).join(',');
+          csvContent += rowData + '\n';
+      });
+
+      data = csvContent;
   }
 
-  const blob = new Blob([data], { type: 'text/plain' });
-  
+  const blob = new Blob([data], { type: 'text/csv' });
+
   const reader = new FileReader();
   reader.onloadend = function() {
-    const base64data = reader.result;
-    chrome.downloads.download({
-      url: base64data,
-      filename: 'data.txt'
-    });
+      const base64data = reader.result;
+      chrome.downloads.download({
+          url: base64data,
+          filename: 'data.csv'
+      });
   }
   reader.readAsDataURL(blob);
 }
@@ -445,4 +473,10 @@ function retrieveEbayCounts (document){
   }
 
   return checkReadyState();
+}
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }

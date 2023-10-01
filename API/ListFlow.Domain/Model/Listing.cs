@@ -24,6 +24,8 @@ namespace ListFlow.Domain.Model
         public DateTime? DateEnded { get; set; }
         public DateTime? DateSold { get; set; }
         public DateTime? LastUpdated { get; set; }
+        public decimal? Price { get; set; }
+
     }
 }
 

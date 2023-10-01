@@ -15,16 +15,25 @@ namespace ListFlow.API.Controllers
     public class BulkListingController : Controller
     {
         private readonly IListingService _listingService;
+        private readonly ILogger<BulkListingController> _logger;   
 
-        public BulkListingController(IListingService listingService)
+        public BulkListingController(ILogger<BulkListingController> logger, IListingService listingService)
         {
+            _logger = logger;
             _listingService = listingService;
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(ListingDTO[] listingDtos) {
-            await _listingService.CreateListings(listingDtos);
-            await _listingService.CreateMetrics(listingDtos);
+            try
+            {
+                await _listingService.CreateListings(listingDtos);
+                await _listingService.CreateMetrics(listingDtos);
+            }catch(Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+            }
+                         
             return Ok();
         }
     }

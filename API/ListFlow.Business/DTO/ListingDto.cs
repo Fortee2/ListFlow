@@ -65,7 +65,6 @@ namespace ListFlow.Business.DTO
 
             }
         }
-
         public int ConvertedLikes
         {
             get
@@ -88,7 +87,7 @@ namespace ListFlow.Business.DTO
             {
                 try
                 {
-                    return Decimal.Parse(Views);
+                    return Decimal.Parse(Price);
                 }
                 catch
                 {

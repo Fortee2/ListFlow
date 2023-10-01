@@ -7,7 +7,7 @@ export const store = configureStore({
   reducer: {
     description: descriptionReducer,
     listingDescription: listingDescriptionReducer,
-    listing: listingReducer
+    listings: listingReducer
   },
 });
 

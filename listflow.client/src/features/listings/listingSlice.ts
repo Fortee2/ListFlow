@@ -1,131 +1,63 @@
-// listingSlice.js
-
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as api from './listingAPI';
-import {Listing } from './listing'
+import axios from 'axios';
 import { RootState } from '../../app/store';
-import { stat } from 'fs';
+import { Listing } from './listing';
 
-export const getAllListings = createAsyncThunk('listings/getAll', async () => {
-  const response = await api.getAllListings();
-  return response;
-});
+interface ListingState {
+  listings: Listing[];
+  selectedListing: Listing | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
+}
 
-export const getListingById = createAsyncThunk('listings/getOne', async (id: string) => {
-  const response = await api.getListingById(id);
-  return response;
-});
-
-export const createListing = createAsyncThunk('listings/create', async (listingDTO: Listing) => {
-  const response = await api.createListing(listingDTO);
-  return response;
-});
-
-export const updateListing = createAsyncThunk('listings/update', async (updatedListing: Listing) => {
-  const response = await api.updateListing(updatedListing);
-  return response;
-});
-
-export const deleteListing = createAsyncThunk('listings/delete', async (id: string) => {
-  await api.deleteListing(id);
-  return id;
-});
-
-export interface ListingState {
-  status: string;
-  allListings: Listing[];
-  selectedListing: Listing | undefined;
-  error: string | undefined;
+interface Filter {
+  salesChannel?: string;
+  itemNumber?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 const initialState: ListingState = {
-  allListings: [],
-  selectedListing: undefined,
+  listings: [],
+  selectedListing: null,
   status: 'idle',
-  error: undefined,
+  error: null,
 };
 
-const listingSlice = createSlice({
+export const fetchListingsByFilter = createAsyncThunk('listings/fetchListingsByFilter', async (filter: Filter) => {
+  const response = await axios.get('https://localhost:7219/api/listing', { params: filter });
+  return response.data;
+});
+
+export const listingSlice = createSlice({
   name: 'listings',
   initialState,
   reducers: {
-    setSelectedListingById: (state, action) => {
-      const id = action.payload;
-      state.selectedListing = state.allListings.find((listing) => listing.id === id);
-    },
-    clearSelectedListing: (state) => {
-      state.selectedListing = undefined;
+    setSelectedListing: (state, action) => {
+      state.selectedListing = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getAllListings.pending, (state) => {
+      .addCase(fetchListingsByFilter.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(getAllListings.fulfilled, (state, action) => {
+      .addCase(fetchListingsByFilter.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        console.log(action.payload);
-        state.allListings = action.payload;
+        state.listings = action.payload;
       })
-      .addCase(getAllListings.rejected, (state, action) => {
+      .addCase(fetchListingsByFilter.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(getListingById.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(getListingById.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.selectedListing = action.payload;
-      })
-      .addCase(getListingById.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(createListing.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(createListing.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.allListings.push(action.payload);
-      })
-      .addCase(createListing.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(updateListing.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(updateListing.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        const updatedListingIndex = state.allListings.findIndex(
-          (listing) => listing.id === action.payload.id
-        );
-        state.allListings[updatedListingIndex] = action.payload;
-        state.selectedListing = action.payload;
-      })
-      .addCase(updateListing.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      })
-      .addCase(deleteListing.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(deleteListing.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.allListings = state.allListings.filter((listing) => listing.id !== action.payload);
-        state.selectedListing = undefined;
-      })
-      .addCase(deleteListing.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
+        state.error = action.error.message ?? 'Something went wrong';
       });
   },
 });
 
-export const { setSelectedListingById, clearSelectedListing} = listingSlice.actions;
+export const { setSelectedListing } = listingSlice.actions;
 
-export const getListings = (state:RootState) =>  state.listing.allListings;
-export const getSelectedListing = (state:RootState) => state.listing.selectedListing;
+export const getListings = (state: RootState) => state.listings.listings;
+export const getSelectedListing = (state: RootState) => state.listings.selectedListing;
+export const getStatus = (state: RootState) => state.listings.status;
+export const getError = (state: RootState) => state.listings.error;
 
 export default listingSlice.reducer;

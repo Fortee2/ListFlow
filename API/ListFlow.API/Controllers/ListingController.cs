@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ListFlow.Business.DTO;
 using ListFlow.Domain.Model;
+using ListFlow.Infrastructure.Filters;
 using ListFlow.OpenAI.Dto;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,12 +21,14 @@ namespace ListFlow.API.Controllers{
             _listingService = listingService;
         }
 
+
         [HttpGet]
-        public ActionResult<IEnumerable<Listing>> Get()
+        public async Task<ActionResult<IEnumerable<Listing>>> GetAllListingsAsync([FromQuery]ListingFilter filter)
         {
-            var listing = _listingService.GetAll();
+            var listing = await _listingService.GetAllListingsAsync(filter);
             return Ok(listing);
         }
+     
 
         [HttpGet("{id}")]
         public ActionResult<Listing> GetById(Guid id)

@@ -1,5 +1,6 @@
 using ListFlow.Business.DTO;
 using ListFlow.Domain.Model;
+using ListFlow.Infrastructure.Filters;
 using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
 
@@ -43,7 +44,8 @@ namespace ListFlow.Business.Services
                 ItemNumber = listing.ItemNumber,
                 Description = listing.Description,
                 SalesChannel = salesChannel,
-                Active = listing.Active
+                Active = listing.Active,
+                Price = listing.ConvertedPrice
             };
 
             await _listings.AddAsync(newListing);
@@ -76,7 +78,7 @@ namespace ListFlow.Business.Services
                 {
                     newListings.Add(new Listing{
                         Id = Guid.NewGuid(),
-                        ItemTitle = listingDto.ItemTitle,
+                        ItemTitle = listingDto.ItemTitle.Replace("  ", " "),
                         ItemNumber = listingDto.ItemNumber,
                         Description = listingDto.Description,
                         SalesChannel = salesChannel,
@@ -88,8 +90,9 @@ namespace ListFlow.Business.Services
                     });
                     continue;
                 }
-
-
+                
+                UpdateListing(existing, listingDto);
+                
             }
 
             await _listings.AddRangeAsync(newListings);
@@ -197,10 +200,15 @@ namespace ListFlow.Business.Services
 
         private void UpdateListing(Listing existing, ListingDTO listingDto)
         {
-            existing.ItemTitle = listingDto.ItemTitle;
+            //if(CompareListing(existing, listingDto))
+            //    return;
+                
+            existing.ItemTitle = listingDto.ItemTitle.Replace("  ", " ");
             existing.ItemNumber = listingDto.ItemNumber;
             existing.Description = listingDto.Description;
             existing.Active = listingDto.Active;
+            existing.Price = listingDto.ConvertedPrice;
+
             if(listingDto.EndedDate != null)
                 existing.DateEnded = listingDto.EndedDate;
             if(listingDto.SoldDate != null)
@@ -211,6 +219,52 @@ namespace ListFlow.Business.Services
             existing.LastUpdated = DateTime.Now;
 
             Update(existing);
+        }
+
+        /// <summary>
+        /// Compare listing and listingDto to see if they are the same
+        /// </summary>
+        /// <param name="existing">Listing Object from the database</param>
+        /// <param name="listingDto">DTO from UI</param>
+        /// <returns>True if objects are the same</returns>
+        private bool CompareListing(Listing existing, ListingDTO listingDto)
+        {
+            return existing.ItemTitle == listingDto.ItemTitle &&
+                existing.ItemNumber == listingDto.ItemNumber &&
+                existing.Description == listingDto.Description &&
+                existing.Active == listingDto.Active &&
+                existing.Price == listingDto.ConvertedPrice &&
+                existing.DateEnded == listingDto.EndedDate &&
+                existing.DateSold == listingDto.SoldDate &&
+                existing.DateListed == listingDto.ListedDate;
+        }
+
+        /// <summary>
+        /// Retrieves all listings that match the specified filter criteria.
+        /// </summary>
+        /// <param name="filter">The filter criteria to apply.</param>
+        /// <returns>A collection of listings that match the filter criteria.</returns>
+        public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
+        {
+            var listings = await _listings.GetAllListingsAsync(filter);
+            {
+                if (!string.IsNullOrEmpty(filter.SalesChannel))
+                {
+                    listings = listings.Where(l => l.SalesChannel.Name == filter.SalesChannel);
+                }
+
+                if (!string.IsNullOrEmpty(filter.ItemNumber))
+                {
+                    listings = listings.Where(l => l.ItemNumber == filter.ItemNumber);
+                }
+
+                if (filter.DateRange != null)
+                {
+                    listings = listings.Where(l => l.DateListed >= filter.DateRange.StartDate && l.DateListed <= filter.DateRange.EndDate);
+                }
+            }
+
+            return listings;
         }
     }
 }

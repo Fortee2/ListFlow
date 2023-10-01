@@ -1,100 +1,73 @@
-import { FormEventHandler, useEffect } from 'react';
+import { FormEventHandler, useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
-import { getListingById, createListing, updateListing, deleteListing, getListings, getAllListings, getSelectedListing } from './listingSlice';
+import { fetchListingsByFilter, getListings } from './listingSlice';
 import { Listing } from './listing';
 
 const ListingComponent = () => {
   const dispatch = useAppDispatch();
   const listings = useAppSelector(getListings);
-  const selectedListing = useAppSelector(getSelectedListing);
+  const [filter, setFilter] = useState({});
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
 
   useEffect(() => {
     // Fetch all listings on mount
-    dispatch(getAllListings());
-  }, [dispatch]);
+    dispatch(fetchListingsByFilter(filter));
+  }, [dispatch, filter]);
 
-  const handleSelectListing = (id: string) => {
-    // Fetch a single listing by ID
-    dispatch(getListingById(id));
+  const currentPageListings = () => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return listings.slice(startIndex, endIndex);
   };
 
-  const handleCreateListing: FormEventHandler<HTMLFormElement> = (event) => {
-    event.preventDefault();
-    const target = event.target as typeof event.target & {
-      itemNumber: {value: string };
-      title: { value: string };
-      description: { value: string };
-    };
-    const listingDTO: Listing = {
-      id: '',
-      itemNumber: target.itemNumber.value,
-      itemTitle: target.title.value,
-      salesChannel: 'EBAY',
-      active: '1',
-      dateEnded: '',  
-      dateListed: '',
-      dateSold: '',
-
-    };
-    dispatch(createListing(listingDTO));
+  const nextPage = () => {
+    setPage(page + 1);
   };
 
-  const handleUpdateListing = (updatedListing: Listing) => {
-    // Update an existing listing
-    dispatch(updateListing(updatedListing));
+  const previousPage = () => {
+    setPage(page - 1);
   };
 
-  const handleDeleteListing = (id : string) => {
-    // Delete a listing by ID
-    dispatch(deleteListing(id));
+  const handleFilterChange = (event: { target: { name: any; value: any; }; }) => {
+    const { name, value } = event.target;
+    setFilter({ ...filter, [name]: value });
   };
 
   return (
     <div>
-      <h2>All Listings</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Sales Channel</th>
-            <th>Item Number</th>
-            <th>Title</th>
-            </tr>
-          </thead>
-          <tbody>
-            {listings.map(listing => (
-              <tr key={listing.id}>
-                <td>{listing.salesChannel}</td>
-                <td>{listing.itemNumber}</td>
-                <td>{listing.itemTitle}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-
-      <hr />
-
-      <h2>Selected Listing</h2>
-      {selectedListing && (
-        <>
-          <p>{selectedListing.itemTitle}</p>
-          <button onClick={() => handleUpdateListing(selectedListing)}>Save Changes</button>
-          <button onClick={() => handleDeleteListing(selectedListing.id)}>Delete Listing</button>
-        </>
-      )}
-
-      <hr />
-
-      <h2>Create a New Listing</h2>
-      <form onSubmit={handleCreateListing}>
-        <label htmlFor="itemNumber">Item Number</label>
-        <input type="text" name="itemNumber" />
-        <label htmlFor="title">Title</label>
-        <input type="text" name="title" />
-        <label htmlFor="description">Description</label>
-        <textarea cols={80} rows={10} name="description" />
-        <button type="submit">Create Listing</button>
+      <h1>Listings</h1>
+      <form>
+        <label>
+          Sales Channel:
+          <input type="text" name="salesChannel" onChange={handleFilterChange} />
+        </label>
+        <label>
+          Item Number:
+          <input type="text" name="itemNumber" onChange={handleFilterChange} />
+        </label>
+        <label>
+          Start Date:
+          <input type="date" name="startDate" onChange={handleFilterChange} />
+        </label>
+        <label>
+          End Date:
+          <input type="date" name="endDate" onChange={handleFilterChange} />
+        </label>
       </form>
+      <ul>
+        {currentPageListings().map((listing) => (
+          <li key={listing.id}>
+            {listing.itemTitle} - {listing.itemNumber} - {listing.salesChannel}
+          </li>
+        ))}
+      </ul>
+      <button onClick={previousPage} disabled={page === 1}>
+        Previous Page
+      </button>
+      <button onClick={nextPage} disabled={currentPageListings().length < pageSize}>
+        Next Page
+      </button>
     </div>
   );
 };

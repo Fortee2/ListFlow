@@ -14,7 +14,7 @@ namespace ListFlow.Infrastructure.Repository
         {
             var listingMetric = (from metric in this._dbContext.ListingMetrics
                                      join listing in this._dbContext.Listings on metric.ListingId equals listing.Id
-                                 where listing.ItemNumber.Contains(ItemNumber)
+                                 where listing.ItemNumber.ToLower() == ItemNumber.ToLower()
                                  select metric).FirstOrDefault();
 
             return listingMetric;

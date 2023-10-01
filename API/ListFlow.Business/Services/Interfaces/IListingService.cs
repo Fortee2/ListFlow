@@ -1,6 +1,7 @@
 using ListFlow.Business;
 using ListFlow.Business.DTO;
 using ListFlow.Domain.Model;
+using ListFlow.Infrastructure.Filters;
 
 public interface IListingService
 {
@@ -19,4 +20,6 @@ public interface IListingService
     ServiceResult<Listing> FindListingsByItemNumber(string Title);
 
     Task CreateMetrics(ListingDTO[] listingDtos);
+
+    Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
 }

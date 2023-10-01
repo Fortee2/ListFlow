@@ -10,25 +10,20 @@ using ListFlow.OpenAI.Interfaces;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-
-
-var loggingFields = HttpLoggingFields.RequestPropertiesAndHeaders |
-                                    HttpLoggingFields.ResponsePropertiesAndHeaders |
-                                    HttpLoggingFields.ResponseStatusCode |
-                                    HttpLoggingFields.RequestQuery |
-                                    HttpLoggingFields.RequestBody;
+builder.Host.UseSerilog((ctx, lc) => lc
+    .WriteTo.Console()
+    .WriteTo.File("debug.log",Serilog.Events.LogEventLevel.Error)
+);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -37,16 +32,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
         options.UseMySQL(connectionString);
     }
-});
-
-builder.Services.AddHttpLogging(options =>
-{
-    // ...
-});
-
-builder.Services.AddHttpLogging(options =>
-{
-    options.LoggingFields = loggingFields;
 });
 
 builder.Services.AddSingleton<IPromptService>(new PromptService(
@@ -86,6 +71,8 @@ app.UseFileServer();
 app.UseSwagger();
 
 app.UseSwaggerUI();
+
+app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
 

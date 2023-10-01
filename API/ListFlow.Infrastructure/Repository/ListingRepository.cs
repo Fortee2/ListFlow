@@ -1,5 +1,8 @@
 ﻿using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Repository.Interface;
+using ListFlow.Infrastructure.Filters;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace ListFlow.Infrastructure.Repository
 {
@@ -12,7 +15,7 @@ namespace ListFlow.Infrastructure.Repository
         public Listing? FindByItemNumber(string ItemNumber)
         {
             var listing = (from list in this._dbContext.Listings
-                           where list.ItemNumber.Contains(ItemNumber)
+                           where list.ItemNumber.ToLower() == ItemNumber.ToLower()
                            select list).FirstOrDefault();
 
             return listing;
@@ -35,6 +38,33 @@ namespace ListFlow.Infrastructure.Repository
                            select list).AsEnumerable();
 
             return listing;
+        }
+
+        public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
+        {
+            var query = _dbContext.Listings.AsQueryable();
+
+            if (filter != null)
+            {
+                if (!string.IsNullOrEmpty(filter.SalesChannel))
+                {
+                    query = query.Where(l => l.SalesChannel.Name == filter.SalesChannel);
+                }
+
+                if (!string.IsNullOrEmpty(filter.ItemNumber))
+                {
+                    query = query.Where(l => l.ItemNumber == filter.ItemNumber);
+                }
+
+                if (filter.DateRange != null)
+                {
+                    query = query.Where(l => l.DateListed >= filter.DateRange.StartDate && l.DateListed <= filter.DateRange.EndDate);
+                }
+            }
+
+            var listings = await query.ToListAsync();
+
+            return listings;
         }
     }
 }

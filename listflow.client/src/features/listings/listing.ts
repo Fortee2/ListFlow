@@ -7,4 +7,5 @@ export interface Listing {
     dateSold: string;
     dateListed: string;
     salesChannel:string;
+    price: number;
   }

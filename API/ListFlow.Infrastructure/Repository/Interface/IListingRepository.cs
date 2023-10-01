@@ -1,5 +1,6 @@
 using System;
 using ListFlow.Domain.Model;
+using ListFlow.Infrastructure.Filters;
 
 namespace ListFlow.Infrastructure.Repository.Interface
 {
@@ -7,5 +8,7 @@ namespace ListFlow.Infrastructure.Repository.Interface
         Listing? FindByTitle(string ListingTitle);
 
         Listing? FindByItemNumber(string ItemNumber);
+
+        Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
     }
 }
