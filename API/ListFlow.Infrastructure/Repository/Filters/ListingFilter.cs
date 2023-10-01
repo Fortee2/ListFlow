@@ -6,6 +6,7 @@ namespace ListFlow.Infrastructure.Filters{
     {
         public string? SalesChannel { get; set; }
         public string? ItemNumber { get; set; }
+        public string? ItemTitle { get; set; }
         public DateRange? DateRange { get; set; }
     }
 

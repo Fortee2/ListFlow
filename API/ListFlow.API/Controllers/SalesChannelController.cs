@@ -8,11 +8,11 @@ namespace ListFlow.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SalesChannelsApiController : ControllerBase
+    public class SalesChannelController : ControllerBase
     {
         private readonly ISalesChannelService _salesChannelService;
 
-        public SalesChannelsApiController(ISalesChannelService salesChannelService)
+        public SalesChannelController(ISalesChannelService salesChannelService)
         {
             _salesChannelService = salesChannelService;
         }

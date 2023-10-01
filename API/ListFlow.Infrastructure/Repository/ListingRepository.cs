@@ -46,14 +46,20 @@ namespace ListFlow.Infrastructure.Repository
 
             if (filter != null)
             {
+              
                 if (!string.IsNullOrEmpty(filter.SalesChannel))
                 {
-                    query = query.Where(l => l.SalesChannel.Name == filter.SalesChannel);
+                    query = query.Where(l => l.SalesChannel.Id.ToString() == filter.SalesChannel);
                 }
 
                 if (!string.IsNullOrEmpty(filter.ItemNumber))
                 {
                     query = query.Where(l => l.ItemNumber == filter.ItemNumber);
+                }
+
+                if (!string.IsNullOrEmpty(filter.ItemTitle))
+                {
+                    query = query.Where(l => l.ItemTitle.Contains(filter.ItemTitle));
                 }
 
                 if (filter.DateRange != null)

@@ -200,8 +200,8 @@ namespace ListFlow.Business.Services
 
         private void UpdateListing(Listing existing, ListingDTO listingDto)
         {
-            //if(CompareListing(existing, listingDto))
-            //    return;
+            if(CompareListing(existing, listingDto))
+                return;
                 
             existing.ItemTitle = listingDto.ItemTitle.Replace("  ", " ");
             existing.ItemNumber = listingDto.ItemNumber;
@@ -247,22 +247,6 @@ namespace ListFlow.Business.Services
         public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
         {
             var listings = await _listings.GetAllListingsAsync(filter);
-            {
-                if (!string.IsNullOrEmpty(filter.SalesChannel))
-                {
-                    listings = listings.Where(l => l.SalesChannel.Name == filter.SalesChannel);
-                }
-
-                if (!string.IsNullOrEmpty(filter.ItemNumber))
-                {
-                    listings = listings.Where(l => l.ItemNumber == filter.ItemNumber);
-                }
-
-                if (filter.DateRange != null)
-                {
-                    listings = listings.Where(l => l.DateListed >= filter.DateRange.StartDate && l.DateListed <= filter.DateRange.EndDate);
-                }
-            }
 
             return listings;
         }

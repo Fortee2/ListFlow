@@ -1,6 +1,7 @@
 import { FormEventHandler, useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import { fetchListingsByFilter, getListings } from './listingSlice';
+import { fetchSalesChannels, getSalesChannels } from '../saleschannel/salesChannelSlice';
 import { Listing } from './listing';
 
 const ListingComponent = () => {
@@ -13,6 +14,7 @@ const ListingComponent = () => {
   useEffect(() => {
     // Fetch all listings on mount
     dispatch(fetchListingsByFilter(filter));
+    dispatch(fetchSalesChannels());
   }, [dispatch, filter]);
 
   const currentPageListings = () => {
@@ -40,11 +42,22 @@ const ListingComponent = () => {
       <form>
         <label>
           Sales Channel:
-          <input type="text" name="salesChannel" onChange={handleFilterChange} />
+          <select name="salesChannel" onChange={handleFilterChange}>
+            <option value="">All</option>
+            {useAppSelector(getSalesChannels).map((salesChannel) => (
+              <option key={salesChannel.id} value={salesChannel.id}>
+                {salesChannel.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           Item Number:
           <input type="text" name="itemNumber" onChange={handleFilterChange} />
+        </label>
+        <label>
+          Item Title:
+          <input type="text" name="itemTitle" onChange={handleFilterChange} />
         </label>
         <label>
           Start Date:
@@ -55,13 +68,32 @@ const ListingComponent = () => {
           <input type="date" name="endDate" onChange={handleFilterChange} />
         </label>
       </form>
-      <ul>
-        {currentPageListings().map((listing) => (
-          <li key={listing.id}>
-            {listing.itemTitle} - {listing.itemNumber} - {listing.salesChannel}
-          </li>
-        ))}
-      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>Item Number</th>
+            <th>Item Title</th>
+            <th>Price</th>
+            <th>Date Listed</th>
+            <th>Date Ended</th>
+            <th>Date Sold</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentPageListings().map((listing) => (
+            <tr>
+              <td>{listing.itemNumber}</td>
+              <td>{listing.itemTitle}</td>
+              <td>{listing.price}</td>
+              <td>{listing.dateListed}</td>
+              <td>{listing.dateEnded}</td>
+              <td>{listing.dateSold}</td>
+              <td><button>Inactive</button></td>
+              <td><button>Fees</button></td>
+            </tr> 
+          ))}
+        </tbody>
+      </table>
       <button onClick={previousPage} disabled={page === 1}>
         Previous Page
       </button>
