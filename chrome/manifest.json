@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Listing Retrival",
-  "version": "0.0.0.3",
+  "version": "0.0.0.4",
   "description": "Retrive listing from a website",
   "permissions": [
     "tabs",
@@ -17,7 +17,8 @@
     "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "icons":{
     "128": "ListFlow_icon.png"
