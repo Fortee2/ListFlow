@@ -1,22 +1,10 @@
 import { scrapDataEbay } from './scrapDataEbay.js';
-import { scrapData } from './scrapDataMercari.js';
-import { getEbayURLs, getMercariURLs } from './urls.js';
+import { scrapData, readTotalItems } from './scrapDataMercari.js';
+import { getEbayURLs, searchMercariURLs } from './urls.js';
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  if (request.action === 'retrieveCount') {
-    try {
-      const tab = await getFirstTab('https://www.mercari.com/mypage/listings/active/');
-      console.log('going to open tab');
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['retrieveCount.js'],
-      });
-    } catch (error) {
-      console.error('Error executing script:', error);
-    }
-    console.log('retrieveCount completed');
-  }
-  else if (request.action === 'retrieveEbay') {
+
+  if (request.action === 'retrieveEbay') {
     try {
       const urls =  getEbayURLs();
 
@@ -50,61 +38,58 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       console.error('Error executing script:', error);
     }
   }
-  else if (request.action === 'retrieveMercari') {
+  else if (request.action === 'retrieveNewMercari') {
+
     try {
-      console.log('retrieveMercari');
-      const urls = getMercariURLs();
+      let pageCount = 1;
+      let totalPages = 0;
+      let titles = []; //Array to hold scraped data
 
-      for (const url of urls) {
-        let titles = [];
-        let itemCount = 0;
+      //Use Type to find the URL
+      let url = searchMercariURLs(request.listingType);
+      const activeListings = url[0].activeListings;
 
-        switch(url.type) {
-          case 'complete':
-            itemCount = request.countData[3];
-            break;
-          case 'active':
-            itemCount = request.countData[0];
-            break;
-          case 'inactive':
-            itemCount = request.countData[1];
-            break;
-          case 'inprogress':
-            itemCount = request.countData[2];
-            break;
-        }
+      do{
+        //Load first Page
+        const tab = await getActiveTab(url[0].url, pageCount, 'Mercari');
+        await delay(getRandomInt(5000, 10000));
 
-        const pageURL = url.url;  
-        const activeListings = url.activeListings;
-        const pageCount = (itemCount < 20)? 1 :  Math.ceil(itemCount / 20);
-        console.log('pageCount: ' + pageCount);
-  
-        const pages = Array.from({length: pageCount}, (_, i) => i + 1);
-        
-        for (const page of pages) {
-          const tab = await getActiveTab(pageURL, page, 'Mercari');
-          await delay(getRandomInt(5000, 30000));
-          const result = await new Promise(resolve => {
+        if(totalPages === 0 ){
+          const resultCnt = await new Promise(resolve => {
             chrome.scripting.executeScript({
-              args:[activeListings, url.type],
               target: { tabId: tab.id },
-              function: scrapData,
+              function: readTotalItems,
             }, resolve);
           });
-          
-          if(result[0].result) {
-            saveItemToDatabase(result[0].result);
-            result[0].result.forEach(element => {
-              titles.push(element)  
-            });
+
+          if(resultCnt[0].result) {
+            console.log(resultCnt[0].result[0]);
+            let itemCount = new Number(resultCnt[0].result[0].replace(',', ''));
+            totalPages = Math.ceil(itemCount / 20);
           }
         }
+        
+        const result = await new Promise(resolve => {
+          chrome.scripting.executeScript({
+            args:[activeListings, url[0].type],
+            target: { tabId: tab.id },
+            function: scrapData,
+          }, resolve);
+        });
+        
+        if(result[0].result) {
+          saveItemToDatabase(result[0].result);
+          result[0].result.forEach(element => {
+            titles.push(element)  
+          });
+        }
+        pageCount++;
+      }while(pageCount <= totalPages );
+      //Loop through each page
 
-        if(titles.length > 0) {
-          downloadData(titles);
-        }         
-      }
-  
+      if(titles.length > 0) {
+        downloadData(titles);
+      }    
     } catch (error) {
       console.error('Error executing script:', error);
     }

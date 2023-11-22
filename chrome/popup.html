@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <title>List Flow</title>
     <style>
       body {
         width: 300px;
@@ -15,9 +16,24 @@
     </style>
   </head>
   <body>
-    <button id="mercariButton">Retrieve from Mercari</button>
+    <label for="downloadImages">Download Images</label>
+    <input type="checkbox" id="downloadImages"/>
 
+    <button id="mercariButton">Retrieve from Mercari</button>
     <button id="eBayButton">Retrieve from eBay</button>
+    <button id="mercariNewButton">New Mercari</button>
+
+    <div>
+      <label>Status:</label>
+      <input type="radio" id="active" name="status" value="active">
+      <label for="active">Active</label>
+      <input type="radio" id="inactive" name="status" value="inactive">
+      <label for="inactive">Inactive</label>
+      <input type="radio" id="inprogress" name="status" value="inprogress">
+      <label for="inprogress">Inprogress</label>
+      <input type="radio" id="complete" name="status" value="complete">
+      <label for="complete">Complete</label>
+    </div>
 
     <script src="popup.js"></script>
   </body>

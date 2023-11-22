@@ -83,7 +83,7 @@ export async function scrapData(completedListings, listingType) {
   
           if(imageUrl !== ""){
             chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
-          }
+          } 
 
           bulkData.push({ 
             itemTitle: ele.innerHTML,
@@ -111,3 +111,10 @@ export async function scrapData(completedListings, listingType) {
     await checkReadyState(); 
     return bulkData;
   }
+
+export function readTotalItems() {
+    console.log('readTotalItems');
+    const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
+    let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
+    return counts;
+}

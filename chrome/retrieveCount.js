@@ -12,7 +12,7 @@ function checkReadyState() {
     console.log('readTotalItems');
     const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
     let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
-    chrome.runtime.sendMessage({ action: 'retrieveMercari', countData: counts, pageURL: 'https://www.mercari.com/mypage/listings/active/?page=' , activeListings: true});
+    chrome.runtime.sendMessage({ action: 'retrieveMercari', countData: counts});
   }
 
   checkReadyState();

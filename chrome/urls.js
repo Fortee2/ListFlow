@@ -17,3 +17,9 @@ export function getMercariURLs() {
   
     return urls;
   }
+
+  export function searchMercariURLs(searchTerm) {
+    let mercariURLs = getMercariURLs();
+
+    return mercariURLs.filter(x => x.type === searchTerm);
+  }
