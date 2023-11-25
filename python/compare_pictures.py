@@ -4,7 +4,7 @@ import listing_dao
 import uuid
 from skimage.metrics import structural_similarity as ssim
 import cv2
-""" 
+
 def compare_images(img1, img2):
     # Initialize the ORB detector
     orb = cv2.ORB_create()
@@ -30,7 +30,7 @@ def compare_images(img1, img2):
     # The score is the average distance of the top matches (lower is better)
     score = sum(match.distance for match in matches[:50]) / 50
 
-    return score """
+    return score 
 
 """ def compare_images(img1, img2):
     # Convert the images to grayscale
@@ -48,13 +48,6 @@ def compare_images(img1, img2):
     # Compute SSIM between two images
     return ssim(img1, img2)  """
 
-def compare_images(img1, img2, method=cv2.HISTCMP_CORREL):
-    hist1 = cv2.calcHist([img1], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-    hist2 = cv2.calcHist([img2], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-    hist1 = cv2.normalize(hist1, hist1).flatten()
-    hist2 = cv2.normalize(hist2, hist2).flatten()
-    return cv2.compareHist(hist1, hist2, method) 
-
 def get_image_paths(directory):
     directory = os.path.expanduser(directory)
     return [os.path.join(directory, filename) for filename in os.listdir(directory)]
@@ -67,7 +60,7 @@ dao = listing_dao.listing_dao('randy','F1r3sidechat!','ec2-54-86-188-228.compute
 
 # Set comparison method and similarity threshold
 comparison_method = cv2.HISTCMP_CORREL  # or another method if preferred
-similarity_threshold = 0.9  # adjust based on testing and requirement
+similarity_threshold = 15  # adjust based on testing and requirement
 
 # Store matches
 matches = []
@@ -87,15 +80,16 @@ for ebay_image_path in ebay_images:
     
     ebay_image = cv2.imread(ebay_image_path)
     
-    
     if ebay_image is None:
         print(f'Error loading eBay image: {ebay_image_path}')
         continue
     
+    prv_similarity = 20
+    
     for mercari_image_path in mercari_images:
-        """if match_found:
+        if match_found:
             match_found = False
-            break"""
+            break
         
         mercari_filename = os.path.basename(mercari_image_path).removesuffix('.jpg').removesuffix('.png').removesuffix('.jpeg')
         
@@ -110,20 +104,23 @@ for ebay_image_path in ebay_images:
         if similarity is None:
             continue
         
-        prv_similarity = 0.9
-        
-        if similarity >= similarity_threshold and similarity > prv_similarity:  # if images are similar
-            guid = str(uuid.uuid4())
+        if similarity <= similarity_threshold and similarity < prv_similarity:  # if images are similar
+            print(f'Similarity: {similarity}')
             prv_similarity = similarity
-            #dao.update_cross_post_id(ebay_filename, guid)
-            #dao.update_cross_post_id(mercari_filename, guid)
             
-            #matches.append((ebay_image_path, mercari_image_path))
-            print(f'Match found: {ebay_image_path}, {mercari_image_path}')
-            #mercari_images.remove(mercari_image_path)
-            #match_found = True
+            print(f'Match found: {ebay_image_path}, {mercari_image_path}')    
             
-            #break  # move on to next ebay image
+            user_input = input(f'Match found: {ebay_image_path}, {mercari_image_path}. Enter y to associate: ')
+            
+            if user_input == 'y':
+                guid = str(uuid.uuid4())
+                dao.update_cross_post_id(ebay_filename, guid)
+                dao.update_cross_post_id(mercari_filename, guid)
+        
+                mercari_images.remove(mercari_image_path)
+                match_found = True
+            
+                break  # move on to next ebay image
         
     if not match_found:
         print(f'No match found for {ebay_image_path}')
