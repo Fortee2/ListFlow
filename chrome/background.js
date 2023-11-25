@@ -1,6 +1,12 @@
-import { scrapDataEbay } from './scrapDataEbay.js';
+import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
 import { scrapData, readTotalItems } from './scrapDataMercari.js';
 import { getEbayURLs, searchMercariURLs } from './urls.js';
+
+let queue = [];
+let imageQueue = [];  // queue for image downloads
+let isDownloading = false;
+let isDownloadingImage = false;
+let oldTab = 0;
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
@@ -33,6 +39,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
           }
         }while(pageCount <= totalPages );
+
+        processQueue(); // process the queue
+        
       }
     } catch (error) {
       console.error('Error executing script:', error);
@@ -71,7 +80,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
-            args:[activeListings, url[0].type],
+            args:[activeListings, url[0].type, request.downloadImages], 
             target: { tabId: tab.id },
             function: scrapData,
           }, resolve);
@@ -95,19 +104,70 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     }
   }
   else if (request.action === 'downloadImage') {
-    chrome.downloads.download({
-      url: request.url,
-      filename: request.filename,
-      saveAs: false,
-      conflictAction: 'uniquify',
-    });
+    imageQueue.push({"url":request.url, "fileName":request.filename}); // enqueue the request
+    processImageQueue(); // process the queue
+  }
+  else if (request.action === 'downloadEbayImage') {
+    queue.push(request.itemNumber); // enqueue the request
   }
   else if (request.action === 'saveToListingAPI') {
     saveItemToDatabase(request.item);
   }
 });
 
-async function getFirstTab(targetUrl) {
+async function processImageQueue() {
+  if (imageQueue.length === 0 || isDownloadingImage) {
+    return;
+  }
+
+  isDownloadingImage = true;
+  let imgRequest = imageQueue.shift(); // dequeue the request
+
+  await new Promise((resolve) => {
+    chrome.downloads.download({
+      url: imgRequest.url,
+      filename: imgRequest.fileName,
+      saveAs: false,
+      conflictAction: 'uniquify',
+    }, () => {
+      if(oldTab !== 0){
+        chrome.tabs.remove(oldTab);
+      }
+      resolve();
+    });
+  });
+
+  isDownloadingImage = false;
+  processImageQueue(); // recursively process the next request in the queue
+}
+
+async function processQueue() {
+  if (queue.length === 0 || isDownloading) {
+    return;
+  }
+
+  isDownloading = true;
+  let itemNumber = queue.shift(); // dequeue the request
+
+  delay(getRandomInt(5000, 30000));
+  const tab = await loadTab('https://www.ebay.com/itm/' + itemNumber);
+
+  await new Promise((resolve) => {
+    chrome.scripting.executeScript({
+      args: [itemNumber],
+      target: { tabId: tab.id },
+      function: scrapDataEbayImages,
+    }, () => {
+      oldTab = tab.id;
+      resolve();
+    });
+  });
+
+  isDownloading = false;
+  processQueue(); // recursively process the next request in the queue
+}
+
+async function loadTab(targetUrl) {
   return new Promise((resolve) => {
     chrome.tabs.create({ url: targetUrl }, function(tab) {
       resolve(tab);

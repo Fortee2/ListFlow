@@ -58,7 +58,7 @@ export async function scrapDataEbay(activeListings) {
             views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
             watchers = f.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
             listPrice = parseEbayPrice(f);
-            imageUrl = f.querySelector('td[class="shui-dt-column__image shui-dt--left"]').querySelector('img').src;
+            
           }else{
             divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
             endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
@@ -82,10 +82,6 @@ export async function scrapDataEbay(activeListings) {
           console.log(parseEbayDate(dateContainer.innerHTML));
           console.log(`ListingType: ${listingType}`);
           
-          if(imageUrl !== ""){
-            chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: a.href.split('/')[4] + '.png'});
-          }
-          
           bulkData.push({ 
             itemTitle: a.innerHTML,
             itemNumber: a.href.split('/')[4],
@@ -98,6 +94,11 @@ export async function scrapDataEbay(activeListings) {
             likes: watchers,
             price: listPrice
            }); 
+
+           if(activeListings  ){
+            chrome.runtime.sendMessage({ action: 'downloadEbayImage', itemNumber: a.href.split('/')[4]});           
+           }
+           
         });
   
         chrome.runtime.sendMessage({ 
@@ -123,3 +124,34 @@ export async function scrapDataEbay(activeListings) {
     console.log(bulkData + '|' + itemCount );
     return  {'result': bulkData, 'count': itemCount};
   }
+
+export async function scrapDataEbayImages(itemNumber) {
+  function checkReadyState() {
+    return new Promise((resolve, reject) => {
+      if(document.readyState === 'complete') {
+        retrieveImages().then(resolve);
+      }else{
+        setTimeout(() => checkReadyState().then(resolve), 1000);
+      }
+    });
+  } 
+
+  function retrieveImages() {
+    return new Promise((resolve, reject) => {
+      function checkImageElement() {
+        let imageElement = document.querySelector('div[class="ux-image-carousel-item image-treatment active  image"]').querySelector('img');
+        if (imageElement) {
+          console.log('retrieveImages');
+          let imageUrl = imageElement.src;
+          chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: itemNumber + '.png'});
+          resolve();
+        } else {
+          setTimeout(checkImageElement, 1000); // wait for 1 second before checking again
+        }
+      }
+      checkImageElement();
+    });
+  }
+
+  checkReadyState();
+}

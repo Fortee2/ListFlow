@@ -57,7 +57,6 @@ namespace ListFlow.Business.Services
         {
             List<Listing> newListings = new List<Listing>();
 
-
             if (listingDtos == null || listingDtos.Count() == 0)
             {
                 return new ServiceResult<Listing[]>("No listings were provided.");
@@ -91,8 +90,7 @@ namespace ListFlow.Business.Services
                     continue;
                 }
                 
-                UpdateListing(existing, listingDto);
-                
+                UpdateListing(existing, listingDto);                
             }
 
             await _listings.AddRangeAsync(newListings);

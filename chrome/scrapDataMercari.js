@@ -1,4 +1,4 @@
-export async function scrapData(completedListings, listingType) {
+export async function scrapData(completedListings, listingType, downloadImages) {
     let bulkData = [];
   
     function checkReadyState() {
@@ -61,7 +61,8 @@ export async function scrapData(completedListings, listingType) {
             
           if(listingType === 'active') {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
-            imageUrl = f.querySelector('div[data-testid="StyledProductThumb"]').querySelector('img').src;
+            imageUrl = 'https://u-mercari-images.mercdn.net/photos/' + ele.href.split('/')[5] + '_1.jpg?format=pjpg&auto=webp&fit=crop';
+            //f.querySelector('div[data-testid="StyledProductThumb"]').querySelector('img').src;
           } else {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelectorAll('a')[1].innerHTML.replace('$', '').trim();
           }
@@ -71,7 +72,7 @@ export async function scrapData(completedListings, listingType) {
           switch(listingType) {
             case 'active':
               listingDateType = 0;
-              break;
+              break;notepad
             case 'inactive':
               listingDateType = 1;
               break;
@@ -81,7 +82,7 @@ export async function scrapData(completedListings, listingType) {
               break;
           }
   
-          if(imageUrl !== ""){
+          if(imageUrl !== "" && downloadImages){
             chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
           } 
 
