@@ -3,7 +3,7 @@ import os
 import listing_dao
 import uuid
 from skimage.metrics import structural_similarity as ssim
-import cv2
+
 
 def compare_images(img1, img2):
     # Initialize the ORB detector
@@ -32,22 +32,6 @@ def compare_images(img1, img2):
 
     return score 
 
-""" def compare_images(img1, img2):
-    # Convert the images to grayscale
-    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-
-    # Resize images to match the smallest one
-    h1, w1 = img1.shape[:2]
-    h2, w2 = img2.shape[:2]
-    if h1 * w1 < h2 * w2:
-        img2 = cv2.resize(img2, (w1, h1))
-    else:
-        img1 = cv2.resize(img1, (w2, h2))
-
-    # Compute SSIM between two images
-    return ssim(img1, img2)  """
-
 def get_image_paths(directory):
     directory = os.path.expanduser(directory)
     return [os.path.join(directory, filename) for filename in os.listdir(directory)]
@@ -75,7 +59,7 @@ for ebay_image_path in ebay_images:
     
     if(dao.image_associated(ebay_filename)):
         print(f'Image already associated: {ebay_image_path}')
-        os.remove(ebay_image_path)
+        #os.remove(ebay_image_path)
         continue
     
     ebay_image = cv2.imread(ebay_image_path)
@@ -110,17 +94,14 @@ for ebay_image_path in ebay_images:
             
             print(f'Match found: {ebay_image_path}, {mercari_image_path}')    
             
-            user_input = input(f'Match found: {ebay_image_path}, {mercari_image_path}. Enter y to associate: ')
-            
-            if user_input == 'y':
-                guid = str(uuid.uuid4())
-                dao.update_cross_post_id(ebay_filename, guid)
-                dao.update_cross_post_id(mercari_filename, guid)
+            guid = str(uuid.uuid4())
+            dao.update_cross_post_id(ebay_filename, guid)
+            dao.update_cross_post_id(mercari_filename, guid)
+    
+            mercari_images.remove(mercari_image_path)
+            match_found = True
         
-                mercari_images.remove(mercari_image_path)
-                match_found = True
-            
-                break  # move on to next ebay image
+            break  # move on to next ebay image
         
     if not match_found:
         print(f'No match found for {ebay_image_path}')
