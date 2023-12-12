@@ -29,6 +29,18 @@ namespace ListFlow.API.Controllers{
             return Ok(listing);
         }
      
+        [HttpGet("{itemNumber}/crosspostid")]
+        public ActionResult<Listing> GetByCrossPostId(string itemNumber)
+        {
+            var listing = _listingService.GetByCrossPostId(itemNumber);
+
+            if (listing == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(listing);
+        }
 
         [HttpGet("{id}")]
         public ActionResult<Listing> GetById(Guid id)

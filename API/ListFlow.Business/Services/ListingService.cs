@@ -248,5 +248,16 @@ namespace ListFlow.Business.Services
 
             return listings;
         }
+
+        public ServiceResult<Listing> GetByCrossPostId(string itemNumber)
+        {
+            var listing = _listings.FindCrossPostListingByItemNumber(itemNumber);
+
+            if(listing == null){
+                return new ServiceResult<Listing>("Listing not found.");
+            }
+
+            return new ServiceResult<Listing>(listing);
+        }
     }
 }

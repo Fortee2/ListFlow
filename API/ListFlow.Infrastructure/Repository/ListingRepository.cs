@@ -30,6 +30,21 @@ namespace ListFlow.Infrastructure.Repository
             return listing;
         }
 
+        public Listing? FindCrossPostListingByItemNumber(string ItemNumber)
+        {
+             var listing = FindByItemNumber(ItemNumber);
+
+            if (listing != null)                
+            {
+                listing = (from list in this._dbContext.Listings
+                           where list.ItemNumber.ToLower() != ItemNumber.ToLower()
+                                && list.CrossPostId == listing.CrossPostId
+                           select list).FirstOrDefault();
+            }
+
+            return listing;
+        }
+
         public IEnumerable<Listing> GetAll()
         {
             var listing = (from list in this._dbContext.Listings

@@ -13,6 +13,8 @@ public interface IListingService
 
     ServiceResult<Listing> GetById(Guid id);
 
+    ServiceResult<Listing> GetByCrossPostId(string itemNumber);
+
     ServiceResult<Listing> Update(Listing Listing);
 
     ServiceResult<Listing> FindListingsByTitle(string Title);

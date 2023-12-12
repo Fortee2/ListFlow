@@ -9,6 +9,7 @@ namespace ListFlow.Infrastructure.Repository.Interface
 
         Listing? FindByItemNumber(string ItemNumber);
 
+        Listing? FindCrossPostListingByItemNumber(string ItemNumber);
         Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
     }
 }
