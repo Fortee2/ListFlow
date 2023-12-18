@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Listing Retrival",
-  "version": "2023.11.0.8",
+  "version": "2023.12.0.2",
   "description": "Retrive listing from a website",
   "permissions": [
+    "storage",
     "tabs",
     "activeTab",
     "scripting",
@@ -20,6 +21,7 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "options_page": "options.html",
   "icons":{
     "128": "ListFlow_icon.png"
   }

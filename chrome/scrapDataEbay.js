@@ -93,11 +93,11 @@ export async function scrapDataEbay(activeListings) {
             views: views,
             likes: watchers,
             price: listPrice
-           }); 
+           });  
 
-           if(activeListings  ){
+         /*  if(activeListings  ){
             chrome.runtime.sendMessage({ action: 'downloadEbayImage', itemNumber: a.href.split('/')[4]});           
-           }
+          }  */
            
         });
   

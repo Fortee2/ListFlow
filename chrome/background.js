@@ -6,7 +6,7 @@ let queue = [];
 let imageQueue = [];  // queue for image downloads
 let isDownloading = false;
 let isDownloadingImage = false;
-let oldTab = 0;
+let oldTab = [];
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
@@ -73,7 +73,24 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
           if(resultCnt[0].result) {
             console.log(resultCnt[0].result[0]);
-            let itemCount = new Number(resultCnt[0].result[0].replace(',', ''));
+            let indx = 0;
+
+            switch(request.listingType) {
+              case 'active':
+                indx = 0; 
+                break;
+              case 'inactive':
+                indx = 1;
+                break;
+              case 'inprogress':
+                indx = 2;
+                break;
+              case 'complete':
+                indx = 3;
+                break;
+            }
+
+            let itemCount = new Number(resultCnt[0].result[indx].replace(',', ''));
             totalPages = Math.ceil(itemCount / 20);
           }
         }
@@ -130,9 +147,10 @@ async function processImageQueue() {
       saveAs: false,
       conflictAction: 'uniquify',
     }, () => {
-      if(oldTab !== 0){
-        chrome.tabs.remove(oldTab);
+      if(oldTab.length > 5){
+        chrome.tabs.remove(oldTab.shift());
       }
+      delay(getRandomInt(5000, 30000));
       resolve();
     });
   });
@@ -158,7 +176,7 @@ async function processQueue() {
       target: { tabId: tab.id },
       function: scrapDataEbayImages,
     }, () => {
-      oldTab = tab.id;
+      oldTab.push(tab.id);
       resolve();
     });
   });
@@ -252,7 +270,7 @@ async function saveItemToDatabase(item) {
 
     console.log('Saving item to the database:', item);
     
-    const response = await fetch('https://localhost:7219/api/BulkListing', {
+    const response = await fetch('http://ec2-54-82-24-126.compute-1.amazonaws.com/api/BulkListing', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
