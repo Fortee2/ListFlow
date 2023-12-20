@@ -4,6 +4,7 @@
     <title>List Flow</title>
     <style>
       body {
+        font-family: sans-serif;
         width: 300px;
         margin: 0;
         padding: 16px;
@@ -13,21 +14,45 @@
         padding: 8px;
         font-size: 16px;
       }
+
+      /* CSS */
+      .button-12 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 14px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+        border-radius: 6px;
+        border: none;
+
+        background: #6E6D70;
+        box-shadow: 0px 0.5px 1px rgba(0, 0, 0, 0.1), inset 0px 0.5px 0.5px rgba(255, 255, 255, 0.5), 0px 0px 0px 0.5px rgba(0, 0, 0, 0.12);
+        color: #DFDEDF;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      .button-12:focus {
+        box-shadow: inset 0px 0.8px 0px -0.25px rgba(255, 255, 255, 0.2), 0px 0.5px 1px rgba(0, 0, 0, 0.1), 0px 0px 0px 3.5px rgba(58, 108, 217, 0.5);
+        outline: 0;
+      }
     </style>
   </head>
   <body>
-    <h1>List Flow</h1>
-    <button id="openOptions">Options</button>
-    <button id="eBayButton">Retrieve from eBay</button>
-    <button id="mercariNewButton">Retrieve from Mercari</button>
-
-    <div>
-      <label for="downloadImages">Download Images</label>
-      <input type="checkbox" id="downloadImages"/>
+    <div style="padding: 4px;">
+      <label for="selectList">Select E-Commerce Site:</label>
+      <br/>
+      <select id="selectList" style="width: 100%;">
+        <option selected>Mercari</option>
+        <option>eBay</option>
+      </select>
     </div>
-
-    <div>
-      <label>Status:</label>
+    <div style="padding: 4px;">
+      <label>Select Listing Type:</label>
+      <br />
+      <input type="radio" id="active" name="status" value="all" checked >
+      <label for="active">All</label>
       <input type="radio" id="active" name="status" value="active">
       <label for="active">Active</label>
       <input type="radio" id="inactive" name="status" value="inactive">
@@ -37,7 +62,22 @@
       <input type="radio" id="complete" name="status" value="complete">
       <label for="complete">Complete</label>
     </div>
-
+    <div style="padding: 4px;">
+      <label for="downloadImages">Download Listing Images:</label>
+      <input type="checkbox" id="downloadImages"/>
+    </div>
+    <div style="padding: 4px;"></div>
+      <button class="button-12" id="retrieveButton">Retrieve Listings</button>
+    </div>
+    <hr />
+    <div style="float: left; width: 50%;">
+      <h1>List Flow</h1> 
+    </div>
+  
+    <div style="float: left; width: 50%;">
+      <button id="openOptions">Options</button>
+    </div>
     <script src="popup.js"></script>
+   
   </body>
 </html>

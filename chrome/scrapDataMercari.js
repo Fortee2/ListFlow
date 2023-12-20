@@ -62,7 +62,6 @@ export async function scrapData(completedListings, listingType, downloadImages) 
           if(listingType === 'active') {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
             imageUrl = 'https://u-mercari-images.mercdn.net/photos/' + ele.href.split('/')[5] + '_1.jpg?format=pjpg&auto=webp&fit=crop';
-            //f.querySelector('div[data-testid="StyledProductThumb"]').querySelector('img').src;
           } else {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelectorAll('a')[1].innerHTML.replace('$', '').trim();
           }
@@ -72,7 +71,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
           switch(listingType) {
             case 'active':
               listingDateType = 0;
-              break;notepad
+              break;
             case 'inactive':
               listingDateType = 1;
               break;
@@ -113,9 +112,40 @@ export async function scrapData(completedListings, listingType, downloadImages) 
     return bulkData;
   }
 
-export function readTotalItems() {
-    console.log('readTotalItems');
-    const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
-    let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
-    return counts;
+export async function retrievePageCount(listingType, tab){
+  const resultCnt = await new Promise(resolve => {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: readTotalItems,
+    }, resolve);
+  });
+
+  if(resultCnt[0].result) {
+    console.log(resultCnt[0].result[0]);
+    let indx = 0;  //defaulting to Active
+
+    switch(listingType) {
+      case 'inactive':
+        indx = 1;
+        break;
+      case 'inprogress':
+        indx = 2;
+        break;
+      case 'complete':
+        indx = 3;
+        break;
+    }
+
+    let itemCount = new Number(resultCnt[0].result[indx].replace(',', ''));
+    return Math.ceil(itemCount / 20);
+  }
+
+  return 0;
+}
+
+function readTotalItems() {
+  console.log('readTotalItems');
+  const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
+  let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
+  return counts;
 }

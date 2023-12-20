@@ -1,5 +1,5 @@
 import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
-import { scrapData, readTotalItems } from './scrapDataMercari.js';
+import { scrapData, retrievePageCount } from './scrapDataMercari.js';
 import { getEbayURLs, searchMercariURLs } from './urls.js';
 
 let queue = [];
@@ -10,113 +10,22 @@ let oldTab = [];
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
-  if (request.action === 'retrieveEbay') {
-    try {
-      const urls =  getEbayURLs();
+  if(request.action === 'retrieveSalesChannel') {
+    try{
+      let salesChannel = request.salesChannel;
+      let listingType = request.listingType;
+      let downloadImages = request.downloadImages;
 
-      for(const url of urls){
-        let pageCount = 1;
-        let totalPages = 0;
-
-        do{
-          const tab = await getActiveTab(url.url, pageCount, 'eBay');
-          await delay(getRandomInt(5000, 30000));
-          const result = await new Promise(resolve => {
-            chrome.scripting.executeScript({
-              args:[url.activeListings],
-              target: { tabId: tab.id },
-              function: scrapDataEbay,
-            }, resolve);
-          });
-          
-          if(result[0].result) {
-            console.log(result[0].result);
-            if(pageCount === 1) {
-              let itemCount = new Number(result[0].result.count.replace(',', ''));
-              totalPages = Math.ceil(itemCount / 200);
-            }
-            pageCount++;
-
-          }
-        }while(pageCount <= totalPages );
-
-        processQueue(); // process the queue
-        
+      switch(salesChannel) {
+        case 'Mercari':
+          await retrieveNewMercariData(listingType, downloadImages);
+          break;
+        case 'eBay':
+          await retrieveEbayData(listingType, downloadImages);
+          break;
       }
-    } catch (error) {
-      console.error('Error executing script:', error);
-    }
-  }
-  else if (request.action === 'retrieveNewMercari') {
 
-    try {
-      let pageCount = 1;
-      let totalPages = 0;
-      let titles = []; //Array to hold scraped data
-
-      //Use Type to find the URL
-      let url = searchMercariURLs(request.listingType);
-      const activeListings = url[0].activeListings;
-
-      do{
-        //Load first Page
-        const tab = await getActiveTab(url[0].url, pageCount, 'Mercari');
-        await delay(getRandomInt(5000, 10000));
-
-        if(totalPages === 0 ){
-          const resultCnt = await new Promise(resolve => {
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              function: readTotalItems,
-            }, resolve);
-          });
-
-          if(resultCnt[0].result) {
-            console.log(resultCnt[0].result[0]);
-            let indx = 0;
-
-            switch(request.listingType) {
-              case 'active':
-                indx = 0; 
-                break;
-              case 'inactive':
-                indx = 1;
-                break;
-              case 'inprogress':
-                indx = 2;
-                break;
-              case 'complete':
-                indx = 3;
-                break;
-            }
-
-            let itemCount = new Number(resultCnt[0].result[indx].replace(',', ''));
-            totalPages = Math.ceil(itemCount / 20);
-          }
-        }
-        
-        const result = await new Promise(resolve => {
-          chrome.scripting.executeScript({
-            args:[activeListings, url[0].type, request.downloadImages], 
-            target: { tabId: tab.id },
-            function: scrapData,
-          }, resolve);
-        });
-        
-        if(result[0].result) {
-          saveItemToDatabase(result[0].result);
-          result[0].result.forEach(element => {
-            titles.push(element)  
-          });
-        }
-        pageCount++;
-      }while(pageCount <= totalPages );
-      //Loop through each page
-
-      if(titles.length > 0) {
-        downloadData(titles);
-      }    
-    } catch (error) {
+    }catch(error) {
       console.error('Error executing script:', error);
     }
   }
@@ -270,7 +179,7 @@ async function saveItemToDatabase(item) {
 
     console.log('Saving item to the database:', item);
     
-    const response = await fetch('http://ec2-54-82-24-126.compute-1.amazonaws.com/api/BulkListing', {
+    const response = await fetch('http://localhost:5000/api/BulkListing', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -292,4 +201,84 @@ function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function retrieveEbayData(listingType, downloadImages) {
+  try {
+    const urls =  getEbayURLs(listingType);
+
+    for(const url of urls){
+      let pageCount = 1;
+      let totalPages = 0;
+
+      do{
+        const tab = await getActiveTab(url.url, pageCount, 'eBay');
+        await delay(getRandomInt(5000, 30000));
+        const result = await new Promise(resolve => {
+          chrome.scripting.executeScript({
+            args:[url.activeListings, downloadImages],
+            target: { tabId: tab.id },
+            function: scrapDataEbay,
+          }, resolve);
+        });
+        
+        if(result[0].result) {
+          console.log(result[0].result);
+          if(pageCount === 1) {
+            let itemCount = new Number(result[0].result.count.replace(',', ''));
+            totalPages = Math.ceil(itemCount / 200);
+          }
+          pageCount++;
+
+        }
+      }while(pageCount <= totalPages );
+
+      processQueue(); // process the queue
+      
+    }
+  } catch (error) {
+    console.error('Error executing script:', error);
+  }
+}
+
+async function retrieveNewMercariData(listingType, downloadImages) {
+  try {
+    let titles = []; //Array to hold scraped data
+
+    //Use Type to find the URL
+    let url = searchMercariURLs(listingType);
+   
+    for (const link of url) {
+      const activeListings = link.activeListings;
+      let totalPages = 0;
+      let pageCount = 1;
+
+      do {
+        // Load first Page
+        const tab = await getActiveTab(link.url, pageCount, 'Mercari');
+        await delay(getRandomInt(5000, 10000));
+
+        if (totalPages === 0) {
+          totalPages = await retrievePageCount(link.type, tab);
+        }
+
+        const result = await new Promise(resolve => {
+          chrome.scripting.executeScript({
+            args: [activeListings, link.type, downloadImages],
+            target: { tabId: tab.id },
+            function: scrapData,
+          }, resolve);
+        });
+
+        pageCount++;
+      } while (pageCount <= totalPages);
+      // Loop through each page
+    }
+
+    if(titles.length > 0) {
+      downloadData(titles);
+    }    
+  } catch (error) {
+    console.error('Error executing script:', error);
+  }
 }

@@ -21,5 +21,25 @@ export function getMercariURLs() {
   export function searchMercariURLs(searchTerm) {
     let mercariURLs = getMercariURLs();
 
+    if(searchTerm === 'all') {
+      return mercariURLs;
+    }
+    
     return mercariURLs.filter(x => x.type === searchTerm);
+  }
+
+  export function searchEbayURLs(searchTerm) {
+    let ebayURLs = getEbayURLs();
+
+    switch(searchTerm) {
+      case 'active':
+        searchTerm = 'active';
+        break;
+      case 'complete':
+        searchTerm = 'inactive';
+        break;
+      default: //all
+        return ebayURLs;
+    }
+    return ebayURLs.filter(x => x.type === searchTerm);
   }

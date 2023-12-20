@@ -1,4 +1,4 @@
-export async function scrapDataEbay(activeListings) {
+export async function scrapDataEbay(activeListings, downloadImages) {
     let bulkData = [];
     let itemCount = 0;
   
@@ -95,10 +95,9 @@ export async function scrapDataEbay(activeListings) {
             price: listPrice
            });  
 
-         /*  if(activeListings  ){
+         if(activeListings && downloadImages){
             chrome.runtime.sendMessage({ action: 'downloadEbayImage', itemNumber: a.href.split('/')[4]});           
-          }  */
-           
+          } 
         });
   
         chrome.runtime.sendMessage({ 
