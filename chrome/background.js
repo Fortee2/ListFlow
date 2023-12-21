@@ -1,6 +1,6 @@
 import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
 import { scrapData, retrievePageCount } from './scrapDataMercari.js';
-import { getEbayURLs, searchMercariURLs } from './urls.js';
+import { searchEbayURLs, searchMercariURLs } from './urls.js';
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
@@ -205,7 +205,7 @@ function getRandomInt(min, max) {
 
 async function retrieveEbayData(listingType, downloadImages) {
   try {
-    const urls =  getEbayURLs(listingType);
+    const urls =  searchEbayURLs(listingType);
 
     for(const url of urls){
       let pageCount = 1;
