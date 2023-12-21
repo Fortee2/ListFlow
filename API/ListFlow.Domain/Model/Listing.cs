@@ -19,7 +19,7 @@ namespace ListFlow.Domain.Model
         // Foreign keys
         //public Guid InventoryId { get; set; }
         public Guid SalesChannelId { get; set; }
-        public Guid CrossPostId{ get; set;}
+        public string? CrossPostId{ get; set;}
         public DateTime? DateListed { get; set; }
         public DateTime? DateEnded { get; set; }
         public DateTime? DateSold { get; set; }
