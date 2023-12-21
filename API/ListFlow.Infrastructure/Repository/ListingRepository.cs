@@ -3,7 +3,6 @@ using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Infrastructure.Filters;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace ListFlow.Infrastructure.Repository
 {
     public partial class ListingRepository : BaseRepository<Listing>, IListingRepository

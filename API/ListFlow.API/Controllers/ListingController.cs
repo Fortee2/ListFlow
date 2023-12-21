@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ListFlow.Business.DTO;
+using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 using ListFlow.OpenAI.Dto;

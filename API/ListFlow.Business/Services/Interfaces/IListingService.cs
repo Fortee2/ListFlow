@@ -3,25 +3,29 @@ using ListFlow.Business.DTO;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 
-public interface IListingService
-{
-    Task<ServiceResult<Listing>> Create(ListingDTO listing);
-    Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listings);
-    ServiceResult<Listing> Delete(Guid id);
+namespace  ListFlow.Business.Services.Interfaces{
+    public interface IListingService
+    {
+        Task<ServiceResult<Listing>> Create(ListingDTO listing);
 
-    ServiceResult<IEnumerable<Listing>> GetAll();
+        Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listings);
+        
+        ServiceResult<Listing> Delete(Guid id);
 
-    ServiceResult<Listing> GetById(Guid id);
+        ServiceResult<IEnumerable<Listing>> GetAll();
 
-    ServiceResult<Listing> GetByCrossPostId(string itemNumber);
+        ServiceResult<Listing> GetById(Guid id);
 
-    ServiceResult<Listing> Update(Listing Listing);
+        ServiceResult<Listing> GetByCrossPostId(string itemNumber);
 
-    ServiceResult<Listing> FindListingsByTitle(string Title);
+        ServiceResult<Listing> Update(Listing item);
 
-    ServiceResult<Listing> FindListingsByItemNumber(string Title);
+        ServiceResult<Listing> FindListingsByTitle(string Title);
 
-    Task CreateMetrics(ListingDTO[] listingDtos);
+        ServiceResult<Listing> FindListingsByItemNumber(string itemNumber);
 
-    Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
+        Task CreateMetrics(ListingDTO[] listingDtos);
+
+        Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
+    }
 }

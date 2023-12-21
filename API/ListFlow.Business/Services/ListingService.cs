@@ -3,6 +3,7 @@ using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
+using ListFlow.Business.Services.Interfaces;    
 
 namespace ListFlow.Business.Services
 {
@@ -39,7 +40,7 @@ namespace ListFlow.Business.Services
 
             var newListing = new Listing
             {
-                Id = new Guid(),
+                Id = Guid.NewGuid(),
                 ItemTitle = listing.ItemTitle,
                 ItemNumber = listing.ItemNumber,
                 Description = listing.Description,
@@ -53,47 +54,50 @@ namespace ListFlow.Business.Services
             return new ServiceResult<Listing>(newListing);
         }
 
-        public async Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listingDtos)
+        public async Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listings)
         {
-            List<Listing> newListings = new List<Listing>();
+            List<Listing> newListings = new();
 
-            if (listingDtos == null || listingDtos.Count() == 0)
+            if (listings == null || !listings.Any())
             {
                 return new ServiceResult<Listing[]>("No listings were provided.");
             }
 
-            var salesChannel = _salesChannels.FindByName(listingDtos.First().SalesChannel);
+            //Listings are grouped by sales channel, so we only need to check the first one
+            var salesChannel = _salesChannels.FindByName(listings[0].SalesChannel);
 
             if (salesChannel == null)
             {
                 return new ServiceResult<Listing[]>("The Sales Channel associated with these listings does not exist.");
             }
 
-            foreach (var listingDto in listingDtos)
+            foreach (var listingDto in listings)
             {
                 var existing = _listings.FindByItemNumber(listingDto.ItemNumber);
 
                 if (existing == null)
                 {
-                    newListings.Add(new Listing{
+                    var newListing = new Listing
+                    {
                         Id = Guid.NewGuid(),
-                        ItemTitle = listingDto.ItemTitle.Replace("  ", " "),
+                        ItemTitle = listingDto.ItemTitle,
                         ItemNumber = listingDto.ItemNumber,
                         Description = listingDto.Description,
                         SalesChannel = salesChannel,
                         Active = listingDto.Active,
+                        DateSold = listingDto.SoldDate,
                         DateListed = listingDto.ListedDate,
                         DateEnded = listingDto.EndedDate,
-                        DateSold = listingDto.SoldDate,
-                        LastUpdated = DateTime.Now
-                    });
+                        Price = listingDto.ConvertedPrice
+                    };
+
+                    _listings.Add(newListing);
+                    newListings.Add(newListing);
                     continue;
                 }
                 
                 UpdateListing(existing, listingDto);                
             }
-
-            await _listings.AddRangeAsync(newListings);
 
             return new ServiceResult<Listing[]>(newListings.ToArray());
         }
@@ -140,14 +144,21 @@ namespace ListFlow.Business.Services
 
         public ServiceResult<Listing> Delete(Guid id)
         {
-             var channel = _listings.FindById(id);
+            try{
+                var listing = _listings.FindById(id);
 
-            if (channel == null)
-            {
-                return new ServiceResult<Listing>("Sales channel not found.");
+                if (listing == null)
+                {
+                    return new ServiceResult<Listing>("Sales channel not found.");
+                }
+
+                _listings.Delete(listing);
+
+                return new ServiceResult<Listing>(listing);
+
+            }catch(Exception ex){
+                return new ServiceResult<Listing>(ex.Message);
             }
-
-            return new ServiceResult<Listing>(channel);
         }
 
         public ServiceResult<Listing> FindListingsByItemNumber(string itemNumber)
