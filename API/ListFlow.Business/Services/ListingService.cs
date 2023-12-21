@@ -54,7 +54,7 @@ namespace ListFlow.Business.Services
             return new ServiceResult<Listing>(newListing);
         }
 
-        public async Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listings)
+        public ServiceResult<Listing[]> CreateListings(ListingDTO[] listings)
         {
             List<Listing> newListings = new();
 
@@ -260,6 +260,11 @@ namespace ListFlow.Business.Services
             return listings;
         }
 
+        /// <summary>
+        /// Retrieves the cross posted listing that matches the specified item number.
+        /// </summary>
+        /// <param name="itemNumber">The item number to find its corresponding listing for.</param>
+        /// <returns>The matching listing to the one searched</returns>
         public ServiceResult<Listing> GetByCrossPostId(string itemNumber)
         {
             var listing = _listings.FindCrossPostListingByItemNumber(itemNumber);

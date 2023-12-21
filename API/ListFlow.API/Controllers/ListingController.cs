@@ -30,6 +30,11 @@ namespace ListFlow.API.Controllers{
             return Ok(listing);
         }
      
+        /// <summary>
+        /// Gets the matching crossposted listing for the item number passed in.
+        /// </summary>
+        /// <param name="itemNumber">Item Number to search for </param>
+        /// <returns>Listing Object or 404 if no listing found </returns>
         [HttpGet("{itemNumber}/crosspostid")]
         public ActionResult<Listing> GetByCrossPostId(string itemNumber)
         {

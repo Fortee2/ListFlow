@@ -29,13 +29,18 @@ namespace ListFlow.Infrastructure.Repository
             return listing;
         }
 
+        /// <summary>
+        /// Finds the crossposted listing associated with the item number passed in.
+        /// </summary>
+        /// <param name="ItemNumber">The item number to find its corresponding listing for.</param>
+        /// <returns>The matching listing to the one searched</returns>
         public Listing? FindCrossPostListingByItemNumber(string ItemNumber)
         {
              var listing = FindByItemNumber(ItemNumber);
 
             if (listing != null)                
             {
-                listing = (from list in this._dbContext.Listings
+                listing = (from list in this._dbContext.Listings.Include(l => l.SalesChannel)
                            where list.ItemNumber.ToLower() != ItemNumber.ToLower()
                                 && list.CrossPostId == listing.CrossPostId
                            select list).FirstOrDefault();

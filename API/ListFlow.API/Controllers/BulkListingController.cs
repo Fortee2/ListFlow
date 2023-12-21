@@ -28,7 +28,7 @@ namespace ListFlow.API.Controllers
         public async Task<IActionResult> Create(ListingDTO[] listingDtos) {
             try
             {
-                await _listingService.CreateListings(listingDtos);
+                _listingService.CreateListings(listingDtos);
                 await _listingService.CreateMetrics(listingDtos);
             }catch(Exception ex)
             {

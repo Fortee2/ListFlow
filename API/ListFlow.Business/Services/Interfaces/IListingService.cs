@@ -8,7 +8,7 @@ namespace  ListFlow.Business.Services.Interfaces{
     {
         Task<ServiceResult<Listing>> Create(ListingDTO listing);
 
-        Task<ServiceResult<Listing[]>> CreateListings(ListingDTO[] listings);
+        ServiceResult<Listing[]> CreateListings(ListingDTO[] listings);
         
         ServiceResult<Listing> Delete(Guid id);
 
