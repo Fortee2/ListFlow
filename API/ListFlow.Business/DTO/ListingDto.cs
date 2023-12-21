@@ -56,7 +56,10 @@ namespace ListFlow.Business.DTO
             {
                 try
                 {
-                    return int.Parse(Views);
+                    int views = 0;
+                    int.TryParse(Views, out views);
+
+                    return views;
                 }
                 catch
                 {
