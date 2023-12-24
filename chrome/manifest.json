@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Listing Retrival",
-  "version": "2023.12.0.6",
+  "version": "2023.12.0.7",
   "description": "Retrive listing from a website",
   "permissions": [
     "storage",

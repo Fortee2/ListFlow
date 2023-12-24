@@ -1,3 +1,5 @@
+import {mercariConstants} from './mercariConstants.js';
+
 export async function scrapData(completedListings, listingType, downloadImages) {
     let bulkData = [];
   
@@ -48,11 +50,11 @@ export async function scrapData(completedListings, listingType, downloadImages) 
   
     function retrieveMercari() {
       return new Promise((resolve, reject) => {
-        console.log('retrieveMercari');
         const lis = document.querySelectorAll('li[data-testid="ListingRow"]');
   
         lis.forEach(f => {
           const ele = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('a'); 
+          const itmNumber = ele.href.split('/')[5]
           let price; 
           const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
           const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p');
@@ -61,7 +63,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             
           if(listingType === 'active') {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
-            imageUrl = 'https://u-mercari-images.mercdn.net/photos/' + ele.href.split('/')[5] + '_1.jpg?format=pjpg&auto=webp&fit=crop';
+            imageUrl =`${mercariConstants.ImageURL}${itmNumber}${mercariConstants.ImageOptions}`;
           } else {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelectorAll('a')[1].innerHTML.replace('$', '').trim();
           }
@@ -87,7 +89,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
 
           bulkData.push({ 
             itemTitle: ele.innerHTML,
-            itemNumber: ele.href.split('/')[5],
+            itemNumber: itmNumber,
             description: ele.innerHTML,
             salesChannel: 'Mercari',
             active: completedListings,
@@ -97,6 +99,15 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             listingDate: parseDate(divLastUpdated.innerHTML),
             listingDateType: listingDateType
            });
+
+          console.log(itmNumber); 
+          fetch(`https://localhost:7219/api/Listing/${itmNumber}/crosspost`).then(response => response.json()).then(data => {
+            console.log(data);
+            if(data.success  && data.data.price !== price){
+              chrome.runtime.sendMessage({ action: 'queuePriceChange', itemNumber: itmNumber, price: data.data.price});
+            }
+          }); 
+
         });
   
         chrome.runtime.sendMessage({ 
@@ -107,7 +118,6 @@ export async function scrapData(completedListings, listingType, downloadImages) 
         resolve(bulkData);
       });
     }
-  
     await checkReadyState(); 
     return bulkData;
   }

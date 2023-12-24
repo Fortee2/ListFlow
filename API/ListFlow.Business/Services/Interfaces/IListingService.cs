@@ -16,7 +16,7 @@ namespace  ListFlow.Business.Services.Interfaces{
 
         ServiceResult<Listing> GetById(Guid id);
 
-        ServiceResult<Listing> GetByCrossPostId(string itemNumber);
+        ServiceResult<Listing> GetCrossPostByItem(string itemNumber);
 
         ServiceResult<Listing> Update(Listing item);
 

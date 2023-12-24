@@ -265,7 +265,7 @@ namespace ListFlow.Business.Services
         /// </summary>
         /// <param name="itemNumber">The item number to find its corresponding listing for.</param>
         /// <returns>The matching listing to the one searched</returns>
-        public ServiceResult<Listing> GetByCrossPostId(string itemNumber)
+        public ServiceResult<Listing> GetCrossPostByItem(string itemNumber)
         {
             var listing = _listings.FindCrossPostListingByItemNumber(itemNumber);
 

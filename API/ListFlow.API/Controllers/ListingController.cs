@@ -35,10 +35,10 @@ namespace ListFlow.API.Controllers{
         /// </summary>
         /// <param name="itemNumber">Item Number to search for </param>
         /// <returns>Listing Object or 404 if no listing found </returns>
-        [HttpGet("{itemNumber}/crosspostid")]
-        public ActionResult<Listing> GetByCrossPostId(string itemNumber)
+        [HttpGet("{itemNumber}/crosspost")]
+        public ActionResult<Listing> GetCrossPost(string itemNumber)
         {
-            var listing = _listingService.GetByCrossPostId(itemNumber);
+            var listing = _listingService.GetCrossPostByItem(itemNumber);
 
             if (listing == null)
             {

@@ -1,9 +1,11 @@
 import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
-import { scrapData, retrievePageCount } from './scrapDataMercari.js';
+import { scrapData } from './scrapDataMercari.js';
 import { searchEbayURLs, searchMercariURLs } from './urls.js';
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
+const priceChanges = new Map();
+
 let isDownloading = false;
 let isDownloadingImage = false;
 let oldTab = [];
@@ -38,6 +40,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
   else if (request.action === 'saveToListingAPI') {
     saveItemToDatabase(request.item);
+  }
+  else if (request.action === 'queuePriceChange') {
+    priceChanges.set(request.itemNumber, request.price);
   }
 });
 
@@ -179,7 +184,7 @@ async function saveItemToDatabase(item) {
 
     console.log('Saving item to the database:', item);
     
-    const response = await fetch('http://localhost:5000/api/BulkListing', {
+    const response = await fetch('http://ec2-54-82-24-126.compute-1.amazonaws.com/api/BulkListing', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
