@@ -12,13 +12,19 @@ document.getElementById('selectList').addEventListener('change', function() {
   let selectedOption = this.value;
   let inprogressRadioButton = document.getElementById('inprogress');
   let inactiveRadioButton = document.getElementById('inactive');
+  let inprogressLabel = inprogressRadioButton.previousElementSibling;
+  let inactiveLabel = inactiveRadioButton.previousElementSibling;
 
   if (selectedOption === 'eBay') {
     inprogressRadioButton.style.display = 'none';
     inactiveRadioButton.style.display = 'none';
+    inprogressLabel.style.display = 'none';
+    inactiveLabel.style.display = 'none';
   } else {
     inprogressRadioButton.style.display = '';
     inactiveRadioButton.style.display = '';
+    inprogressLabel.style.display = '';
+    inactiveLabel.style.display = '';
   }
 });
 
