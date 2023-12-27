@@ -1,7 +1,7 @@
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import PercentIcon from '@mui/icons-material/Percent';
+//import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+//import PercentIcon from '@mui/icons-material/Percent';
 import { useEffect, useState } from "react";
-import FeeTypes from "../../enums/FeeTypes";
+import FeeTypes from "../../../enums/FeeTypes";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import ToggleButton from "@mui/material/ToggleButton";
 import NumericEntry from './NumericEntry';
@@ -55,10 +55,10 @@ export const PrecentageInput = (props: PrecentageInputProps) => {
                     aria-label="precentage-toggle-button"
                 >
                     <ToggleButton value={FeeTypes.PERCENTAGE} aria-label="percentage">
-                        <PercentIcon />
+                       
                     </ToggleButton>
                     <ToggleButton value={FeeTypes.FIXED} aria-label="fixed">
-                        <AttachMoneyIcon />
+                       
                     </ToggleButton>
                 </ToggleButtonGroup>
             </div>

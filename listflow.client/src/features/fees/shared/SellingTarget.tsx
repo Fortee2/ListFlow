@@ -1,7 +1,7 @@
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent/CardContent";
 import Divider from "@mui/material/Divider";
-import { useAppSelector, useAppDispatch } from "../../store/hooks";
+import { useAppSelector, useAppDispatch } from "../../../app/hooks";
 import {  setSellPrice, setShippingChrgd,  setShippingPaid , setPackingMaterials} from "../CalculatorSlice"
 import NumericEntry from "./NumericEntry";
 

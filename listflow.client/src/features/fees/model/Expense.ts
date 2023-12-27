@@ -1,4 +1,4 @@
-import FeeTypes from "../enums/FeeTypes";
+import FeeTypes from "../../../enums/FeeTypes";
 
 class Expense{
     public name: string;

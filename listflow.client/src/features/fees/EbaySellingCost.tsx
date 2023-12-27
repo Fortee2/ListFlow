@@ -6,8 +6,6 @@ import { PrecentageInput } from "./shared/PrecentageInput";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
 import ProfitLoss from "./shared/ProfitLoss";
 
-//import {setBelowStdFee, setFinalValueFee} from "../../Slices/EbayFeeSlice";
-
 const EbaySellingCost = () => {
     const dispatch = useAppDispatch();
     const sellPrice = useAppSelector(state => state.calculator.totalSellPrice);

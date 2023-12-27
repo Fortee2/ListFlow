@@ -1,8 +1,7 @@
-import { FormEventHandler, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import { fetchListingsByFilter, getListings } from './listingSlice';
 import { fetchSalesChannels, getSalesChannels } from '../saleschannel/salesChannelSlice';
-import { Listing } from './listing';
 
 const ListingComponent = () => {
   const dispatch = useAppDispatch();
@@ -81,7 +80,7 @@ const ListingComponent = () => {
         </thead>
         <tbody>
           {currentPageListings().map((listing) => (
-            <tr>
+            <tr key={listing.id}>
               <td>{listing.itemNumber}</td>
               <td>{listing.itemTitle}</td>
               <td>{listing.price}</td>

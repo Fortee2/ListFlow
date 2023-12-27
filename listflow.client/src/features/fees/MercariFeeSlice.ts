@@ -1,8 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import FeeTypes from "../enums/FeeTypes";
-import Expense from "../model/Expense";
-import Fee from "../model/Fee";
-import { RootState } from "../store/store";
+import FeeTypes from "../../enums/FeeTypes";
+import Expense from "./model/Expense";
+import Fee from "./model/Fee";
+import { RootState } from "../../app/store";
 
 export interface iMercariFeeState{
     baseFee: Expense;

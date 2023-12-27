@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import FeeTypes from "../../enums/FeeTypes";
 import {selectSpecificFeeAmount, addFee, removeFee } from "./MercariFeeSlice";
 import PaymentFees from "./shared/PaymentFees";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import ProfitLoss from "./shared/ProfitLoss";
 
 const MeracariSellingCost = () => {

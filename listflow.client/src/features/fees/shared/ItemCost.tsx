@@ -1,9 +1,9 @@
 import { Card, CardContent, Divider } from "@mui/material";
 import { useEffect} from "react";
 import ItemCalculator from "../ItemCalculator";
-import FeeTypes from "../../enums/FeeTypes";
+import FeeTypes from "../../../enums/FeeTypes";
 import { PrecentageInput } from "./PrecentageInput";
-import { useAppSelector, useAppDispatch } from "../../store/hooks";
+import { useAppSelector, useAppDispatch } from "../../../app/hooks";
 import {setPricePaid, setTaxPaid,setTaxRate, setTaxRateType } from "../CalculatorSlice"
 import NumericEntry from "./NumericEntry";
 

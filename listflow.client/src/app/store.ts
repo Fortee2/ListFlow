@@ -5,6 +5,7 @@ import listingReducer from '../features/listings/listingSlice';
 import salesChannelReducer from '../features/saleschannel/salesChannelSlice';
 import calculatorReducer from '../features/fees/CalculatorSlice';
 import eBayFeeReducer from '../features/fees/EbayFeeSlice';
+import mercariFeeReducer from '../features/fees/MercariFeeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     salesChannels: salesChannelReducer,
     calculator: calculatorReducer,
     eBayFees: eBayFeeReducer,
+    mercariFees: mercariFeeReducer,
   },
 });
 

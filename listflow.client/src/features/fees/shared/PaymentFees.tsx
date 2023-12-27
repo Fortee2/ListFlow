@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import FeeTypes from "../../enums/FeeTypes";
+import FeeTypes from "../../../enums/FeeTypes";
 import { removeFee, addFee,selectSpecificFeeAmount } from "../MercariFeeSlice";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 
 const PaymentFees = () => {
     const dispatch = useAppDispatch();
