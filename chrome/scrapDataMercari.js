@@ -1,4 +1,28 @@
-import {mercariConstants} from './mercariConstants.js';
+export async function correctPriceMercari(price){
+  function checkReadyState() {
+    return new Promise((resolve, reject) => {
+      if(document.readyState === 'complete') {
+        console.log('readyState is complete');
+        setPrice().then(resolve);
+      } else {
+        console.log('readyState is not complete');
+        setTimeout(() => checkReadyState().then(resolve), 1000);
+      }
+    });
+  }
+
+  function setPrice() {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => resolve(), 1000);
+      console.log(price);
+      const priceEle = document.querySelector('input[name="sellPrice"]');
+      priceEle.value = price;
+      resolve();
+    });
+  }
+
+  checkReadyState();
+}
 
 export async function scrapData(completedListings, listingType, downloadImages) {
     let bulkData = [];
@@ -18,36 +42,35 @@ export async function scrapData(completedListings, listingType, downloadImages) 
     function parseDate(dateString) {
       if (dateString.includes('ago')) {
         let timeportion = dateString.split('ago')[0].trim();
-        console.log(timeportion);
-  
+      
         if (timeportion.includes('h')) {
           let hours = timeportion.split('h')[0].trim();
           let date = new Date();
           date.setHours(date.getHours() - hours);
           return date.toISOString();
         }
-  
+    
         if (timeportion.includes('d')) {  
           let days = timeportion.split('d')[0].trim();
           let date = new Date();
           date.setDate(date.getDate() - days);
           return date.toISOString();
         }
-  
+    
         if (timeportion.includes('m')) {
           let minutes = timeportion.split('m')[0].trim();
           let date = new Date();
           date.setMinutes(date.getMinutes() - minutes);
           return date.toISOString();
         }
-  
+    
         console.log('Unable to parse date');
         return null;
       }
-  
+    
       return new Date(dateString).toISOString();
     }
-  
+
     function retrieveMercari() {
       return new Promise((resolve, reject) => {
         const lis = document.querySelectorAll('li[data-testid="ListingRow"]');
@@ -63,7 +86,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             
           if(listingType === 'active') {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
-            imageUrl =`${mercariConstants.ImageURL}${itmNumber}${mercariConstants.ImageOptions}`;
+            imageUrl ='https://u-mercari-images.mercdn.net/photos/' + itmNumber + '_1.jpg?format=pjpg&auto=webp&fit=crop';
           } else {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelectorAll('a')[1].innerHTML.replace('$', '').trim();
           }
@@ -102,8 +125,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
 
           console.log(itmNumber); 
           fetch(`https://localhost:7219/api/Listing/${itmNumber}/crosspost`).then(response => response.json()).then(data => {
-            console.log(data);
-            if(data.success  && data.data.price !== price){
+            if(data.success  && +data.data.price < +price){
               chrome.runtime.sendMessage({ action: 'queuePriceChange', itemNumber: itmNumber, price: data.data.price});
             }
           }); 
@@ -131,7 +153,6 @@ export async function retrievePageCount(listingType, tab){
   });
 
   if(resultCnt[0].result) {
-    console.log(resultCnt[0].result[0]);
     let indx = 0;  //defaulting to Active
 
     switch(listingType) {
@@ -146,7 +167,7 @@ export async function retrievePageCount(listingType, tab){
         break;
     }
 
-    let itemCount = new Number(resultCnt[0].result[indx].replace(',', ''));
+    let itemCount = +resultCnt[0].result[indx].replace(',', '');
     return Math.ceil(itemCount / 20);
   }
 
@@ -159,3 +180,4 @@ function readTotalItems() {
   let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
   return counts;
 }
+

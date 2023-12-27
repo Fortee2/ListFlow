@@ -1,6 +1,7 @@
 import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
-import { scrapData } from './scrapDataMercari.js';
+import { scrapData, retrievePageCount, correctPriceMercari } from './scrapDataMercari.js';
 import { searchEbayURLs, searchMercariURLs } from './urls.js';
+import {mercariConstants} from './mercariConstants.js';
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
@@ -21,6 +22,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       switch(salesChannel) {
         case 'Mercari':
           await retrieveNewMercariData(listingType, downloadImages);
+          correctPrice();
           break;
         case 'eBay':
           await retrieveEbayData(listingType, downloadImages);
@@ -42,9 +44,44 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     saveItemToDatabase(request.item);
   }
   else if (request.action === 'queuePriceChange') {
+    console.log('queuePriceChange action received:', request.itemNumber, request.price);
     priceChanges.set(request.itemNumber, request.price);
   }
 });
+
+let tabId; // The ID of the tab you're interested in
+
+chrome.tabs.onRemoved.addListener(function(closedTabId) {
+  if (closedTabId === tabId) {
+    // The tab was closed, move to the next item
+    correctPrice();
+  }
+});
+
+async function correctPrice() {
+  console.log('correctPrice');
+  if(priceChanges.size > 0){
+    let keyValIterator = priceChanges.entries();
+    let keyVal = keyValIterator.next().value;
+    if (keyVal) {
+      let url = mercariConstants.EditUrL + keyVal[0];
+      let newPrice = keyVal[1];
+
+      const tab = await loadTab(url);
+      tabId = tab.id;
+
+      await new Promise(resolve => {
+        chrome.scripting.executeScript({
+          args: [newPrice],
+          target: { tabId: tab.id },
+          function: correctPriceMercari,
+        }, resolve);
+      });
+
+      priceChanges.delete(keyVal[0]);
+    }
+  }
+}
 
 async function processImageQueue() {
   if (imageQueue.length === 0 || isDownloadingImage) {
@@ -182,9 +219,8 @@ async function saveItemToDatabase(item) {
       item = JSON.stringify(item, null, 2); // Pretty print the JSON
     }
 
-    console.log('Saving item to the database:', item);
-    
     const response = await fetch('http://ec2-54-82-24-126.compute-1.amazonaws.com/api/BulkListing', {
+    //const response = await fetch('https://localhost:7219/api/BulkListing', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -192,9 +228,9 @@ async function saveItemToDatabase(item) {
       body: item,
     });
 
-    if (response.ok) {
-      console.log('Item saved to the database successfully:', item);
-    } else {
+    if (!response.ok) {
+      //console.log('Item saved to the database successfully:', item);
+    //} else {
       console.error('Failed to save item to the database:', item);
     }
   } catch (error) {
@@ -228,7 +264,6 @@ async function retrieveEbayData(listingType, downloadImages) {
         });
         
         if(result[0].result) {
-          console.log(result[0].result);
           if(pageCount === 1) {
             let itemCount = new Number(result[0].result.count.replace(',', ''));
             totalPages = Math.ceil(itemCount / 200);
@@ -256,7 +291,7 @@ async function retrieveNewMercariData(listingType, downloadImages) {
     for (const link of url) {
       const activeListings = link.activeListings;
       let totalPages = 0;
-      let pageCount = 1;
+      let pageCount = 0;
 
       do {
         // Load first Page
@@ -267,7 +302,7 @@ async function retrieveNewMercariData(listingType, downloadImages) {
           totalPages = await retrievePageCount(link.type, tab);
         }
 
-        const result = await new Promise(resolve => {
+        await new Promise(resolve => {
           chrome.scripting.executeScript({
             args: [activeListings, link.type, downloadImages],
             target: { tabId: tab.id },

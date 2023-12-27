@@ -39,9 +39,6 @@ export async function scrapDataEbay(activeListings, downloadImages) {
   
     function retrieveEbay(activeListings) {
       return new Promise((resolve, reject) => {
-        console.log('retrieveEbay');
-        console.log(`Listings are: ${activeListings}`);
-  
         const trs = document.querySelectorAll('tr[class="grid-row"]');
       
         trs.forEach(f => {
@@ -50,9 +47,8 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           let endedStatus = 'Unsold';
           let views =  "0";
           let watchers = "0";
-          let listPrice = "0";
-          let imageUrl = "";
-  
+          let listPrice;
+
           if(activeListings){
             divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
             views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
@@ -120,7 +116,6 @@ export async function scrapDataEbay(activeListings, downloadImages) {
     }
   
     await checkReadyState();
-    console.log(bulkData + '|' + itemCount );
     return  {'result': bulkData, 'count': itemCount};
   }
 
