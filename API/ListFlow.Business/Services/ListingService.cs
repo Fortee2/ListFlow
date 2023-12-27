@@ -3,7 +3,8 @@ using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
-using ListFlow.Business.Services.Interfaces;    
+using ListFlow.Business.Services.Interfaces;
+using ListFlow.Domain.DTO;
 
 namespace ListFlow.Business.Services
 {
@@ -186,6 +187,11 @@ namespace ListFlow.Business.Services
         public ServiceResult<IEnumerable<Listing>> GetAll()
         {
             return new ServiceResult<IEnumerable<Listing>>(_listings.GetAll());
+        }
+
+        public ServiceResult<IEnumerable<PriceMismatchDto>> MispricedListings()
+        {
+            return new ServiceResult<IEnumerable<PriceMismatchDto>>(_listings.MispricedListings());
         }
 
         public ServiceResult<Listing> GetById(Guid id)

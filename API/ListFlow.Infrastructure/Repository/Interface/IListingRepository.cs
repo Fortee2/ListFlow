@@ -1,5 +1,6 @@
 using System;
 using ListFlow.Domain.Model;
+using ListFlow.Domain.DTO;
 using ListFlow.Infrastructure.Filters;
 
 namespace ListFlow.Infrastructure.Repository.Interface
@@ -11,5 +12,7 @@ namespace ListFlow.Infrastructure.Repository.Interface
 
         Listing? FindCrossPostListingByItemNumber(string ItemNumber);
         Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
+
+        IEnumerable<PriceMismatchDto> MispricedListings();
     }
 }

@@ -1,7 +1,9 @@
 ﻿using ListFlow.Domain.Model;
+using ListFlow.Domain.DTO;
 using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Infrastructure.Filters;
 using Microsoft.EntityFrameworkCore;
+using System.Xml.Schema;
 
 namespace ListFlow.Infrastructure.Repository
 {
@@ -43,6 +45,7 @@ namespace ListFlow.Infrastructure.Repository
                 listing = (from list in this._dbContext.Listings.Include(l => l.SalesChannel)
                            where list.ItemNumber.ToLower() != ItemNumber.ToLower()
                                 && list.CrossPostId == listing.CrossPostId
+                                && list.CrossPostId != null
                            select list).FirstOrDefault();
             }
 
@@ -52,9 +55,27 @@ namespace ListFlow.Infrastructure.Repository
         public IEnumerable<Listing> GetAll()
         {
             var listing = (from list in this._dbContext.Listings
-                           where list.Active == true
+                           where list.Active
                            orderby list.DateListed descending
                            select list).AsEnumerable();
+
+            return listing;
+        }
+
+        public IEnumerable<PriceMismatchDto> MispricedListings()
+        {
+            var listing = (from list in this._dbContext.Listings
+                             join  scList in this._dbContext.Listings on list.CrossPostId equals scList.CrossPostId
+                           where list.Active
+                            && list.Price > scList.Price
+                           orderby list.DateListed descending
+                           select new PriceMismatchDto(
+                                list.ItemNumber,
+                                list.ItemTitle,
+                                list.Price,
+                                scList.Price,
+                                scList.ItemNumber
+                           )).AsEnumerable();
 
             return listing;
         }

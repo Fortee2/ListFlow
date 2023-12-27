@@ -1,5 +1,6 @@
 using ListFlow.Business;
 using ListFlow.Business.DTO;
+using ListFlow.Domain.DTO;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 
@@ -23,6 +24,8 @@ namespace  ListFlow.Business.Services.Interfaces{
         ServiceResult<Listing> FindListingsByTitle(string Title);
 
         ServiceResult<Listing> FindListingsByItemNumber(string itemNumber);
+
+        ServiceResult<IEnumerable<PriceMismatchDto>> MispricedListings();
 
         Task CreateMetrics(ListingDTO[] listingDtos);
 
