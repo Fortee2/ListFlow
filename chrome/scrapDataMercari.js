@@ -3,7 +3,8 @@ export async function correctPriceMercari(price){
     return new Promise((resolve, reject) => {
       if(document.readyState === 'complete') {
         console.log('readyState is complete');
-        setPrice().then(resolve);
+        setPrice(price); 
+        resolve();
       } else {
         console.log('readyState is not complete');
         setTimeout(() => checkReadyState().then(resolve), 1000);
@@ -11,17 +12,45 @@ export async function correctPriceMercari(price){
     });
   }
 
-  function setPrice() {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => resolve(), 1000);
-      console.log(price);
-      const priceEle = document.querySelector('input[name="sellPrice"]');
-      priceEle.value = price;
-      resolve();
-    });
+  function setPrice(price) { 
+    
+
+    const el = document.querySelector('input[name="sellPrice"]');
+    if (el) {
+        el.addEventListener('input', (e) => {
+            console.log('input event fired');
+            console.log(e.target.value);
+        });
+        el.addEventListener('change', (e) => {
+            console.log('change event fired');
+            console.log(e.target.value);
+        }); 
+        el.addEventListener('focus', (e) => {
+            console.log('focus event fired');
+            console.log(e.target.value);
+        });
+        el.addEventListener('keydown', (e) => { 
+            setTimeout(() => {
+              document.querySelector('button[data-testid="ListButton"]').click();
+            }, 2000);
+            //https://www.mercari.com/sell/confirmation/m84401916975/
+            console.log('keydown event fired');
+            console.log(e.target.value);
+        });
+        el.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+        el.value = parseFloat(price);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        //el.dispatchEvent(new Event('change'));
+        let event = new KeyboardEvent('keydown', {bubbles: true,  key: 'Enter' });
+        el.dispatchEvent(event);
+        console.log(price);
+    } else {
+        console.error('Input field not found');
+    }
   }
 
-  checkReadyState();
+  console.log('correctPriceMercari');
+  await checkReadyState();
 }
 
 export async function scrapData(completedListings, listingType, downloadImages) {
@@ -84,6 +113,10 @@ export async function scrapData(completedListings, listingType, downloadImages) 
           const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
           let imageUrl = "";
             
+          if(ele.innerHTML.startsWith('Bundle')) {
+            return;
+          }
+
           if(listingType === 'active') {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
             imageUrl ='https://u-mercari-images.mercdn.net/photos/' + itmNumber + '_1.jpg?format=pjpg&auto=webp&fit=crop';
@@ -123,12 +156,12 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             listingDateType: listingDateType
            });
 
-          console.log(itmNumber); 
+/*           console.log(itmNumber); 
           fetch(`https://localhost:7219/api/Listing/${itmNumber}/crosspost`).then(response => response.json()).then(data => {
             if(data.success  && +data.data.price < +price){
               chrome.runtime.sendMessage({ action: 'queuePriceChange', itemNumber: itmNumber, price: data.data.price});
             }
-          }); 
+          });  */
 
         });
   

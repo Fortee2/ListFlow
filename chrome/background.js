@@ -22,7 +22,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       switch(salesChannel) {
         case 'Mercari':
           await retrieveNewMercariData(listingType, downloadImages);
-          correctPrice();
+          getMispricedItems().then(() => {
+            correctPrice();
+          });
           break;
         case 'eBay':
           await retrieveEbayData(listingType, downloadImages);
@@ -50,6 +52,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 });
 
 let tabId; // The ID of the tab you're interested in
+let isChromeRunning = true;
+
+chrome.windows.onRemoved.addListener(function() {
+  // Stop calling correctPrice when the last Chrome window is closed
+  isChromeRunning = false;
+});
 
 chrome.tabs.onRemoved.addListener(function(closedTabId) {
   if (closedTabId === tabId) {
@@ -60,7 +68,7 @@ chrome.tabs.onRemoved.addListener(function(closedTabId) {
 
 async function correctPrice() {
   console.log('correctPrice');
-  if(priceChanges.size > 0){
+  if(priceChanges.size > 0 && isChromeRunning){
     let keyValIterator = priceChanges.entries();
     let keyVal = keyValIterator.next().value;
     if (keyVal) {
@@ -70,14 +78,21 @@ async function correctPrice() {
       const tab = await loadTab(url);
       tabId = tab.id;
 
-      await new Promise(resolve => {
-        chrome.scripting.executeScript({
+      await delay(getRandomInt(5000, 10000));
+
+      chrome.scripting.executeScript({
           args: [newPrice],
           target: { tabId: tab.id },
           function: correctPriceMercari,
-        }, resolve);
+      }).then( () =>{
+        console.log('Price Changed for ' + keyVal[0] + ' to ' + newPrice);
+        delay(10000).then(() => {
+          chrome.tabs.remove(tab.id);
+        });
+      }).catch((error) => {
+        console.error('Error executing script:', error);
       });
-
+      
       priceChanges.delete(keyVal[0]);
     }
   }
@@ -238,6 +253,22 @@ async function saveItemToDatabase(item) {
   }
 }
 
+function getMispricedItems() {
+  return new Promise(resolve => {
+    fetch(`https://localhost:7219/api/Listing/mispriced`).then(response => response.json()).then(data => {
+        if(data.success  ){
+          for(const item of data.data){
+            if(item.itemNumber.startsWith('m')){
+                priceChanges.set(item.itemNumber, item.crossPostPrice);
+            }
+          }
+          resolve(); 
+        }
+    });
+
+  });
+}
+
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
@@ -296,7 +327,7 @@ async function retrieveNewMercariData(listingType, downloadImages) {
       do {
         // Load first Page
         const tab = await getActiveTab(link.url, pageCount, 'Mercari');
-        await delay(getRandomInt(5000, 10000));
+        await delay(getRandomInt(3000, 5000));
 
         if (totalPages === 0) {
           totalPages = await retrievePageCount(link.type, tab);
