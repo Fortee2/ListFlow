@@ -18,6 +18,14 @@ export function getMercariURLs() {
     return urls;
   }
 
+  export function getEtsyURLs() {
+    const urls = [
+      {'type': 'active', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/sort:stock,order:ascending,view:table', 'activeListings': true}, 
+    ];  
+  
+    return urls;
+  }
+
   export function searchMercariURLs(searchTerm) {
     let mercariURLs = getMercariURLs();
 

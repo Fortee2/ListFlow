@@ -1,7 +1,9 @@
 import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
-import { scrapData, retrievePageCount, correctPriceMercari } from './scrapDataMercari.js';
-import { searchEbayURLs, searchMercariURLs } from './urls.js';
+import { scrapData, retrievePageCount } from './scrapDataMercari.js';
+import { searchEbayURLs, searchMercariURLs, getEtsyURLs } from './urls.js';
 import {mercariConstants} from './mercariConstants.js';
+import { correctPriceMercari } from './priceMercari.js';
+import { scrapDataEtsy } from './scrapDataEtsy.js';
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
@@ -28,6 +30,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           break;
         case 'eBay':
           await retrieveEbayData(listingType, downloadImages);
+          break;
+        case 'Etsy':
+          await retrieveEtsyData(listingType, downloadImages);
           break;
       }
 
@@ -255,7 +260,7 @@ async function saveItemToDatabase(item) {
 
 function getMispricedItems() {
   return new Promise(resolve => {
-    fetch(`https://localhost:7219/api/Listing/mispriced`).then(response => response.json()).then(data => {
+    fetch(`http://ec2-54-82-24-126.compute-1.amazonaws.com/api/Listing/mispriced`).then(response => response.json()).then(data => {
         if(data.success  ){
           for(const item of data.data){
             if(item.itemNumber.startsWith('m')){
@@ -338,6 +343,48 @@ async function retrieveNewMercariData(listingType, downloadImages) {
             args: [activeListings, link.type, downloadImages],
             target: { tabId: tab.id },
             function: scrapData,
+          }, resolve);
+        });
+
+        pageCount++;
+      } while (pageCount <= totalPages);
+      // Loop through each page
+    }
+
+    if(titles.length > 0) {
+      downloadData(titles);
+    }    
+  } catch (error) {
+    console.error('Error executing script:', error);
+  }
+}
+
+async function retrieveEtsyData(listingType, downloadImages) {
+  try {
+    let titles = []; //Array to hold scraped data
+
+    //Use Type to find the URL
+    let url = getEtsyURLs(listingType);
+   
+    for (const link of url) {
+      const activeListings = link.activeListings;
+      let totalPages = 0;
+      let pageCount = 0;
+
+      do {
+        // Load first Page
+        const tab = await loadTab(link.url);
+        await delay(getRandomInt(3000, 5000));
+
+     /*    if (totalPages === 0) {
+          totalPages = await retrievePageCount(link.type, tab);
+        }
+      */
+        await new Promise(resolve => {
+          chrome.scripting.executeScript({
+            args: [activeListings, link.type, downloadImages],
+            target: { tabId: tab.id },
+            function: scrapDataEtsy,
           }, resolve);
         });
 
