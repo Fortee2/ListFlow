@@ -15,6 +15,10 @@
         font-size: 16px;
       }
 
+      .smallText {
+        font-size: 10px;
+      }
+
       /* CSS */
       .button-12 {
         display: flex;
@@ -41,27 +45,30 @@
   </head>
   <body>
     <div style="padding: 4px;">
-      <label for="selectList">Select E-Commerce Site:</label>
-      <br/>
-      <select id="selectList" style="width: 100%;">
-        <option selected>Mercari</option>
-        <option>eBay</option>
-        <option>Etsy</option>
-      </select>
+      <div style="float: left; width: 50%;">
+        <span>Sales Channel:</span>
+      </div>
+      <div style="float: left; width: 50%;">
+        <select id="selectChannel" style="width: 100%;">
+          <option selected>Mercari</option>
+          <option>eBay</option>
+          <option>Etsy</option>
+        </select>
+      </div>
     </div>
     <div style="padding: 4px;">
-      <label>Select Listing Type:</label>
-      <br />
-      <input type="radio" id="active" name="status" value="all" checked >
-      <label for="active">All</label>
-      <input type="radio" id="active" name="status" value="active">
-      <label for="active">Active</label>
-      <input type="radio" id="inactive" name="status" value="inactive">
-      <label for="inactive">Inactive</label>
-      <input type="radio" id="inprogress" name="status" value="inprogress">
-      <label for="inprogress">Inprogress</label>
-      <input type="radio" id="complete" name="status" value="complete">
-      <label for="complete">Complete</label>
+      <div style="float: left; width: 50%;">
+        <span>Listing Type</span>
+      </div>
+      <div style="float: left; width: 50%;"></div>
+        <select id="selectType" style="width: 50%;">
+          <option value="all" selected>All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="inprogress">Inprogress</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
     </div>
     <div style="padding: 4px;">
       <label for="downloadImages">Download Listing Images:</label>
@@ -76,7 +83,7 @@
     </div>
   
     <div style="float: left; width: 50%;">
-      <button id="openOptions">Options</button>
+      <button class="button-12" id="openOptions">Options</button>
     </div>
     <script src="popup.js"></script>
    

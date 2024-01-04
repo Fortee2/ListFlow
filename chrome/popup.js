@@ -8,33 +8,19 @@ document.getElementById('openOptions').addEventListener('click', function() {
   chrome.runtime.openOptionsPage();
 });
 
-document.getElementById('selectList').addEventListener('change', function() {
+document.getElementById('selectChannel').addEventListener('change', function() {
   let selectedOption = this.value;
-  let inprogressRadioButton = document.getElementById('inprogress');
-  let inactiveRadioButton = document.getElementById('inactive');
-  let inprogressLabel = inprogressRadioButton.previousElementSibling;
-  let inactiveLabel = inactiveRadioButton.previousElementSibling;
 
-  if (selectedOption === 'eBay') {
-    inprogressRadioButton.style.display = 'none';
-    inactiveRadioButton.style.display = 'none';
-    inprogressLabel.style.display = 'none';
-    inactiveLabel.style.display = 'none';
-  } else {
-    inprogressRadioButton.style.display = '';
-    inactiveRadioButton.style.display = '';
-    inprogressLabel.style.display = '';
-    inactiveLabel.style.display = '';
-  }
 });
 
 function getSelectedStatusValue() {
-  const selectedRadio = document.querySelector('input[name="status"]:checked');
-  return selectedRadio ? selectedRadio.value : null;
+  const selectList = document.getElementById('selectType');
+  const isSelected = selectList.selectedOptions[0].value;
+  return isSelected;
 }
 
 function getSelectedSalesChannel() {
-  const selectList = document.getElementById('selectList');
+  const selectList = document.getElementById('selectChannel');
   const isSelected = selectList.selectedOptions[0].value;
   return isSelected;
 }
