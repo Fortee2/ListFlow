@@ -13,7 +13,8 @@
   "host_permissions": [
     "https://www.mercari.com/*",
     "https://www.ebay.com/*",
-    "https://www.etsy.com/*"
+    "https://www.etsy.com/*",
+    "https://shopgoodwill.com/*"
   ],
   "action": {
     "default_popup": "popup.html"
