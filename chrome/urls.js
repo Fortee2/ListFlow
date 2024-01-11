@@ -21,6 +21,7 @@ export function getMercariURLs() {
   export function getEtsyURLs() {
     const urls = [
       {'type': 'active', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/sort:stock,order:ascending,view:table', 'activeListings': true}, 
+      {'type': 'inactive', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/state:inactive,view:table', 'activeListings': false},
     ];  
   
     return urls;
