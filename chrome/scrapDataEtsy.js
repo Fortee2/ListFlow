@@ -43,7 +43,8 @@ export async function scrapDataEtsy(completedListings, listingType, downloadImag
         lis.forEach(f => {
           const itemLink = f.querySelector('div[class="listing-row-title vertical-align-top flag-body"]').querySelector('a'); 
           console.log(itemLink.href);
-          const itmNumber = itemLink.href.split('/')[8]
+          const itmNumber = itemLink.href.split('/')[8].split('?')[0];
+          console.log(itmNumber);
 /* 
           const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
           const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p'); 
