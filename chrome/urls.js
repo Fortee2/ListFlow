@@ -45,6 +45,7 @@ export function getMercariURLs() {
         searchTerm = 'active';
         break;
       case 'complete':
+      case 'inactive':
         searchTerm = 'inactive';
         break;
       default: //all

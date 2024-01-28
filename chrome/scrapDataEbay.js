@@ -48,13 +48,17 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           let views =  "0";
           let watchers = "0";
           let listPrice;
+          let qty = '1';
+          let listStatus = activeListings;
 
           if(activeListings){
             divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
             views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
             watchers = f.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
             listPrice = parseEbayPrice(f);
-            
+            qty = f.querySelector('td[class="shui-dt-column__availableQuantity shui-dt--right editable inline-editable"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerText;
+            console.log('Quantity: ' + qty);
+
           }else{
             divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
             endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
@@ -64,14 +68,24 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           console.log(endedStatus);
   
           let listingType;
+          let listingDate = parseEbayDate(divDate.innerHTML);
+
           if (activeListings) {
-            listingType = 0;
+            if(qty == '0'){
+              listingType = 2;  //active listing with 0 quantity is considered complete
+              listStatus = false;
+              listingDate = Date.now();
+            }else{
+              listingType = 0;
+            }
           } else if (endedStatus === "Unsold") {
             listingType = 1;
           } else {
             listingType = 2;
           }
   
+          console.log('ListingType: ' + listingType);
+
           let a = div.querySelector('a');
           let dateContainer = divDate.querySelector('div');
   
@@ -83,8 +97,8 @@ export async function scrapDataEbay(activeListings, downloadImages) {
             itemNumber: a.href.split('/')[4],
             description: a.innerHTML,
             salesChannel: 'eBay',
-            active: activeListings,
-            listingDate: parseEbayDate(dateContainer.innerHTML),
+            active: listStatus,
+            listingDate: listingDate,
             listingDateType: listingType,
             views: views,
             likes: watchers,

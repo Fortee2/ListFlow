@@ -118,9 +118,10 @@ export async function scrapData(completedListings, listingType, downloadImages) 
         resolve(bulkData);
       });
     }
+
     await checkReadyState(); 
     return bulkData;
-  }
+}
 
 export async function retrievePageCount(listingType, tab){
   const resultCnt = await new Promise(resolve => {

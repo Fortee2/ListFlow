@@ -64,7 +64,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         function: scrapGoodwill,
       }, resolve);
     });
-  }else if (request.action === 'downloadData') {
+  }
+  else if (request.action === 'downloadData') {
     downloadData(request.data);
   }
 });
@@ -421,8 +422,8 @@ async function retrieveEbayData(listingType, downloadImages) {
         });
         
         if(result[0].result) {
-          if(pageCount === 1) {
-            let itemCount = new Number(result[0].result.count.replace(',', ''));
+          if(totalPages === 0) {
+            let itemCount = +result[0].result.count.replace(',', '');
             totalPages = Math.ceil(itemCount / 200);
           }
           pageCount++;
