@@ -7,6 +7,7 @@ import { scrapDataEtsy } from './scrapDataEtsy.js';
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
+
 const priceChanges = new Map();
 
 let isDownloading = false;
@@ -54,11 +55,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     console.log('queuePriceChange action received:', request.itemNumber, request.price);
     priceChanges.set(request.itemNumber, request.price);
   }
+  else if (request.action === 'queueEbayNoQty') {
+    zeroQtyQueue.push(request.itemNumber);
+  }
   else if (request.action === 'parseGoodwill') {
     
     const tab = await loadTab('https://shopgoodwill.com/item/187608532');
     await delay(getRandomInt(1000, 30000));
-    const result = await new Promise(resolve => {
+    await new Promise(resolve => {
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
         function: scrapGoodwill,
@@ -432,7 +436,7 @@ async function retrieveEbayData(listingType, downloadImages) {
       }while(pageCount <= totalPages );
 
       processQueue(); // process the queue
-      
+            
     }
   } catch (error) {
     console.error('Error executing script:', error);
@@ -498,10 +502,6 @@ async function retrieveEtsyData(listingType, downloadImages) {
         const tab = await loadTab(link.url);
         await delay(getRandomInt(3000, 5000));
 
-     /*    if (totalPages === 0) {
-          totalPages = await retrievePageCount(link.type, tab);
-        }
-      */
         await new Promise(resolve => {
           chrome.scripting.executeScript({
             args: [activeListings, link.type, downloadImages],

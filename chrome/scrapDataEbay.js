@@ -1,6 +1,7 @@
 export async function scrapDataEbay(activeListings, downloadImages) {
     let bulkData = [];
     let itemCount = 0;
+    let zeroItemCount = 0;
   
     function checkReadyState() {
       return new Promise((resolve, reject) => {
@@ -40,6 +41,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
     function retrieveEbay(activeListings) {
       return new Promise((resolve, reject) => {
         const trs = document.querySelectorAll('tr[class="grid-row"]');
+
       
         trs.forEach(f => {
           let div = f.querySelector('div[class="column-title__text"]');
@@ -52,7 +54,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           let listStatus = activeListings;
 
           if(activeListings){
-            divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+            divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
             views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
             watchers = f.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
             listPrice = parseEbayPrice(f);
@@ -60,7 +62,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
             console.log('Quantity: ' + qty);
 
           }else{
-            divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]');
+            divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
             endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
             listPrice = f.querySelector('td[class="shui-dt-column__price shui-dt--right"]').querySelector('div[class="col-price__current"]').querySelector('span').innerHTML.replace('$', '').trim();
           }
@@ -68,16 +70,28 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           console.log(endedStatus);
   
           let listingType;
-          let listingDate = parseEbayDate(divDate.innerHTML);
+          console.log("Listing Date:");
+          console.log(divDate);
+          let listingDate = parseEbayDate(divDate);
+          let a = div.querySelector('a');
+          let itemNumber = a.href.split('/')[4];
 
           if (activeListings) {
             if(qty == '0'){
-              listingType = 2;  //active listing with 0 quantity is considered complete
-              listStatus = false;
-              listingDate = Date.now();
-            }else{
-              listingType = 0;
+              //chrome.runtime.sendMessage({action: 'queueEbayNoQty', itemNumber: );
+              //https://www.ebay.com/itm/176073765216
+              zeroItemCount++;
+              f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).focus();
+              f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).click();
+              
+              do{
+                console.log('Waiting for checkbox to be checked ' + itemNumber);
+              }while(f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).checked == false);
+
             }
+            
+            listingType = 0;
+            
           } else if (endedStatus === "Unsold") {
             listingType = 1;
           } else {
@@ -85,12 +99,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           }
   
           console.log('ListingType: ' + listingType);
-
-          let a = div.querySelector('a');
-          let dateContainer = divDate.querySelector('div');
-  
-          console.log(parseEbayDate(dateContainer.innerHTML));
-          console.log(`ListingType: ${listingType}`);
+          console.log(parseEbayDate(divDate));
           
           bulkData.push({ 
             itemTitle: a.innerHTML,
@@ -109,7 +118,27 @@ export async function scrapDataEbay(activeListings, downloadImages) {
             chrome.runtime.sendMessage({ action: 'downloadEbayImage', itemNumber: a.href.split('/')[4]});           
           } 
         });
-  
+
+        if(zeroItemCount){
+          const actionButton = document.querySelectorAll('div[class="action-btn"]')[2].querySelector('button'); 
+
+          if(actionButton){
+            let loopCount = 0;
+            actionButton.click();
+            document.getElementById('s0-1-1-19-3-7-36-27-2-28-2-@bulkActionsV2-14-@fake-menu-@content-menu').querySelectorAll('li')[0].querySelector('button').click();
+            let endListingDiv = document.querySelector('div[class="se-end-listing__footer-actions"]');
+            do{
+              endListingDiv = document.querySelector('div[class="se-end-listing__footer-actions"]');
+              console.log('Waiting for endListingDiv');
+              setTimeout(3000);
+            }while(endListingDiv == null || loopCount++ < 10);
+            
+            endListingDiv.querySelector('button[class="btn btn--primary"]').click();
+          }else{
+            alert('No action button');
+          }
+        }
+
         chrome.runtime.sendMessage({ 
           action: 'saveToListingAPI',
           item: bulkData

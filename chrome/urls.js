@@ -12,7 +12,8 @@ export function getMercariURLs() {
   export function getEbayURLs() {
     const urls = [
       {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
-      {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
+      {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD_NOT_RELISTED', 'activeListings': false},
+      {'type': 'complete', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&catType=storeCategories&timePeriod=LAST_90_DAYS&q_field1=title&action=search', 'activeListings': false},
     ];  
   
     return urls;
@@ -45,6 +46,8 @@ export function getMercariURLs() {
         searchTerm = 'active';
         break;
       case 'complete':
+        searchTerm = 'complete';
+        break;
       case 'inactive':
         searchTerm = 'inactive';
         break;
