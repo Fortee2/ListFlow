@@ -1,9 +1,9 @@
-import { scrapDataEbay, scrapDataEbayImages } from './scrapDataEbay.js';
-import { scrapData, retrievePageCount } from './scrapDataMercari.js';
+import { scrapDataEbay, scrapDataEbayImages } from './ebay/scrapDataEbay.js';
+import { scrapData, retrievePageCount } from './mercari/scrapDataMercari.js';
 import { searchEbayURLs, searchMercariURLs, getEtsyURLs } from './urls.js';
 import {mercariConstants} from './mercariConstants.js';
-import { correctPriceMercari } from './priceMercari.js';
-import { scrapDataEtsy } from './scrapDataEtsy.js';
+import { correctPriceMercari } from './mercari/priceMercari.js';
+import { scrapDataEtsy } from './etsy/scrapDataEtsy.js';
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
@@ -59,7 +59,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     zeroQtyQueue.push(request.itemNumber);
   }
   else if (request.action === 'parseGoodwill') {
-    
     const tab = await loadTab('https://shopgoodwill.com/item/187608532');
     await delay(getRandomInt(1000, 30000));
     await new Promise(resolve => {
