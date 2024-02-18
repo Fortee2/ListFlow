@@ -13,6 +13,6 @@ namespace ListFlow.Infrastructure.Repository.Interface
         Listing? FindCrossPostListingByItemNumber(string ItemNumber);
         Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
 
-        IEnumerable<PriceMismatchDto> MispricedListings();
+        IEnumerable<PriceMismatchDto> MispricedListings(Guid anchorSalesChannel);
     }
 }

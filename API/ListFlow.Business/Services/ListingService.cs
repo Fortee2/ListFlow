@@ -5,6 +5,7 @@ using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.DTO;
+using ListFlow.Business.Enums;
 
 namespace ListFlow.Business.Services
 {
@@ -191,7 +192,7 @@ namespace ListFlow.Business.Services
 
         public ServiceResult<IEnumerable<PriceMismatchDto>> MispricedListings()
         {
-            return new ServiceResult<IEnumerable<PriceMismatchDto>>(_listings.MispricedListings());
+            return new ServiceResult<IEnumerable<PriceMismatchDto>>(_listings.MispricedListings(SalesChannelConstants.eBay));
         }
 
         public ServiceResult<Listing> GetById(Guid id)
