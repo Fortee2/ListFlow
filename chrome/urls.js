@@ -8,6 +8,10 @@ export function getMercariURLs() {
   
     return urls;
   }
+
+  export function getMercariItemURL(){
+    return 'https://www.mercari.com/sell/edit/';
+  }
   
   export function getEbayURLs() {
     const urls = [

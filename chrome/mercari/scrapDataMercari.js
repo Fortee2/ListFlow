@@ -15,24 +15,24 @@ export async function scrapData(completedListings, listingType, downloadImages) 
   
     function parseDate(dateString) {
       if (dateString.includes('ago')) {
-        let timeportion = dateString.split('ago')[0].trim();
+        let timePortion = dateString.split('ago')[0].trim();
       
-        if (timeportion.includes('h')) {
-          let hours = timeportion.split('h')[0].trim();
+        if (timePortion.includes('h')) {
+          let hours = timePortion.split('h')[0].trim();
           let date = new Date();
           date.setHours(date.getHours() - hours);
           return date.toISOString();
         }
     
-        if (timeportion.includes('d')) {  
-          let days = timeportion.split('d')[0].trim();
+        if (timePortion.includes('d')) {  
+          let days = timePortion.split('d')[0].trim();
           let date = new Date();
           date.setDate(date.getDate() - days);
           return date.toISOString();
         }
     
-        if (timeportion.includes('m')) {
-          let minutes = timeportion.split('m')[0].trim();
+        if (timePortion.includes('m')) {
+          let minutes = timePortion.split('m')[0].trim();
           let date = new Date();
           date.setMinutes(date.getMinutes() - minutes);
           return date.toISOString();
@@ -98,23 +98,19 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             views: divViews.innerHTML,
             price: price,
             listingDate: parseDate(divLastUpdated.innerHTML),
-            listingDateType: listingDateType
+            listingDateType: listingDateType,
+            shipping: '',
+            shippingCost: '',
+            shippingService: '',
+            shippingWeight: '',
            });
-
-/*           console.log(itmNumber); 
-          fetch(`http://ec2-54-82-24-126.compute-1.amazonaws.com/api/Listing/${itmNumber}/crosspost`).then(response => response.json()).then(data => {
-            if(data.success  && +data.data.price < +price){
-              chrome.runtime.sendMessage({ action: 'queuePriceChange', itemNumber: itmNumber, price: data.data.price});
-            }
-          });  */
-
         });
   
         chrome.runtime.sendMessage({ 
           action: 'saveToListingAPI',
           item: bulkData
         });
-  
+
         resolve(bulkData);
       });
     }
