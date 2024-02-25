@@ -10,6 +10,7 @@ let queue = [];
 let imageQueue = [];  // queue for image downloads
 let currentSalesChannel = '';
 let updatePrice = false;
+let createExport = false;
 
 const priceChanges = new Map();
 
@@ -105,6 +106,11 @@ function loadGlobalSettings() {
   chrome.storage.sync.get('updatePrice', function(data) {
     updatePrice = data.updatePrice;
   });
+
+  chrome.storage.sync.get('createExport', function(data) {
+    createExport = data.createExport;
+  });
+
 }
 
 let tabId; // The ID of the tab you"re interested in
@@ -249,7 +255,9 @@ async function getActiveTab(targetUrl, page, salesChannel, activeListings = true
 }
 
 async function downloadData(data) {
-  console.log('downloadData');
+  if(!createExport) { 
+    return;
+  }
 
   //Enhance Data for download
   if(currentSalesChannel === 'Mercari') {
