@@ -28,10 +28,9 @@
 	and ll.Active  = 1
     and (l.Active = 0);
     
-select  l.ItemNumber, l.ItemTitle, l.lastupdated, l.DateListed, l.dateended, l.datesold
+select  *
 from listflow.Listing l
 where active = true
 and crosspostid is null
-order by datelisted, itemtitle;
+order by itemtitle;
     
-    		

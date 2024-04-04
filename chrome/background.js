@@ -54,8 +54,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
       switch(currentSalesChannel) {
         case "Mercari":
-          
-          await retrieveMercariData(listingType, downloadImages);
+          await retrieveMercariData(downloadImages, searchMercariURLs(listingType));
           if(updatePrice){
             getMispricedItems().then(() => {
               correctPrice();
@@ -410,12 +409,50 @@ async function retrieveEbayData(listingType, downloadImages) {
   }
 }
 
-async function retrieveMercariData(listingType, downloadImages) {
+async function retrieveEtsyData(listingType, downloadImages) {
   try {
     let titles = []; //Array to hold scraped data
 
     //Use Type to find the URL
-    let url = searchMercariURLs(listingType);
+    let url = getEtsyURLs(listingType);
+   
+    for (const link of url) {
+      const activeListings = link.activeListings;
+      let totalPages = 0;
+      let pageCount = 0;
+
+      do {
+        // Load first Page
+        const tab = await loadTab(link.url);
+        await delay(getRandomInt(3000, 5000));
+
+        await new Promise(resolve => {
+          chrome.scripting.executeScript({
+            args: [activeListings, link.type, downloadImages],
+            target: { tabId: tab.id },
+            function: scrapDataEtsy,
+          }, resolve);
+        });
+
+        pageCount++;
+      } while (pageCount <= totalPages);
+      // Loop through each page
+    }
+
+    if(titles.length > 0) {
+      downloadData(titles);
+    }    
+  } catch (error) {
+    console.error("Error executing script:", error);
+  }
+}
+
+async function retrieveMercariData( downloadImages, mercariURLs) {
+  try {
+    let titles = []; //Array to hold scraped data
+
+    //Use Type to find the URL
+    let url = mercariURLs;
    
     for (const link of url) {
       const activeListings = link.activeListings;
@@ -452,44 +489,6 @@ async function retrieveMercariData(listingType, downloadImages) {
       downloadData(titles);
     }
 
-  } catch (error) {
-    console.error("Error executing script:", error);
-  }
-}
-
-async function retrieveEtsyData(listingType, downloadImages) {
-  try {
-    let titles = []; //Array to hold scraped data
-
-    //Use Type to find the URL
-    let url = getEtsyURLs(listingType);
-   
-    for (const link of url) {
-      const activeListings = link.activeListings;
-      let totalPages = 0;
-      let pageCount = 0;
-
-      do {
-        // Load first Page
-        const tab = await loadTab(link.url);
-        await delay(getRandomInt(3000, 5000));
-
-        await new Promise(resolve => {
-          chrome.scripting.executeScript({
-            args: [activeListings, link.type, downloadImages],
-            target: { tabId: tab.id },
-            function: scrapDataEtsy,
-          }, resolve);
-        });
-
-        pageCount++;
-      } while (pageCount <= totalPages);
-      // Loop through each page
-    }
-
-    if(titles.length > 0) {
-      downloadData(titles);
-    }    
   } catch (error) {
     console.error("Error executing script:", error);
   }

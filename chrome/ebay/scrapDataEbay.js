@@ -56,7 +56,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
           watchers = f.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
           listPrice = parseEbayPrice(f);
-          qty = f.querySelector('td[class="shui-dt-column__availableQuantity shui-dt--right editable inline-editable"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerText;
+          qty = parseAvailableQuantity(f);
         }else{
           divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
           endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
@@ -76,7 +76,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
             
             do{
               await delay(1000);
-            }while(f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).checked == false);
+            }while(!f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).checked);
 
           }
           
@@ -151,12 +151,34 @@ export async function scrapDataEbay(activeListings, downloadImages) {
 
     function parseEbayPrice(priceElement) {
         try{
-            return priceElement.querySelector('td[class="shui-dt-column__price shui-dt--right inline-editable"]').querySelector('div[class="col-price__current"]').querySelector('span').innerHTML.replace('$', '').trim();
+            if(priceElement == null) return "0";
+
+            let price = priceElement.querySelector('td[class="shui-dt-column__price shui-dt--right inline-editable"]').querySelector('div[class="col-price__current"]').querySelector('span').innerText;
+
+            if(price.includes('to')){
+                return price.split('to')[0].replace('$', '').trim();
+            }
+            
+            return price.replace('$', '').trim();
         }
         catch(e){
             console.log(e);
             return "0";
         }
+    }
+
+    function parseAvailableQuantity(element) {
+      try{
+        const availableQuantityElement = element.querySelector(
+            'td[class="shui-dt-column__availableQuantity shui-dt--right editable inline-editable"]'
+        ).querySelector('div[class="shui-dt--text-column"]').querySelector('div');
+    
+        return availableQuantityElement ? availableQuantityElement.innerText : null;
+      }catch(e){
+        console.log(e);
+        return "0";
+      }
+
     }
   
     await checkReadyState();
