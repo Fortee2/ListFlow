@@ -45,17 +45,8 @@ export async function scrapDataEtsy(completedListings, listingType, downloadImag
           console.log(itemLink.href);
           const itmNumber = itemLink.href.split('/')[8].split('?')[0];
           console.log(itmNumber);
-/* 
-          const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
-          const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p'); 
-          let imageUrl = ""; */
-
-         
-         const divLastUpdated = f.querySelector('div.meta-listing-state');  
-
-         const price = f.querySelector('div[id="nondgp-price"]').querySelector('span[class="currency-value"]').innerText;
-         
-  
+          const divLastUpdated = f.querySelector('div.meta-listing-state');  
+          const price = f.querySelector('div[id="nondgp-price"]').querySelector('span[class="currency-value"]').innerText;
           let listingDateType;
   
           switch(listingType) {
@@ -70,10 +61,6 @@ export async function scrapDataEtsy(completedListings, listingType, downloadImag
               listingDateType = 2;
               break;
           }
-  
-/*           if(imageUrl !== "" && downloadImages){
-            chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: itemLink.href.split('/')[5] + '.png'});
-          }  */
 
           bulkData.push({ 
             itemTitle: itemLink.innerHTML,

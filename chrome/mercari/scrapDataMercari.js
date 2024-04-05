@@ -3,13 +3,24 @@ export async function scrapData(completedListings, listingType, downloadImages) 
   
     function checkReadyState() {
       return new Promise((resolve, reject) => {
-        if(document.readyState === 'complete') {
-          console.log('readyState is complete');
-          retrieveMercari().then(resolve);
-        } else {
-          console.log('readyState is not complete');
-          setTimeout(() => checkReadyState().then(resolve), 1000);
+        let timeoutId = setTimeout(() => {
+          clearTimeout(timeoutId);
+          reject(new Error('Page load timed out after 10 seconds'));
+        }, 10000); // 10 seconds timeout
+    
+        function check() {
+          if(document.readyState === 'complete') {
+            clearTimeout(timeoutId);
+            console.log('readyState is complete');
+            retrieveMercari(); 
+            resolve();
+          } else {
+            console.log('readyState is not complete');
+            setTimeout(check, 1000);
+          }
         }
+    
+        check();
       });
     }
   

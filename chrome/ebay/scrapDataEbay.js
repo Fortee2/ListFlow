@@ -52,14 +52,14 @@ export async function scrapDataEbay(activeListings, downloadImages) {
         let listStatus = activeListings;
 
         if(activeListings){
-          divDate = f.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
-          views = f.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
-          watchers = f.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+          divDate = parseEbayDateFromElement(f);
+          views = parseEbayViewsFromElement(f);
+          watchers = parseEbayWatchersFromElement(f);
           listPrice = parseEbayPrice(f);
           qty = parseAvailableQuantity(f);
         }else{
           divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
-          endedStatus = f.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+          endedStatus = parseEbayEndedStatus(f);
           listPrice = f.querySelector('td[class="shui-dt-column__price shui-dt--right"]').querySelector('div[class="col-price__current"]').querySelector('span').innerHTML.replace('$', '').trim();
         }
 
@@ -90,7 +90,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
 
         bulkData.push({ 
           itemTitle: a.innerHTML,
-          itemNumber: a.href.split('/')[4],
+          itemNumber: itemNumber,
           description: a.innerHTML,
           salesChannel: 'eBay',
           active: listStatus,
@@ -99,7 +99,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           views: views,
           likes: watchers,
           price: listPrice
-          });  
+        });  
 
         if(activeListings && downloadImages){
           chrome.runtime.sendMessage({ action: 'downloadEbayImage', itemNumber: a.href.split('/')[4]});           
@@ -107,42 +107,49 @@ export async function scrapDataEbay(activeListings, downloadImages) {
       }
 
       if(zeroItemCount){
-          let buttonClicked = false;
-          let loopCount = 0;
-          let endListingDiv = null;
-
-          alert('stop');
-                      
-          do{
-            
-            await delay(3000);
-            const actionButton = document.querySelectorAll('div[class="action-btn"]')[2].querySelector('button'); 
-            
-            if(actionButton && !buttonClicked){
-              actionButton.focus();
-              actionButton.click();
-              buttonClicked = true;
-            }
-
-            if(buttonClicked){
-              document.getElementById('s0-1-1-19-3-7-36-27-2-28-2-@bulkActionsV2-14-@fake-menu-@content-menu').querySelectorAll('li')[0].querySelector('button').click();
-              endListingDiv = document.querySelector('div[class="se-end-listing__footer-actions"]');
-              await delay(3000);
-              if(endListingDiv != null){
-                endListingDiv.querySelector('button[class="btn btn--primary"]').focus();
-                endListingDiv.querySelector('button[class="btn btn--primary"]').click();
-              }
-            }
-            
-            loopCount++;
-          }while(endListingDiv == null || loopCount < 10);
-          
+          await endListings();
       }
 
       chrome.runtime.sendMessage({ 
         action: 'saveToListingAPI',
         item: bulkData
       });
+    }
+
+    async function endListings() {
+      let buttonClicked = false;
+      let loopCount = 0;
+      let endListingDiv = null;
+
+      alert('stop');
+
+      try{
+        do {
+
+          await delay(3000);
+          const actionButton = document.querySelectorAll('div[class="action-btn"]')[2].querySelector('button');
+
+          if (actionButton && !buttonClicked) {
+            actionButton.focus();
+            actionButton.click();
+            buttonClicked = true;
+          }
+
+          if (buttonClicked) {
+            document.getElementById('s0-1-1-19-3-7-36-27-2-28-2-@bulkActionsV2-14-@fake-menu-@content-menu').querySelectorAll('li')[0].querySelector('button').click();
+            endListingDiv = document.querySelector('div[class="se-end-listing__footer-actions"]');
+            await delay(3000);
+            if (endListingDiv != null) {
+              endListingDiv.querySelector('button[class="btn btn--primary"]').focus();
+              endListingDiv.querySelector('button[class="btn btn--primary"]').click();
+            }
+          }
+
+          loopCount++;
+        } while (endListingDiv == null || loopCount < 10);
+      }catch(e){
+        console.log(e);
+      }
     }
 
     async function delay(ms) {
@@ -178,9 +185,52 @@ export async function scrapDataEbay(activeListings, downloadImages) {
         console.log(e);
         return "0";
       }
-
     }
-  
+    
+    function parseEbayDateFromElement(element) {
+      try{
+        const fromElement = element.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
+    
+        return fromElement ? fromElement : "";
+      }catch(e){
+        console.log(e);
+        return "";
+      }
+    }
+
+    function parseEbayViewsFromElement(element) {
+      try{
+        const viewsElement = element.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
+    
+        return viewsElement ? viewsElement : "0";
+      }catch(e){
+        console.log(e);
+        return "0";
+      }
+    }
+
+    function parseEbayWatchersFromElement(element) {
+      try{
+        const watchersElement = element.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+    
+        return watchersElement ? watchersElement : "0";
+      }catch(e){
+        console.log(e);
+        return "0";
+      }
+    }
+
+    function parseEbayEndedStatus(element) {
+      try{
+        const endedStatusElement = element.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+    
+        return endedStatusElement ? endedStatusElement : "Unsold";
+      }catch(e){
+        console.log(e);
+        return "Unsold";
+      }
+    }
+
     await checkReadyState();
     return  {'result': bulkData, 'count': itemCount};
   }
