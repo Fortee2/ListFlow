@@ -1,7 +1,7 @@
 import  ListingDescriptionPrompt  from './ListingDescriptionPrompt';
 
 export  function fetchListingDescription(data:ListingDescriptionPrompt) {
-   return  fetch('https://localhost:7219/api/Prompt', {
+   return  fetch('http://localhost:5227/api/Prompt', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

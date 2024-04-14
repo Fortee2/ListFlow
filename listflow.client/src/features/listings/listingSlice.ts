@@ -25,7 +25,7 @@ const initialState: ListingState = {
 };
 
 export const fetchListingsByFilter = createAsyncThunk('listings/fetchListingsByFilter', async (filter: Filter) => {
-  const response = await axios.get('https://localhost:7219/api/listing', { params: filter });
+  const response = await axios.get('http://localhost:5227/api/listing', { params: filter });
   return response.data;
 });
 
