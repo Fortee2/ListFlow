@@ -116,7 +116,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
       });
     }
 
-    async function endListings() {
+  async function endListings() {
       let buttonClicked = false;
       let loopCount = 0;
       let endListingDiv = null;
@@ -138,8 +138,12 @@ export async function scrapDataEbay(activeListings, downloadImages) {
           if (buttonClicked) {
             document.getElementById('s0-1-1-19-3-7-36-27-2-28-2-@bulkActionsV2-14-@fake-menu-@content-menu').querySelectorAll('li')[0].querySelector('button').click();
             endListingDiv = document.querySelector('div[class="se-end-listing__footer-actions"]');
+
             await delay(3000);
+            console.log(endListingDiv);
+            
             if (endListingDiv != null) {
+              
               endListingDiv.querySelector('button[class="btn btn--primary"]').focus();
               endListingDiv.querySelector('button[class="btn btn--primary"]').click();
             }
@@ -150,7 +154,7 @@ export async function scrapDataEbay(activeListings, downloadImages) {
       }catch(e){
         console.log(e);
       }
-    }
+  }
 
     async function delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));

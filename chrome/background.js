@@ -5,6 +5,7 @@ import {mercariConstants} from "./mercari/mercariConstants.js";
 import { correctPriceMercari } from "./mercari/priceMercari.js";
 import { scrapDataEtsy } from "./etsy/scrapDataEtsy.js";
 import { retrieveItemDetails } from '../mercari/itemPageDetails.js';
+import { endEbayListings } from "./ebay/endListings.js";
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
@@ -62,7 +63,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           }
           break;
         case "eBay":
-          await retrieveEbayData(listingType, downloadImages);
+/*           await endEbayInactive(listingType).then(async () => {
+            await retrieveEbayData(listingType, downloadImages);
+          }); */
+          await endEbayInactive(listingType);
           break;
         case "Etsy":
           await retrieveEtsyData(listingType, downloadImages);
@@ -403,6 +407,31 @@ async function retrieveEbayData(listingType, downloadImages) {
 
       processQueue(); // process the queue
             
+    }
+  } catch (error) {
+    console.error("Error executing script:", error);
+  }
+}
+
+async function endEbayInactive(listingType) {
+  try {
+    if(listingType !== 'active' && listingType !== 'all') {
+      return;
+    }
+
+    const urls =  searchEbayURLs('active');
+
+    for(const url of urls){
+      let pageCount = 1;
+   
+      const tab = await getActiveTab(url.url, pageCount, "eBay");
+      await delay(getRandomInt(5000, 30000));
+      await new Promise(resolve => {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: endEbayListings,
+        }, resolve);
+      });
     }
   } catch (error) {
     console.error("Error executing script:", error);
