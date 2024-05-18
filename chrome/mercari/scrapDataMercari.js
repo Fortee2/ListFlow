@@ -94,10 +94,8 @@ export async function scrapData(completedListings, listingType, downloadImages) 
               listingDateType = 2;
               break;
           }
-  
-          if(imageUrl !== "" && downloadImages){
-            chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
-          } 
+
+          var parsedDate = parseDate(divLastUpdated.innerHTML);
 
           bulkData.push({ 
             itemTitle: ele.innerHTML,
@@ -108,15 +106,19 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             likes: divLike.innerHTML,
             views: divViews.innerHTML,
             price: price,
-            listingDate: parseDate(divLastUpdated.innerHTML),
+            listingDate: parsedDate,
             listingDateType: listingDateType,
             shipping: '',
             shippingCost: '',
             shippingService: '',
             shippingWeight: '',
            });
+
+            if(imageUrl !== "" && downloadImages){
+              chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
+            } 
         });
-  
+
         chrome.runtime.sendMessage({ 
           action: 'saveToListingAPI',
           item: bulkData
@@ -166,4 +168,3 @@ function readTotalItems() {
   let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
   return counts;
 }
-

@@ -56,8 +56,6 @@ export async function endEbayListings(){
         let loopCount = 0;
         let endListingDiv = null;
   
-        alert('stop');
-  
         try{
           do {
             const actionButton = document.querySelectorAll('div[class="action-btn"]')[2].querySelector('button');

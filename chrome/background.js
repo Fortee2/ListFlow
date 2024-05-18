@@ -6,6 +6,7 @@ import { correctPriceMercari } from "./mercari/priceMercari.js";
 import { scrapDataEtsy } from "./etsy/scrapDataEtsy.js";
 import { retrieveItemDetails } from '../mercari/itemPageDetails.js';
 import { endEbayListings } from "./ebay/endListings.js";
+import { removeInactive } from "./mercari/removeInactive.js";
 
 let queue = [];
 let imageQueue = [];  // queue for image downloads
@@ -18,32 +19,33 @@ const priceChanges = new Map();
 let isDownloading = false;
 let isDownloadingImage = false;
 let oldTab = [];
+let serverURI = "http://demo.api.com";
 
 chrome.runtime.onInstalled.addListener(() => {
   // Set Default Settings
-  chrome.storage.sync.get('serverURI', function(data) {
-    if(data.serverURI === undefined){
-      chrome.storage.sync.set('serverURI',  "http://demo.api.com");
-      }
+  chrome.storage.sync.get({
+    serverURI: "http://demo.api.com",
+    createExport: false,
+    updatePrice: false
+  }, function(data) {
+    serverURI = data.serverURI;
+    // Use data.createExport and data.updatePrice as needed
   });
-
-  chrome.storage.sync.get('createExport', function(data) {
-    if(data.createExport === undefined){
-      chrome.storage.sync.set('createExport',  false);
-      }
-  });
-
-  chrome.storage.sync.get('updatePrice', function(data) {
-    if(data.updatePrice === undefined){
-      chrome.storage.sync.set('updatePrice',  false);
-    }
-  });
-
 });
 
-chrome.runtime.onStartup.addListener(() => {
-  loadGlobalSettings();
+
+// Load settings when the extension is loaded
+chrome.storage.sync.get({
+  serverURI: "http://demo.api.com",
+  createExport: false,
+  updatePrice: false
+}, function(data) {
+  serverURI = data.serverURI;
+  createExport = data.createExport;
+  updatePrice = data.updatePrice;
 });
+
+// Rest of your code...
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
@@ -55,7 +57,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
       switch(currentSalesChannel) {
         case "Mercari":
-          await retrieveMercariData(downloadImages, searchMercariURLs(listingType));
+          await retrieveMercariData(downloadImages, searchMercariURLs(listingType)).then(async () => {
+            await removeInactiveItems();
+          }); 
+
           if(updatePrice){
             getMispricedItems().then(() => {
               correctPrice();
@@ -63,10 +68,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           }
           break;
         case "eBay":
-/*           await endEbayInactive(listingType).then(async () => {
+          await endEbayInactive(listingType).then(async () => {
             await retrieveEbayData(listingType, downloadImages);
-          }); */
-          await endEbayInactive(listingType);
+          }); 
           break;
         case "Etsy":
           await retrieveEtsyData(listingType, downloadImages);
@@ -105,16 +109,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
 });
 
-function loadGlobalSettings() {
-  chrome.storage.sync.get('updatePrice', function(data) {
-    updatePrice = data.updatePrice;
-  });
 
-  chrome.storage.sync.get('createExport', function(data) {
-    createExport = data.createExport;
-  });
-
-}
 
 let tabId; // The ID of the tab you"re interested in
 let isChromeRunning = true;
@@ -337,7 +332,7 @@ async function saveItemToDatabase(item) {
       item = JSON.stringify(item, null, 2); // Pretty print the JSON
     }
 
-    const response = await fetch("http://ec2-54-82-24-126.compute-1.amazonaws.com/api/BulkListing", {
+    const response = await fetch(`${serverURI}/api/BulkListing`, {
     //const response = await fetch("https://localhost:7219/api/BulkListing", {
       method: "POST",
       headers: {
@@ -356,7 +351,7 @@ async function saveItemToDatabase(item) {
 
 function getMispricedItems() {
   return new Promise(resolve => {
-    fetch(`http://ec2-54-82-24-126.compute-1.amazonaws.com/api/Listing/mispriced`).then(response => response.json()).then(data => {
+    fetch(`${serverURI}/api/Listing/mispriced`).then(response => response.json()).then(data => {
         if(data.success  ){
           for(const item of data.data){
             if(item.itemNumber.startsWith("m")){
@@ -471,6 +466,24 @@ async function retrieveEtsyData(listingType, downloadImages) {
     if(titles.length > 0) {
       downloadData(titles);
     }    
+  } catch (error) {
+    console.error("Error executing script:", error);
+  }
+}
+
+async function removeInactiveItems() {
+  try {
+    const urls =  searchMercariURLs('inactive')[0];
+
+    const tab = await loadTab(urls.url);
+    await delay(getRandomInt(5000, 30000));
+    await new Promise(resolve => {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: removeInactive,
+      }, resolve);
+    });
+    
   } catch (error) {
     console.error("Error executing script:", error);
   }

@@ -1,8 +1,7 @@
 export async function scrapDataEbay(activeListings, downloadImages) {
     let bulkData = [];
     let itemCount = 0;
-    let zeroItemCount = 0;
-  
+    
     async function  checkReadyState() {
       return new Promise((resolve, reject) => {
         if(document.readyState === 'complete') {
@@ -68,20 +67,8 @@ export async function scrapDataEbay(activeListings, downloadImages) {
         let a = div.querySelector('a');
         let itemNumber = a.href.split('/')[4];
 
-        if (activeListings) {
-          if(qty == '0'){
-            zeroItemCount++;
-            f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).focus();
-            f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).click();
-            
-            do{
-              await delay(1000);
-            }while(!f.querySelector(`input[id="shui-dt-checkone-${itemNumber}"]`).checked);
-
-          }
-          
+        if (activeListings) {        
           listingType = 0;
-          
         } else if (endedStatus === "Unsold") {
           listingType = 1;
         } else {
@@ -106,58 +93,10 @@ export async function scrapDataEbay(activeListings, downloadImages) {
         } 
       }
 
-      if(zeroItemCount){
-          await endListings();
-      }
-
       chrome.runtime.sendMessage({ 
         action: 'saveToListingAPI',
         item: bulkData
       });
-    }
-
-  async function endListings() {
-      let buttonClicked = false;
-      let loopCount = 0;
-      let endListingDiv = null;
-
-      alert('stop');
-
-      try{
-        do {
-
-          await delay(3000);
-          const actionButton = document.querySelectorAll('div[class="action-btn"]')[2].querySelector('button');
-
-          if (actionButton && !buttonClicked) {
-            actionButton.focus();
-            actionButton.click();
-            buttonClicked = true;
-          }
-
-          if (buttonClicked) {
-            document.getElementById('s0-1-1-19-3-7-36-27-2-28-2-@bulkActionsV2-14-@fake-menu-@content-menu').querySelectorAll('li')[0].querySelector('button').click();
-            endListingDiv = document.querySelector('div[class="se-end-listing__footer-actions"]');
-
-            await delay(3000);
-            console.log(endListingDiv);
-            
-            if (endListingDiv != null) {
-              
-              endListingDiv.querySelector('button[class="btn btn--primary"]').focus();
-              endListingDiv.querySelector('button[class="btn btn--primary"]').click();
-            }
-          }
-
-          loopCount++;
-        } while (endListingDiv == null || loopCount < 10);
-      }catch(e){
-        console.log(e);
-      }
-  }
-
-    async function delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function parseEbayPrice(priceElement) {
