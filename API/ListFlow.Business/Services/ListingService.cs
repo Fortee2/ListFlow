@@ -6,6 +6,7 @@ using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.DTO;
 using ListFlow.Business.Enums;
+using System.Reflection.Metadata;
 
 namespace ListFlow.Business.Services
 {
@@ -282,5 +283,29 @@ namespace ListFlow.Business.Services
 
             return new ServiceResult<Listing>(listing);
         }
+    
+        public void MarkSold(string itemNumber, string soldDate)
+        {
+            var listing = _listings.FindByItemNumber(itemNumber);
+
+            if (listing == null)
+            {
+                throw new Exception("Listing not found.");
+            }
+
+            DateTime parsedDate;
+
+            if (!DateTime.TryParse(soldDate, out parsedDate))
+            {
+                parsedDate = DateTime.Now;
+            }
+
+            listing.DateSold = parsedDate;
+            listing.Active = false;
+            listing.LastUpdated = DateTime.Now;
+
+            _listings.Update(listing);
+        }
+    
     }
 }

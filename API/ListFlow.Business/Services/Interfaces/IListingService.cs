@@ -30,5 +30,7 @@ namespace  ListFlow.Business.Services.Interfaces{
         Task CreateMetrics(ListingDTO[] listingDtos);
 
         Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
+
+        void MarkSold(string itemNumber, string soldDate);
     }
 }

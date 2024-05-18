@@ -16,8 +16,8 @@ namespace ListFlow.Infrastructure.Repository
         public Listing? FindByItemNumber(string ItemNumber)
         {
             var listing = (from list in this._dbContext.Listings
-                           where list.ItemNumber.ToLower() == ItemNumber.ToLower()
-                           select list).FirstOrDefault();
+                       where list.ItemNumber.ToLower() == ItemNumber.ToLower()
+                       select list).FirstOrDefault();
 
             return listing;
         }

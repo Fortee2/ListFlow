@@ -1,18 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ListFlow.Business.DTO;
 using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.DTO;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
-using ListFlow.OpenAI.Dto;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ListFlow.API.Controllers{
+namespace ListFlow.API.Controllers;
 
-    [ApiController]
+[ApiController]
     [Route("api/[controller]")]
     public class ListingController : ControllerBase
     {
@@ -23,7 +18,6 @@ namespace ListFlow.API.Controllers{
             _listingService = listingService;
         }
 
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Listing>>> GetAllListingsAsync([FromQuery]ListingFilter filter)
         {
@@ -31,6 +25,13 @@ namespace ListFlow.API.Controllers{
             return Ok(listing);
         }
      
+        [HttpPut("{itemNumber}/sold")]
+        public IActionResult MarkSold(string itemNumber, [FromBody] SoldDateDto soldDate )
+        {
+            _listingService.MarkSold(itemNumber, soldDate.SoldDate);
+            return NoContent();
+        }
+
         /// <summary>
         /// Gets the matching crossposted listing for the item number passed in.
         /// </summary>
@@ -99,7 +100,7 @@ namespace ListFlow.API.Controllers{
             }
 
             return NoContent();
-        }
+        } 
 
         [HttpGet("mispriced")]
         public ActionResult<IEnumerable<PriceMismatchDto>> GetMispricedListingsAsync()
@@ -107,5 +108,5 @@ namespace ListFlow.API.Controllers{
             var listing =  _listingService.MispricedListings();
             return Ok(listing);
         }
+
     }
-}
