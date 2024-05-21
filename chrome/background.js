@@ -1,4 +1,4 @@
-import { scrapDataEbay, scrapDataEbayImages } from "./ebay/scrapDataEbay.js";
+import { scrapDataEbay, scrapEbayImages, scrapEbayDescriptions } from "./ebay/scrapDataEbay.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
 import { searchEbayURLs, searchMercariURLs, getEtsyURLs, getMercariItemURL } from './urls.js';
 import {mercariConstants} from "./mercari/mercariConstants.js";
@@ -8,11 +8,14 @@ import { retrieveItemDetails } from '../mercari/itemPageDetails.js';
 import { endEbayListings } from "./ebay/endListings.js";
 import { removeInactive } from "./mercari/removeInactive.js";
 
-let queue = [];
+let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
+let descQueue = [];  // queue for description updates
 let currentSalesChannel = '';
 let updatePrice = false;
 let createExport = false;
+let zeroQtyQueue = new Map();
+let downloadImages = false;
 
 const priceChanges = new Map();
 
@@ -23,14 +26,17 @@ let serverURI = "http://demo.api.com";
 
 chrome.runtime.onInstalled.addListener(() => {
   // Set Default Settings
-  chrome.storage.sync.get({
-    serverURI: "http://demo.api.com",
-    createExport: false,
-    updatePrice: false
-  }, function(data) {
-    serverURI = data.serverURI;
-    // Use data.createExport and data.updatePrice as needed
+  chrome.storage.sync.set({ serverURI: "http://demo.api.com" }, function() {
+    console.log('Preferences saved.');
   });
+
+  chrome.storage.sync.set({ createExport: false }, function() {
+    console.log('Preferences saved.');
+  });
+
+  chrome.storage.sync.set({ updatePrice: false  }, function() {
+    console.log('Preferences saved.');
+  })
 });
 
 
@@ -48,13 +54,40 @@ chrome.storage.sync.get({
 // Rest of your code...
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-
-  if(request.action === "retrieveSalesChannel") {
-    try{
+  console.log("Received message:", request.action);
+  switch(request.action) {
+    case "downloadImage":
+      imageQueue.push({"url":request.url, "fileName":request.filename}); // enqueue the request
+      processImageQueue(); // process the queue
+      break;
+    case "downloadEbayImage":
+      ebayImageQueue.push(request.itemNumber); // enqueue the request
+      processQueue(); // process the queue
+      break;
+    case "downloadEbayDesc":
+      descQueue.push(request.itemNumber); // enqueue the request
+      break;
+    case "saveToListingAPI":
+      saveItemToDatabase(request.item);
+      break;
+    case "queueEbayNoQty":
+      zeroQtyQueue.push(request.itemNumber);
+      break;
+    case "downloadData":
+      downloadData(request.data);
+      break;
+    case "updateDesc":  
+      saveDescToDatabase(request.desc, request.item);
+      break; 
+    case "updatePostage":
+      //TODO: Get the weight and dimensions out of the request object
+      savePostageToDatabase(request.postage, request.item);
+      break;
+    case "retrieveSalesChannel":
       currentSalesChannel = request.salesChannel;
       let listingType = request.listingType;
-      let downloadImages = request.downloadImages;
-
+      downloadImages = request.downloadImages;
+  
       switch(currentSalesChannel) {
         case "Mercari":
           await retrieveMercariData(downloadImages, searchMercariURLs(listingType)).then(async () => {
@@ -70,46 +103,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         case "eBay":
           await endEbayInactive(listingType).then(async () => {
             await retrieveEbayData(listingType, downloadImages);
-          }); 
+          }).then(() => {
+            processDescQueue();
+          })
           break;
         case "Etsy":
           await retrieveEtsyData(listingType, downloadImages);
           break;
-      }
-
-    }catch(error) {
-      console.error("Error executing script:", error);
-    }
-  }
-  else if (request.action === "downloadImage") {
-    imageQueue.push({"url":request.url, "fileName":request.filename}); // enqueue the request
-    processImageQueue(); // process the queue
-  }
-  else if (request.action === "downloadEbayImage") {
-    queue.push(request.itemNumber); // enqueue the request
-  }
-  else if (request.action === "saveToListingAPI") {
-    saveItemToDatabase(request.item);
-  }
-  else if (request.action === "queueEbayNoQty") {
-    zeroQtyQueue.push(request.itemNumber);
-  }
-  else if (request.action === "parseGoodwill") {
-    const tab = await loadTab("https://shopgoodwill.com/item/187608532");
-    await delay(getRandomInt(1000, 30000));
-    await new Promise(resolve => {
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: scrapGoodwill,
-      }, resolve);
-    });
-  }
-  else if (request.action === "downloadData") {
-    downloadData(request.data);
+      } 
+      break;
   }
 });
-
-
 
 let tabId; // The ID of the tab you"re interested in
 let isChromeRunning = true;
@@ -176,8 +180,7 @@ async function processImageQueue() {
       if(oldTab.length > 5){
         chrome.tabs.remove(oldTab.shift());
       }
-      delay(getRandomInt(5000, 30000));
-      resolve();
+      delay(getRandomInt(5000, 30000)).then(resolve());
     });
   });
 
@@ -186,29 +189,81 @@ async function processImageQueue() {
 }
 
 async function processQueue() {
-  if (queue.length === 0 || isDownloading) {
+  if (ebayImageQueue.length === 0 || isDownloading) {
     return;
   }
 
+  let itemNumber = ebayImageQueue.shift(); // dequeue the request  
   isDownloading = true;
-  let itemNumber = queue.shift(); // dequeue the request
 
-  delay(getRandomInt(5000, 30000));
+  delay(getRandomInt(5000, 10000));
   const tab = await loadTab("https://www.ebay.com/itm/" + itemNumber);
-
   await new Promise((resolve) => {
     chrome.scripting.executeScript({
-      args: [itemNumber],
+      args: [itemNumber, downloadImages],
       target: { tabId: tab.id },
-      function: scrapDataEbayImages,
+      function: scrapEbayImages,
     }, () => {
       oldTab.push(tab.id);
       resolve();
     });
   });
 
+  descQueue.push(itemNumber); // enqueue the request
   isDownloading = false;
+  await delay(getRandomInt(5000, 30000));
   processQueue(); // recursively process the next request in the queue
+}
+
+async function processDescQueue() {
+  
+  if(oldTab.length > 5){
+    chrome.tabs.remove(oldTab.shift());
+  }
+
+  if (descQueue.length === 0 || isDownloading) {
+    return;
+  }
+
+  let itemNumber = descQueue.shift(); // dequeue the request  
+  isDownloading = true;
+
+  const tab = await loadTab(`https://vi.vipr.ebaydesc.com/itmdesc/${itemNumber}`);
+  await new Promise((resolve, reject) => {
+    chrome.scripting.executeScript({
+      args: [itemNumber],
+      target: { tabId: tab.id },
+      function: scrapEbayDescriptions,
+    }).then(() => {
+      oldTab.push(tab.id);
+      isDownloading = false;;
+      delay(getRandomInt(5000, 30000)).then(processDescQueue()).then(resolve()); // recursively process the next request in the queue
+    }).catch((error) => {
+      console.error("Error executing script:", error);
+      reject(error);
+    });
+  });
+
+  await delay(getRandomInt(5000, 30000));
+  const newTab = await loadTab(`https://www.ebay.com/lstng?draftId=${itemNmber}&mode=ReviseItem`);
+
+  await new Promise((resolve, reject) => {
+    chrome.scripting.executeScript({
+      args: [itemNumber],
+      target: { tabId: tab.id },
+      function: scrapEbayPostage,
+    }).then(() => {
+      oldTab.push(tab.id);
+      isDownloading = false;;
+      delay(getRandomInt(5000, 30000)).then(processDescQueue()).then(resolve()); // recursively process the next request in the queue
+    }).catch((error) => {
+      console.error("Error executing script:", error);
+      reject(error);
+    });
+  });
+
+
+
 }
 
 async function loadTab(targetUrl) {
@@ -326,6 +381,27 @@ function delay(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
+async function savePostageToDatabase(postage, itemNumber) {
+}
+
+async function saveDescToDatabase(desc, itemNumber) {
+  try {
+    const response = await fetch(`${serverURI}/api/listing/${itemNumber}/description`, {
+      method: "Put",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({description:desc}),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to save item to the database:", desc);
+    }
+  } catch (error) {
+    console.error("Error saving item to the database:", error);
+  }
+}
+
 async function saveItemToDatabase(item) {
   try {
     if (typeof item === "object") {
@@ -333,7 +409,6 @@ async function saveItemToDatabase(item) {
     }
 
     const response = await fetch(`${serverURI}/api/BulkListing`, {
-    //const response = await fetch("https://localhost:7219/api/BulkListing", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -356,6 +431,22 @@ function getMispricedItems() {
           for(const item of data.data){
             if(item.itemNumber.startsWith("m")){
                 priceChanges.set(item.itemNumber, item.crossPostPrice);
+            }
+          }
+          resolve(); 
+        }
+    });
+
+  });
+}
+
+function getSoldItems() {
+  return new Promise(resolve => {
+    fetch(`${serverURI}/api/Listing/sold`).then(response => response.json()).then(data => {
+        if(data.success  ){
+          for(const item of data.data){
+            if(item.itemNumber.startsWith("m")){
+                zeroQtyQueue.set(item.itemNumber, item.crossPostPrice);
             }
           }
           resolve(); 

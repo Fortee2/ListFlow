@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Listing Retrieval",
-  "version": "2024.5.0.3",
+  "version": "2024.5.0.9",
   "description": "Retrieve listing from a website",
   "permissions": [
     "storage",
@@ -14,7 +14,8 @@
     "https://www.mercari.com/*",
     "https://www.ebay.com/*",
     "https://www.etsy.com/*",
-    "https://shopgoodwill.com/*"
+    "https://shopgoodwill.com/*",
+    "https://vi.vipr.ebaydesc.com/*"
   ],
   "action": {
     "default_popup": "popup.html"
