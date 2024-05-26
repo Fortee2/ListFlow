@@ -1,32 +1,31 @@
 {
-  "manifest_version": 3,
-  "name": "Listing Retrieval",
-  "version": "2024.5.0.9",
-  "description": "Retrieve listing from a website",
-  "permissions": [
-    "storage",
-    "tabs",
-    "activeTab",
-    "scripting",
-    "downloads"
-  ],
-  "host_permissions": [
-    "https://www.mercari.com/*",
-    "https://www.ebay.com/*",
-    "https://www.etsy.com/*",
-    "https://shopgoodwill.com/*",
-    "https://vi.vipr.ebaydesc.com/*"
-  ],
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
-  "options_page": "options.html",
-  "icons":{
-    "128": "ListFlow_icon.png"
-  }
-
+	"manifest_version": 3,
+	"name": "Listing Retrieval",
+	"version": "2024.5.1.1",
+	"description": "Retrieve listing from a website",
+	"permissions": [
+		"storage",
+		"tabs",
+		"activeTab",
+		"scripting",
+		"downloads"
+	],
+	"host_permissions": [
+		"https://www.mercari.com/*",
+		"https://www.ebay.com/*",
+		"https://www.etsy.com/*",
+		"https://shopgoodwill.com/*",
+		"https://vi.vipr.ebaydesc.com/*"
+	],
+	"action": {
+		"default_popup": "popup.html"
+	},
+	"background": {
+		"service_worker": "background.js",
+		"type": "module"
+	},
+	"options_page": "options.html",
+	"icons": {
+		"128": "ListFlow_icon.png"
+	}
 }
