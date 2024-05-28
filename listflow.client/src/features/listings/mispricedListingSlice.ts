@@ -18,7 +18,7 @@ const initialState: MispricedListingState = {
 
 // Define the async thunk for fetching mispriced listings
 export const fetchMispricedListings = createAsyncThunk('listings/fetchMispricedListings', async () => {
-  const response = await axios.get<MispricedListing[]>('https://localhost:7219/api/Listing/mispriced');
+  const response = await axios.get<MispricedListing[]>('http://localhost:5227/api/Listing/mispriced');
   return response.data;
 });
 

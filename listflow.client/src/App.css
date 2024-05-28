@@ -112,3 +112,19 @@ button:disabled {
   opacity: 0.5; /* decrease opacity to make the button appear grayed out */
   cursor: not-allowed; /* change cursor to not-allowed to indicate the button cannot be clicked */
 }
+
+/* Add your existing styles for td */
+td {
+  padding: 10px;
+  border: 1px solid black;
+}
+
+/* Add styles for alternating row colors */
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+

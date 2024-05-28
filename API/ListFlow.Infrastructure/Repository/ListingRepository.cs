@@ -16,8 +16,8 @@ namespace ListFlow.Infrastructure.Repository
         public Listing? FindByItemNumber(string ItemNumber)
         {
             var listing = (from list in this._dbContext.Listings
-                           where list.ItemNumber.ToLower() == ItemNumber.ToLower()
-                           select list).FirstOrDefault();
+                       where list.ItemNumber.ToLower() == ItemNumber.ToLower()
+                       select list).FirstOrDefault();
 
             return listing;
         }
@@ -62,19 +62,29 @@ namespace ListFlow.Infrastructure.Repository
             return listing;
         }
 
-        public IEnumerable<PriceMismatchDto> MispricedListings()
+        /// <summary>
+        /// Returns a list of listings that are mispriced.  The anchor sales channel is the sales channel that has the correct price.
+        /// </summary>
+        /// <param name="anchorSalesChannel">The GUID for the Sales Channel that has the correct price</param>
+        /// <returns>JSON Object of misprices items</returns>
+        public IEnumerable<PriceMismatchDto> MispricedListings(Guid anchorSalesChannel)
         {
             var listing = (from list in this._dbContext.Listings
                              join  scList in this._dbContext.Listings on list.CrossPostId equals scList.CrossPostId
                            where list.Active
+                            && scList.Active
                             && list.Price > scList.Price
-                           orderby list.DateListed descending
+                            && scList.SalesChannel.Id == anchorSalesChannel
+                            && list.SalesChannel.Id != scList.SalesChannel.Id
+                           orderby list.Price descending
                            select new PriceMismatchDto(
                                 list.ItemNumber,
                                 list.ItemTitle,
                                 list.Price,
                                 scList.Price,
-                                scList.ItemNumber
+                                scList.ItemNumber,
+                                list.SalesChannel.Id.ToString(),
+                                scList.SalesChannel.Id.ToString()
                            )).AsEnumerable();
 
             return listing;
@@ -111,6 +121,23 @@ namespace ListFlow.Infrastructure.Repository
             var listings = await query.ToListAsync();
 
             return listings;
+        }
+
+        public Dictionary<string, string> GetSoldListings()
+        {
+            var listing = (from list in this._dbContext.Listings
+                join  scList in this._dbContext.Listings on list.CrossPostId equals scList.CrossPostId
+                where list.DateSold != null
+                      && scList.Active 
+                      && list.SalesChannel.Id != scList.SalesChannel.Id
+                orderby list.Price descending
+                select new
+                {
+                    scList.SalesChannel.Name,
+                    scList.ItemNumber
+                }).ToDictionary(x => x.ItemNumber, x => x.Name);
+
+            return listing;
         }
     }
 }

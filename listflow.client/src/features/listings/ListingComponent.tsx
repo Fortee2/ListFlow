@@ -67,32 +67,37 @@ const ListingComponent = () => {
           <input type="date" name="endDate" onChange={handleFilterChange} />
         </label>
       </form>
-      <table>
-        <thead>
-          <tr>
-            <th>Item Number</th>
-            <th>Item Title</th>
-            <th>Price</th>
-            <th>Date Listed</th>
-            <th>Date Ended</th>
-            <th>Date Sold</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentPageListings().map((listing) => (
-            <tr key={listing.id}>
-              <td>{listing.itemNumber}</td>
-              <td>{listing.itemTitle}</td>
-              <td>{listing.price}</td>
-              <td>{listing.dateListed}</td>
-              <td>{listing.dateEnded}</td>
-              <td>{listing.dateSold}</td>
-              <td><button>Inactive</button></td>
-              <td><button>Fees</button></td>
-            </tr> 
-          ))}
-        </tbody>
-      </table>
+      <div className='center'>
+        <table style={{border: "1px solid black", padding: "10px"}}>
+          <thead style={{backgroundColor:"white", fontStyle:"bold"}}>
+            <tr>
+              <th>Item Number</th>
+              <th>Item Title</th>
+              <th>Price</th>
+              <th>Date Listed</th>
+              <th>Date Ended</th>
+              <th>Date Sold</th>
+              <th>Active?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentPageListings().map((listing) => (
+              <tr key={listing.id}>
+                <td>{listing.itemNumber}</td>
+                <td>{listing.itemTitle}</td>
+                <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(listing.price)}</td>
+                <td>{listing.dateListed}</td>
+                <td>{listing.dateEnded}</td>
+                <td>{listing.dateSold}</td>
+                <td>{listing.active ? "Yes" : "No"}</td>
+                <td><button>Inactive</button></td>
+                <td><button>Fees</button></td>
+              </tr> 
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <button onClick={previousPage} disabled={page === 1}>
         Previous Page
       </button>

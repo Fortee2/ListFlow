@@ -10,7 +10,11 @@ document.getElementById('openOptions').addEventListener('click', function() {
 
 document.getElementById('selectChannel').addEventListener('change', function() {
   let selectedOption = this.value;
+  //TODO:  Add logic to show/hide the listing type select list
+});
 
+document.getElementById('snipeButton').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'parseGoodwill' });
 });
 
 function getSelectedStatusValue() {

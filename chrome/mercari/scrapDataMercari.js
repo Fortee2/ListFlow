@@ -3,36 +3,47 @@ export async function scrapData(completedListings, listingType, downloadImages) 
   
     function checkReadyState() {
       return new Promise((resolve, reject) => {
-        if(document.readyState === 'complete') {
-          console.log('readyState is complete');
-          retrieveMercari().then(resolve);
-        } else {
-          console.log('readyState is not complete');
-          setTimeout(() => checkReadyState().then(resolve), 1000);
+        let timeoutId = setTimeout(() => {
+          clearTimeout(timeoutId);
+          reject(new Error('Page load timed out after 10 seconds'));
+        }, 10000); // 10 seconds timeout
+    
+        function check() {
+          if(document.readyState === 'complete') {
+            clearTimeout(timeoutId);
+            console.log('readyState is complete');
+            retrieveMercari(); 
+            resolve();
+          } else {
+            console.log('readyState is not complete');
+            setTimeout(check, 1000);
+          }
         }
+    
+        check();
       });
     }
   
     function parseDate(dateString) {
       if (dateString.includes('ago')) {
-        let timeportion = dateString.split('ago')[0].trim();
+        let timePortion = dateString.split('ago')[0].trim();
       
-        if (timeportion.includes('h')) {
-          let hours = timeportion.split('h')[0].trim();
+        if (timePortion.includes('h')) {
+          let hours = timePortion.split('h')[0].trim();
           let date = new Date();
           date.setHours(date.getHours() - hours);
           return date.toISOString();
         }
     
-        if (timeportion.includes('d')) {  
-          let days = timeportion.split('d')[0].trim();
+        if (timePortion.includes('d')) {  
+          let days = timePortion.split('d')[0].trim();
           let date = new Date();
           date.setDate(date.getDate() - days);
           return date.toISOString();
         }
     
-        if (timeportion.includes('m')) {
-          let minutes = timeportion.split('m')[0].trim();
+        if (timePortion.includes('m')) {
+          let minutes = timePortion.split('m')[0].trim();
           let date = new Date();
           date.setMinutes(date.getMinutes() - minutes);
           return date.toISOString();
@@ -83,10 +94,8 @@ export async function scrapData(completedListings, listingType, downloadImages) 
               listingDateType = 2;
               break;
           }
-  
-          if(imageUrl !== "" && downloadImages){
-            chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
-          } 
+
+          var parsedDate = parseDate(divLastUpdated.innerHTML);
 
           bulkData.push({ 
             itemTitle: ele.innerHTML,
@@ -97,30 +106,31 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             likes: divLike.innerHTML,
             views: divViews.innerHTML,
             price: price,
-            listingDate: parseDate(divLastUpdated.innerHTML),
-            listingDateType: listingDateType
+            listingDate: parsedDate,
+            listingDateType: listingDateType,
+            shipping: '',
+            shippingCost: '',
+            shippingService: '',
+            shippingWeight: '',
            });
 
-/*           console.log(itmNumber); 
-          fetch(`http://ec2-54-82-24-126.compute-1.amazonaws.com/api/Listing/${itmNumber}/crosspost`).then(response => response.json()).then(data => {
-            if(data.success  && +data.data.price < +price){
-              chrome.runtime.sendMessage({ action: 'queuePriceChange', itemNumber: itmNumber, price: data.data.price});
-            }
-          });  */
-
+            if(imageUrl !== "" && downloadImages){
+              chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
+            } 
         });
-  
+
         chrome.runtime.sendMessage({ 
           action: 'saveToListingAPI',
           item: bulkData
         });
-  
+
         resolve(bulkData);
       });
     }
+
     await checkReadyState(); 
     return bulkData;
-  }
+}
 
 export async function retrievePageCount(listingType, tab){
   const resultCnt = await new Promise(resolve => {
@@ -158,4 +168,3 @@ function readTotalItems() {
   let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
   return counts;
 }
-

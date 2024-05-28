@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SalesChannel> SalesChannels { get; set; }
     public DbSet<Listing> Listings { get; set; }
     public DbSet<ListingMetric> ListingMetrics { get; set; }
+    public DbSet<Postage> Postages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SalesChannel>().ToTable("SalesChannel");
         modelBuilder.Entity<Listing>().ToTable("Listing");
         modelBuilder.Entity<ListingMetric>().ToTable("ListingMetric");
+        modelBuilder.Entity<Postage>().ToTable("Postage");
 
         modelBuilder.Entity<Listing>()
             .HasOne(l => l.SalesChannel)

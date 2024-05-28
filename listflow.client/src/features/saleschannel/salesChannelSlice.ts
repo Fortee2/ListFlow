@@ -10,7 +10,7 @@ interface SalesChannelState {
 }
 
 export const fetchSalesChannels = createAsyncThunk('salesChannels/fetchSalesChannels', async () => {
-  const response = await axios.get('https://localhost:7219/api/saleschannel');
+  const response = await axios.get('http://localhost:5227/api/saleschannel');
   return response.data.data;
 });
 

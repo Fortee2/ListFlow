@@ -1,28 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ListFlow.Business.DTO;
 using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.DTO;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
-using ListFlow.OpenAI.Dto;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ListFlow.API.Controllers{
+namespace ListFlow.API.Controllers;
 
-    [ApiController]
+[ApiController]
     [Route("api/[controller]")]
     public class ListingController : ControllerBase
     {
         private readonly IListingService _listingService;
+        private readonly  IBasicService<Postage> _postageService;
 
-        public ListingController(IListingService listingService)
+        public ListingController(IListingService listingService,  IBasicService<Postage> postageService)
         {
             _listingService = listingService;
+            _postageService = postageService;
         }
-
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Listing>>> GetAllListingsAsync([FromQuery]ListingFilter filter)
@@ -31,6 +27,13 @@ namespace ListFlow.API.Controllers{
             return Ok(listing);
         }
      
+        [HttpPut("{itemNumber}/sold")]
+        public IActionResult MarkSold(string itemNumber, [FromBody] SoldDateDto soldDate )
+        {
+            _listingService.MarkSold(itemNumber, soldDate.SoldDate);
+            return NoContent();
+        }
+
         /// <summary>
         /// Gets the matching crossposted listing for the item number passed in.
         /// </summary>
@@ -41,13 +44,14 @@ namespace ListFlow.API.Controllers{
         {
             var listing = _listingService.GetCrossPostByItem(itemNumber);
 
-            if (listing == null)
+            if (!listing.Success)
             {
-                return NotFound();
+                return NotFound(listing.ErrorMessage);
             }
-
+            
             return Ok(listing);
         }
+        
 
         [HttpGet("{id}")]
         public ActionResult<Listing> GetById(Guid id)
@@ -99,7 +103,7 @@ namespace ListFlow.API.Controllers{
             }
 
             return NoContent();
-        }
+        } 
 
         [HttpGet("mispriced")]
         public ActionResult<IEnumerable<PriceMismatchDto>> GetMispricedListingsAsync()
@@ -107,5 +111,47 @@ namespace ListFlow.API.Controllers{
             var listing =  _listingService.MispricedListings();
             return Ok(listing);
         }
+
+        [HttpGet("sold")]
+        public ActionResult<Dictionary<string, string>> GetSoldListings()
+        {
+            var listing = _listingService.GetCrossPostSold();
+            return Ok(listing);
+        }
+        
+        [HttpPut("{itemNumber}/description")]
+        public IActionResult UpdateDescription(string itemNumber, [FromBody] DescriptionDto description)
+        {
+            var result = _listingService.UpdateDescription(itemNumber, description.Description);
+
+            if (!result.Success)
+            {
+                return BadRequest(result.ErrorMessage);
+            }
+
+            return NoContent();
+        }
+        
+        [HttpPost("{itemNumber}/postage")]
+        public async Task<IActionResult> CreatePostage(string itemNumber, [FromBody] PostageDto postage)
+        {
+            var listing =  _listingService.FindListingsByItemNumber(itemNumber).Data;
+
+            var result = await _postageService.Create(new Postage()
+            {
+                Id = listing.Id,
+                Height = postage.PackageHeight,
+                Width = postage.PackageWidth,
+                Length = postage.PackageLength,
+                Ounces = postage.MinorElement,
+                Pounds = postage.MajorElement,
+            });
+
+            if (!result.Success)
+            {
+                return BadRequest(result.ErrorMessage);
+            }
+
+            return NoContent();
+        }
     }
-}

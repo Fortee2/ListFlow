@@ -5,6 +5,8 @@ using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.DTO;
+using ListFlow.Business.Enums;
+using System.Reflection.Metadata;
 
 namespace ListFlow.Business.Services
 {
@@ -191,7 +193,7 @@ namespace ListFlow.Business.Services
 
         public ServiceResult<IEnumerable<PriceMismatchDto>> MispricedListings()
         {
-            return new ServiceResult<IEnumerable<PriceMismatchDto>>(_listings.MispricedListings());
+            return new ServiceResult<IEnumerable<PriceMismatchDto>>(_listings.MispricedListings(SalesChannelConstants.eBay));
         }
 
         public ServiceResult<Listing> GetById(Guid id)
@@ -220,7 +222,9 @@ namespace ListFlow.Business.Services
                 
             existing.ItemTitle = listingDto.ItemTitle.Replace("  ", " ");
             existing.ItemNumber = listingDto.ItemNumber;
-            existing.Description = listingDto.Description;
+            //TOOO: Ebay Descriptions are coming from a sperate endpoint because of how they have to be retrieved.
+            //Commenting this out for now to prevent overwriting them
+            //existing.Description = (listingDto.Description 
             existing.Active = listingDto.Active;
             existing.Price = listingDto.ConvertedPrice;
 
@@ -246,7 +250,6 @@ namespace ListFlow.Business.Services
         {
             return existing.ItemTitle == listingDto.ItemTitle &&
                 existing.ItemNumber == listingDto.ItemNumber &&
-                existing.Description == listingDto.Description &&
                 existing.Active == listingDto.Active &&
                 existing.Price == listingDto.ConvertedPrice &&
                 existing.DateEnded == listingDto.EndedDate &&
@@ -280,6 +283,53 @@ namespace ListFlow.Business.Services
             }
 
             return new ServiceResult<Listing>(listing);
+        }
+    
+        public void MarkSold(string itemNumber, string soldDate)
+        {
+            var listing = _listings.FindByItemNumber(itemNumber);
+
+            if (listing == null)
+            {
+                throw new Exception("Listing not found.");
+            }
+
+            DateTime parsedDate;
+
+            if (!DateTime.TryParse(soldDate, out parsedDate))
+            {
+                parsedDate = DateTime.Now;
+            }
+
+            listing.DateSold = parsedDate;
+            listing.Active = false;
+            listing.LastUpdated = DateTime.Now;
+
+            _listings.Update(listing);
+        }
+
+        public ServiceResult<List<ItemNumberResponse>> GetCrossPostSold()
+        {
+            var result = _listings.GetSoldListings();
+            
+            return new ServiceResult<List<ItemNumberResponse>>(result.Select(x => new ItemNumberResponse { ItemNumber = x.Key, SalesChannel = x.Value }).ToList());
+        }
+        
+        public ServiceResult<string> UpdateDescription(string itemNumber, string description)
+        {
+            var listing = _listings.FindByItemNumber(itemNumber);
+
+            if (listing == null)
+            {
+                return new ServiceResult<string>("Listing not found.");
+            }
+
+            listing.Description = description;
+            listing.LastUpdated = DateTime.Now;
+
+            _listings.Update(listing);
+
+            return new ServiceResult<string>(data:"Saved successfully.");
         }
     }
 }

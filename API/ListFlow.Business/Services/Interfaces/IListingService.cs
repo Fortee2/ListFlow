@@ -30,5 +30,9 @@ namespace  ListFlow.Business.Services.Interfaces{
         Task CreateMetrics(ListingDTO[] listingDtos);
 
         Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
+
+        void MarkSold(string itemNumber, string soldDate);
+        ServiceResult<List<ItemNumberResponse>> GetCrossPostSold();
+        ServiceResult<string> UpdateDescription(string itemNumber, string description);
     }
 }

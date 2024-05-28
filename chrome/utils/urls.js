@@ -8,11 +8,15 @@ export function getMercariURLs() {
   
     return urls;
   }
+
+  export function getMercariItemURL(){
+    return 'https://www.mercari.com/sell/edit/';
+  }
   
   export function getEbayURLs() {
     const urls = [
       {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
-      {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
+      {'type': 'complete', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
     ];  
   
     return urls;
@@ -21,6 +25,7 @@ export function getMercariURLs() {
   export function getEtsyURLs() {
     const urls = [
       {'type': 'active', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/sort:stock,order:ascending,view:table', 'activeListings': true}, 
+      {'type': 'inactive', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/state:inactive,view:table', 'activeListings': false},
     ];  
   
     return urls;
@@ -44,6 +49,9 @@ export function getMercariURLs() {
         searchTerm = 'active';
         break;
       case 'complete':
+        searchTerm = 'complete';
+        break;
+      case 'inactive':
         searchTerm = 'inactive';
         break;
       default: //all

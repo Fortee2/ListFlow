@@ -56,7 +56,6 @@ namespace ListFlow.Infrastructure.Repository
         public T? FindById(Guid id)
         {
             return _dbContext.Find<T>(id);
-
         }
 
         public void Update(T obj)
