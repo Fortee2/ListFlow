@@ -1,4 +1,4 @@
-export async function retrieveItemDetails(price){
+export async function retrieveItemDetails(){
     function checkReadyState() {
       return new Promise((resolve) => {
         if(document.readyState === 'complete') {

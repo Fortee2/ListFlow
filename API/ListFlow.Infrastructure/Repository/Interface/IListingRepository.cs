@@ -14,5 +14,6 @@ namespace ListFlow.Infrastructure.Repository.Interface
         Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
 
         IEnumerable<PriceMismatchDto> MispricedListings(Guid anchorSalesChannel);
+        Dictionary<string, string> GetSoldListings();
     }
 }

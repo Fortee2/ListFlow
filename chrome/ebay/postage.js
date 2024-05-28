@@ -30,18 +30,29 @@ export async function scrapEbayPostage(itemNumber) {
                 let minorElement = document.querySelector('input[name="minorWeight"]');
                 let packageLength = document.querySelector('input[name="packageLength"]');
                 let packageWidth = document.querySelector('input[name="packageWidth"]');
-                let packageHeight = document.querySelector('input[name="packageHeight"]');
+                let packageHeight = document.querySelector('input[name="packageDepth"]');
     
+                console.log('majorElement');
+                console.log(majorElement);
+                console.log('minorElement');
+                console.log(minorElement);
+                console.log('packageLength');
+                console.log(packageLength);
+                console.log('packageWidth');
+                console.log(packageWidth);
+                console.log('packageHeight');
+                console.log(packageHeight);
+
                 if (majorElement) {
                     console.log('retrievePostage');
                     console.log(majorElement.innerText);
                     chrome.runtime.sendMessage({ 
                         action: 'queueEbayPostage', 
-                        majorElement: majorElement.value, 
-                        minorElement: minorElement.value,
-                        packageLength: packageLength.value,
-                        packageWidth: packageWidth.value,
-                        packageHeight: packageHeight.value,
+                        majorElement: majorElement.value === '' ? 0 : majorElement.value, 
+                        minorElement: minorElement.value === '' ? 0 : minorElement.value,
+                        packageLength: packageLength.value === '' ? 0 : packageLength.value,
+                        packageWidth: packageWidth.value === '' ? 0 : packageWidth.value,
+                        packageHeight: packageHeight.value === '' ? 0 : packageHeight.value,
                         item: itemNumber});
                     resolve();
                 } else {

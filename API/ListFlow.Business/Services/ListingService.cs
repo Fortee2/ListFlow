@@ -222,7 +222,9 @@ namespace ListFlow.Business.Services
                 
             existing.ItemTitle = listingDto.ItemTitle.Replace("  ", " ");
             existing.ItemNumber = listingDto.ItemNumber;
-            existing.Description = listingDto.Description;
+            //TOOO: Ebay Descriptions are coming from a sperate endpoint because of how they have to be retrieved.
+            //Commenting this out for now to prevent overwriting them
+            //existing.Description = (listingDto.Description 
             existing.Active = listingDto.Active;
             existing.Price = listingDto.ConvertedPrice;
 
@@ -248,7 +250,6 @@ namespace ListFlow.Business.Services
         {
             return existing.ItemTitle == listingDto.ItemTitle &&
                 existing.ItemNumber == listingDto.ItemNumber &&
-                existing.Description == listingDto.Description &&
                 existing.Active == listingDto.Active &&
                 existing.Price == listingDto.ConvertedPrice &&
                 existing.DateEnded == listingDto.EndedDate &&
@@ -306,6 +307,29 @@ namespace ListFlow.Business.Services
 
             _listings.Update(listing);
         }
-    
+
+        public ServiceResult<List<ItemNumberResponse>> GetCrossPostSold()
+        {
+            var result = _listings.GetSoldListings();
+            
+            return new ServiceResult<List<ItemNumberResponse>>(result.Select(x => new ItemNumberResponse { ItemNumber = x.Key, SalesChannel = x.Value }).ToList());
+        }
+        
+        public ServiceResult<string> UpdateDescription(string itemNumber, string description)
+        {
+            var listing = _listings.FindByItemNumber(itemNumber);
+
+            if (listing == null)
+            {
+                return new ServiceResult<string>("Listing not found.");
+            }
+
+            listing.Description = description;
+            listing.LastUpdated = DateTime.Now;
+
+            _listings.Update(listing);
+
+            return new ServiceResult<string>(data:"Saved successfully.");
+        }
     }
 }

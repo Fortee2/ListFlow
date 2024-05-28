@@ -1,4 +1,4 @@
-export async function scrapDataEtsy(completedListings, listingType, downloadImages) {
+export async function scrapDataEtsy(completedListings, listingType) {
     let bulkData = [];
   
     function checkReadyState() {

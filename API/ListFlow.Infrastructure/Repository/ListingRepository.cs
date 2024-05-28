@@ -122,6 +122,23 @@ namespace ListFlow.Infrastructure.Repository
 
             return listings;
         }
+
+        public Dictionary<string, string> GetSoldListings()
+        {
+            var listing = (from list in this._dbContext.Listings
+                join  scList in this._dbContext.Listings on list.CrossPostId equals scList.CrossPostId
+                where list.DateSold != null
+                      && scList.Active 
+                      && list.SalesChannel.Id != scList.SalesChannel.Id
+                orderby list.Price descending
+                select new
+                {
+                    scList.SalesChannel.Name,
+                    scList.ItemNumber
+                }).ToDictionary(x => x.ItemNumber, x => x.Name);
+
+            return listing;
+        }
     }
 }
 

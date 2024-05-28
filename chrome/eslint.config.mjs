@@ -13,7 +13,10 @@ export default [
             // Required for certain syntax usages
             "ecmaVersion": 2020
             }, 
-        }
+        },
+        ignores: [
+            "**/node_modules/*"
+        ],
     },
     pluginJs.configs.recommended,
 ];

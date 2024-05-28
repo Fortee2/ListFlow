@@ -1,13 +1,14 @@
-import { scrapDataEbay, scrapEbayImages, scrapEbayDescriptions } from "./ebay/scrapDataEbay.js";
+ import { scrapDataEbay, scrapEbayImages, scrapEbayDescriptions } from "./ebay/scrapDataEbay.js";
 import { scrapEbayPostage } from "./ebay/postage.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
-import { searchEbayURLs, searchMercariURLs, getEtsyURLs } from './utils/urls.js';
+import { searchEbayURLs, searchMercariURLs, getEtsyURLs, getMercariItemURL } from './utils/urls.js';
 import {mercariConstants} from "./mercari/mercariConstants.js";
 import { correctPriceMercari } from "./mercari/priceMercari.js";
+import { retrieveItemDetails } from "./mercari/itemPageDetails.js";
 import { scrapDataEtsy } from "./etsy/scrapDataEtsy.js";
 import { endEbayListings } from "./ebay/endListings.js";
 import { removeInactive } from "./mercari/removeInactive.js";
-import { getRandomInt, downloadData, delay } from "./utils/utils.js";
+import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
 
 let ebayImageQueue = [];
@@ -131,7 +132,7 @@ chrome.tabs.onRemoved.addListener(function(closedTabId) {
 
 async function getEbayShippingDetails(itemNumber) {
   await delay(getRandomInt(5000, 30000));
-  const newTab = await loadTab(`https://www.ebay.com/lstng?draftId=${itemNumber}&mode=ReviseItem`);
+  const newTab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
   chrome.scripting.executeScript({
     args: [itemNumber],
     target: { tabId: newTab.id },
@@ -155,13 +156,18 @@ async function ProcessSalesChannel( listingType) {
       }
       break;
     case "eBay":
-      await endEbayInactive(listingType).then(async () => {
+      
+      await endEbayInactive(listingType)
+      .then(async () => {
         await retrieveEbayData(listingType, downloadImages);
-      }).then(() => {
-        processDescQueue();
-      }).then(() => {
+      })
+      //.then(() => {
+        //processDescQueue();
+      //})
+      .then(() => {
+        console.log(postageQueue.length);
         processShippingInfoQueue();
-      });
+      }); 
       break;
     case "Etsy":
       await retrieveEtsyData(listingType, downloadImages);
@@ -248,7 +254,6 @@ async function processQueue() {
     });
   });
 
-  descQueue.push(itemNumber); // enqueue the request
   isDownloading = false;
   await delay(getRandomInt(5000, 30000));
   processQueue(); // recursively process the next request in the queue
@@ -263,7 +268,7 @@ async function processShippingInfoQueue() {
   isDownloading = true;
 
   await getEbayShippingDetails(itemNumber);
-
+  processPostageQueue(); 
   isDownloading = false;
   await delay(getRandomInt(5000, 30000));
   processShippingInfoQueue(); // recursively process the next request in the queue
@@ -299,11 +304,9 @@ async function processDescQueue() {
   });
 }
 
-
-
 async function processPostageQueue() {
   try {
-    if (postageQueue.length === 0 || isDownloading) {
+    if (postageQueue.length === 0) {
       return;
     }
 
@@ -324,11 +327,10 @@ async function processPostageQueue() {
     if (!response.ok) {
       console.error("Failed to save postage to the database:", postage);
     }
+
+    processPostageQueue(); // recursively process the next request in the queue
   } catch (error) {
     console.error("Error saving postage to the database:", error);
-  }
-  finally {
-    processPostageQueue(); // recursively process the next request in the queue
   }
 }
 
@@ -551,4 +553,74 @@ async function retrieveMercariData( downloadImages, mercariURLs) {
   } catch (error) {
     console.error("Error executing script:", error);
   }
+}
+
+async function downloadData(data, createExport, currentSalesChannel) {
+  if(!createExport) { 
+      return;
+  }
+
+  //Enhance Data for download
+  if(currentSalesChannel === 'Mercari') {
+      data = await retrieveMercariDetails(data);
+  }
+
+  if (Array.isArray(data) && data.length > 0) {
+      let csvContent = '';
+
+      // Header row
+      const header = Object.keys(data[0]).join(',');
+      csvContent += header + '\n';
+
+      // Data rows
+      data.forEach(row => {
+          const rowData = Object.values(row).join(',');
+          csvContent += rowData + '\n';
+      });
+
+      data = csvContent;
+  }
+
+  const blob = new Blob([data], { type: 'text/csv' });
+
+  const reader = new FileReader();
+  reader.onloadend = function() {
+      const base64data = reader.result;
+      chrome.downloads.download({
+          url: base64data,
+          filename: 'data.csv'
+      });
+  }
+  reader.readAsDataURL(blob);
+}
+
+async function retrieveMercariDetails(data) {
+  //Enhance Data for download
+
+    for(const item of data){
+
+      item.description  = "";
+      item.itemTitle = item.itemTitle.replace(/,/g, '');
+
+      const link = getMercariItemURL() + item.itemNumber;
+      const tab = await loadTab(link);
+      await delay(getRandomInt(3000, 5000));
+
+      await new Promise(resolve => {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: retrieveItemDetails,
+        }, resolve);
+
+        } ).then((shipping) => {
+          item.shipping = shipping[0].result;
+          console.log('Shipping: ' + shipping);
+          
+      }).then(() => {
+        chrome.tabs.remove(tab.id);
+      });
+      
+    }
+  
+  return data;
 }
