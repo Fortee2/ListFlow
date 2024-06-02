@@ -14,7 +14,7 @@ document.getElementById('selectChannel').addEventListener('change', function() {
 });
 
 document.getElementById('snipeButton').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'parseGoodwill' });
+  chrome.runtime.sendMessage({ action: 'migrateMercari' });
 });
 
 function getSelectedStatusValue() {

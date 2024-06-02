@@ -198,14 +198,21 @@ export async function scrapEbayImages(itemNumber, downloadImages) {
   function retrieveImages() {
     return new Promise((resolve, reject) => {
       function checkImageElement() {
-          let imageElement = document.querySelector('div[class="ux-image-grid no-scrollbar"]').querySelectorAll('img');
+          //document.querySelectorAll('.uploader-thumbnails__inline-edit')[0].getElementsByTagName('button')[0].getAttribute('style')
+          let imageElement = document.querySelectorAll('.uploader-thumbnails__inline-edit');
           if (imageElement) {
             let count = 0;
             imageElement.forEach((element) => {
+              const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style');
+
+              const startIdx = backgroundImageString.indexOf('url(') + 5;
+              const endIdx = backgroundImageString.indexOf('\')');
+
               console.log('retrieveImages');
-              let imageUrl = element.src;
-              imageUrl = imageUrl.replace('l140', 'l1600');
+
+              let imageUrl  = backgroundImageString.substring(startIdx, endIdx);
               chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: `${itemNumber}_${count}.png`});
+              count++;
             });
             
             resolve();

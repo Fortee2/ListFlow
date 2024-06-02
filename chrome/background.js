@@ -10,6 +10,7 @@ import { endEbayListings } from "./ebay/endListings.js";
 import { removeInactive } from "./mercari/removeInactive.js";
 import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
+import { createNewItem } from "./mercari/createListing.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -28,6 +29,7 @@ let isDownloading = false;
 let isDownloadingImage = false;
 let oldTab = [];
 let serverURI = "http://demo.api.com";
+let lastTimeInactive = "2024-01-01";
 
 chrome.runtime.onInstalled.addListener(() => {
   // Set Default Settings
@@ -53,6 +55,12 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log('Default updatePrice saved.');
       });
     }
+
+    if (data.ebayLastInactive === null) {
+      chrome.storage.sync.set({ ebayLastInactive: "2024-01-01" }, function() {
+        console.log('Default ebayLastInactive saved.');
+      });
+    }
   });
 });
 
@@ -65,6 +73,7 @@ chrome.storage.sync.get({
   serverURI = data.serverURI;
   createExport = data.createExport;
   updatePrice = data.updatePrice;
+  lastTimeInactive = data.ebayLastInactive;
 });
 
 chrome.runtime.onMessage.addListener(async (request) => {
@@ -112,6 +121,9 @@ chrome.runtime.onMessage.addListener(async (request) => {
       downloadImages = request.downloadImages;
       ProcessSalesChannel(request.listingType);
       break;
+    case "migrateMercari":
+      crossPostListing();
+      break;
   }
 });
 
@@ -156,18 +168,17 @@ async function ProcessSalesChannel( listingType) {
       }
       break;
     case "eBay":
-      
       await endEbayInactive(listingType)
       .then(async () => {
         await retrieveEbayData(listingType, downloadImages);
       })
-      //.then(() => {
-        //processDescQueue();
-      //})
+      .then(() => {
+        processDescQueue();
+      })
       .then(() => {
         console.log(postageQueue.length);
         processShippingInfoQueue();
-      }); 
+      });  
       break;
     case "Etsy":
       await retrieveEtsyData(listingType, downloadImages);
@@ -242,7 +253,7 @@ async function processQueue() {
   isDownloading = true;
 
   delay(getRandomInt(5000, 10000));
-  const tab = await loadTab("https://www.ebay.com/itm/" + itemNumber);
+  const tab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
   await new Promise((resolve) => {
     chrome.scripting.executeScript({
       args: [itemNumber, downloadImages],
@@ -272,6 +283,20 @@ async function processShippingInfoQueue() {
   isDownloading = false;
   await delay(getRandomInt(5000, 30000));
   processShippingInfoQueue(); // recursively process the next request in the queue
+}
+
+async function crossPostListing(){
+  const tab = await loadTab(`https://www.mercari.com/sell/`);
+  await new Promise((resolve, reject) => {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: createNewItem,
+    }).then(() => {
+      oldTab.push(tab.id);
+    });
+
+    resolve();
+  });
 }
 
 async function processDescQueue() {
