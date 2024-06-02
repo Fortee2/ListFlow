@@ -14,7 +14,7 @@ export async function createMercariListing(){
     }).catch(console.error);
   }
   
-    function setPrice(price) { 
+  function setPrice(price) { 
       const el = document.querySelector('input[name="sellPrice"]');
       if (el) {
           el.addEventListener('input', (e) => {
@@ -50,7 +50,7 @@ export async function createMercariListing(){
       }
     }
     
-    function setDescription() {
+    async function setDescription() {
       try{
         let listing =  {
             "id": "c87243f3-d72d-45b3-b177-e5fe813519c9",
@@ -69,6 +69,10 @@ export async function createMercariListing(){
           };
 
           alert("Opening new listing page");
+          console.log('Attempting Image Upload ');
+          let blob = await fetchImageAsBlob('http://localhost:5227/images/176073104720_0.png');
+          let file = new File([blob], "image.png", {type: "image/png"});
+          dropFile(file);
           let el = document.querySelector('[data-testid="Title"]');
           setListingDetails(el, listing.itemTitle);
           el = document.querySelector('[data-testid="Description"]');
@@ -77,6 +81,35 @@ export async function createMercariListing(){
       }catch(e){
         console.log(e);
       }    
+    }
+
+    async function fetchImageAsBlob(url) {
+      // Fetch the image
+      console.log('starting download');
+      let response = await fetch(url).catch(console.error);
+  
+      // Get the response as a blob
+      let blob = await response.blob();
+      console.log('file downloaded');
+      // Return the blob
+      return blob;
+  }
+
+    function dropFile(file) {
+        try {
+            console.log('dropFile');
+            const dropzone = document.querySelector('[data-testid="PhotoUploadBox"]');
+            console.log(dropzone);
+            const dt = new DataTransfer();
+            dt.items.add(file);
+          
+            ['dragstart', 'drag', 'dragenter', 'dragover','drop', 'dragend'].forEach(eventName => {
+                dropzone.dispatchEvent(new DragEvent(eventName, { dataTransfer: dt }));
+                console.log(eventName);
+            });
+        } catch(e) {
+            console.log(e);
+        }
     }
 
     function setListingDetails(el, listingValue) {

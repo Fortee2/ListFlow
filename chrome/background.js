@@ -287,7 +287,7 @@ async function processShippingInfoQueue() {
 
 async function crossPostListing(){
   let tab = await loadTab(mercariConstants.CreateListingUrl);
-
+  await delay(getRandomInt(3000, 5000));
   await new Promise((resolve, reject) => {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },

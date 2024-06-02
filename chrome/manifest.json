@@ -15,7 +15,8 @@
 		"https://www.ebay.com/*",
 		"https://www.etsy.com/*",
 		"https://shopgoodwill.com/*",
-		"https://vi.vipr.ebaydesc.com/*"
+		"https://vi.vipr.ebaydesc.com/*",
+		"http://localhost:5227/*"
 	],
 	"action": {
 		"default_popup": "popup.html"
