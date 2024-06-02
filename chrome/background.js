@@ -10,7 +10,7 @@ import { endEbayListings } from "./ebay/endListings.js";
 import { removeInactive } from "./mercari/removeInactive.js";
 import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
-import { createNewItem } from "./mercari/createListing.js";
+import { createMercariListing } from "./mercari/createMercariListing.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -122,7 +122,7 @@ chrome.runtime.onMessage.addListener(async (request) => {
       ProcessSalesChannel(request.listingType);
       break;
     case "migrateMercari":
-      crossPostListing();
+      await crossPostListing();
       break;
   }
 });
@@ -286,16 +286,19 @@ async function processShippingInfoQueue() {
 }
 
 async function crossPostListing(){
-  const tab = await loadTab(`https://www.mercari.com/sell/`);
+  let tab = await loadTab(mercariConstants.CreateListingUrl);
+
   await new Promise((resolve, reject) => {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: createNewItem,
-    }).then(() => {
-      oldTab.push(tab.id);
+      function: createMercariListing,
+    }, () => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve();
+      }
     });
-
-    resolve();
   });
 }
 
