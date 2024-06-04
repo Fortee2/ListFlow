@@ -5,3 +5,4 @@ __pycache__
 /email/obj
 /email/bin/Debug/net8.0
 /chrome/node_modules
+API/ListFlow.API/debug.log
