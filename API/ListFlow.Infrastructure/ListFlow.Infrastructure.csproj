@@ -14,9 +14,6 @@
     <None Remove="Repository\Interface\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Repository\Interface\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\ListFlow.Domain\ListFlow.Domain.csproj" />
   </ItemGroup>
 </Project>

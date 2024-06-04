@@ -72,7 +72,30 @@ export async function createMercariListing(){
           console.log('Attempting Image Upload ');
           let blob = await fetchImageAsBlob('http://localhost:5227/images/176073104720_0.png');
           let file = new File([blob], "image.png", {type: "image/png"});
-          dropFile(file);
+          // Select the file input element
+          const fileInput = document.querySelector('input[type="file"]');
+          if (!fileInput) {
+              console.error('File input not found');
+          }
+          // Create a new 'change' event
+          const event = new Event('change', { bubbles: true });
+
+          // Create a new DataTransfer object
+          let dt = new DataTransfer();
+
+          // Add the file to the DataTransfer object
+          dt.items.add(file);
+
+          // Assign the files property of the DataTransfer object to fileInput.files
+          fileInput.files = dt.files;
+
+          console.log('File added to input');
+          console.log(fileInput.files);
+
+          // Dispatch the 'change' event
+          fileInput.dispatchEvent(event);
+          console.log('change event dispatched file added to input');
+
           let el = document.querySelector('[data-testid="Title"]');
           setListingDetails(el, listing.itemTitle);
           el = document.querySelector('[data-testid="Description"]');

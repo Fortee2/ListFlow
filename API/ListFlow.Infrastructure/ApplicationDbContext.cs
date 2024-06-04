@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Listing> Listings { get; set; }
     public DbSet<ListingMetric> ListingMetrics { get; set; }
     public DbSet<Postage> Postages { get; set; }
+    public DbSet<Images> Images { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,12 +30,13 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Listing>().ToTable("Listing");
         modelBuilder.Entity<ListingMetric>().ToTable("ListingMetric");
         modelBuilder.Entity<Postage>().ToTable("Postage");
-
+        modelBuilder.Entity<Images>().ToTable("Images");
+        
         modelBuilder.Entity<Listing>()
             .HasOne(l => l.SalesChannel)
             .WithMany()
             .HasForeignKey(l => l.SalesChannelId);
-
+        
         modelBuilder.Entity<ListingMetric>()
             .HasOne(l => l.Listing)
             .WithMany()

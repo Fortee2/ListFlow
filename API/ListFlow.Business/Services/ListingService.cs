@@ -91,7 +91,8 @@ namespace ListFlow.Business.Services
                         DateSold = listingDto.SoldDate,
                         DateListed = listingDto.ListedDate,
                         DateEnded = listingDto.EndedDate,
-                        Price = listingDto.ConvertedPrice
+                        Price = listingDto.ConvertedPrice,
+                        LastUpdated = DateTime.Now
                     };
 
                     _listings.Add(newListing);
@@ -330,6 +331,11 @@ namespace ListFlow.Business.Services
             _listings.Update(listing);
 
             return new ServiceResult<string>(data:"Saved successfully.");
+        }
+
+        public List<Listing> GetListingsToCrossPost()
+        {
+            return _listings.ItemsToCrossList(Guid.Parse("28e91dfe-9a9d-482d-4aed-08db50d0bd42")).ToList();
         }
     }
 }
