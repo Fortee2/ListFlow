@@ -1,9 +1,9 @@
-export async function createMercariListing(){
+export async function createMercariListing(ebayListing){
   function checkReadyState(){
     return new Promise((resolve, reject) => {
       if(document.readyState === 'complete'){
         console.log('Document is ready');
-        setDescription();
+        setDescription(ebayListing);
         resolve();
       }else{
         console.log('Document is not ready, checking again in 1 second');
@@ -50,52 +50,39 @@ export async function createMercariListing(){
       }
     }
     
-    async function setDescription() {
+    async function setDescription(listing) {
       try{
-        let listing =  {
-            "id": "c87243f3-d72d-45b3-b177-e5fe813519c9",
-            "itemNumber": "186447582143",
-            "itemTitle": "Waechtersbach Large Tea Kettle High Fired Ceramic Earthenware Floral Motif Gift",
-            "description": "Steep in the elegance of tradition with this Waechtersbach large tea kettle, masterfully crafted from high fired ceramic earthenware. Renowned for its quality and durability, this kettle boasts a beautifully hand-painted floral motif, adding a touch of timeless beauty to any kitchen decor. Its ample size ensures a generous brew, making it perfect for gatherings or quiet afternoons. A harmonious blend of form and function, this kettle is a testament to Waechtersbach's commitment to craftsmanship. Present it as a cherished gift or make it the centerpiece of your tea rituals. Secure this exquisite piece today and savor the luxury of fine earthenware in every cup. Please note that this pot is in great condition but it does have a small crack at the base of its handle (pictured).  \n\n\n\n\n\n\n\n",
-            "salesChannel": null,
-            "active": true,
-            "salesChannelId": "28e91dfe-9a9d-482d-4aed-08db50d0bd42",
-            "crossPostId": null,
-            "dateListed": "2024-05-17T17:29:00",
-            "dateEnded": null,
-            "dateSold": null,
-            "lastUpdated": "2024-05-20T01:13:02",
-            "price": 17
-          };
 
           alert("Opening new listing page");
-          console.log('Attempting Image Upload ');
-          let blob = await fetchImageAsBlob('http://localhost:5227/images/176073104720_0.png');
-          let file = new File([blob], "image.png", {type: "image/png"});
-          // Select the file input element
-          const fileInput = document.querySelector('input[type="file"]');
-          if (!fileInput) {
-              console.error('File input not found');
-          }
-          // Create a new 'change' event
-          const event = new Event('change', { bubbles: true });
-
-          // Create a new DataTransfer object
-          let dt = new DataTransfer();
-
-          // Add the file to the DataTransfer object
-          dt.items.add(file);
-
-          // Assign the files property of the DataTransfer object to fileInput.files
-          fileInput.files = dt.files;
-
-          console.log('File added to input');
-          console.log(fileInput.files);
-
-          // Dispatch the 'change' event
-          fileInput.dispatchEvent(event);
-          console.log('change event dispatched file added to input');
-
+          listing.images.forEach(async image => {
+            console.log('Attempting Image Upload ');
+            let blob = await fetchImageAsBlob(image);
+            let file = new File([blob], "image.png", {type: "image/png"});
+            // Select the file input element
+            const fileInput = document.querySelector('input[type="file"]');
+            if (!fileInput) {
+                console.error('File input not found');
+            }
+            // Create a new 'change' event
+            const event = new Event('change', { bubbles: true });
+  
+            // Create a new DataTransfer object
+            let dt = new DataTransfer();
+  
+            // Add the file to the DataTransfer object
+            dt.items.add(file);
+  
+            // Assign the files property of the DataTransfer object to fileInput.files
+            fileInput.files = dt.files;
+  
+            console.log('File added to input');
+            console.log(fileInput.files);
+  
+            // Dispatch the 'change' event
+            fileInput.dispatchEvent(event);
+            console.log('change event dispatched file added to input');
+          });
+         
           let el = document.querySelector('[data-testid="Title"]');
           setListingDetails(el, listing.itemTitle);
           el = document.querySelector('[data-testid="Description"]');
@@ -116,23 +103,6 @@ export async function createMercariListing(){
       console.log('file downloaded');
       // Return the blob
       return blob;
-  }
-
-    function dropFile(file) {
-        try {
-            console.log('dropFile');
-            const dropzone = document.querySelector('[data-testid="PhotoUploadBox"]');
-            console.log(dropzone);
-            const dt = new DataTransfer();
-            dt.items.add(file);
-          
-            ['dragstart', 'drag', 'dragenter', 'dragover','drop', 'dragend'].forEach(eventName => {
-                dropzone.dispatchEvent(new DragEvent(eventName, { dataTransfer: dt }));
-                console.log(eventName);
-            });
-        } catch(e) {
-            console.log(e);
-        }
     }
 
     function setListingDetails(el, listingValue) {

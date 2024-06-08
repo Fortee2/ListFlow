@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Listing Retrieval",
-	"version": "2024.6.0.9",
+	"version": "2024.6.1.0",
 	"description": "Retrieve listing from a website",
 	"permissions": [
 		"storage",
@@ -15,8 +15,7 @@
 		"https://www.ebay.com/*",
 		"https://www.etsy.com/*",
 		"https://shopgoodwill.com/*",
-		"https://vi.vipr.ebaydesc.com/*",
-		"http://localhost:5227/*"
+		"https://vi.vipr.ebaydesc.com/*"
 	],
 	"action": {
 		"default_popup": "popup.html"

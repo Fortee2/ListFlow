@@ -14,7 +14,8 @@ document.getElementById('selectChannel').addEventListener('change', function() {
 });
 
 document.getElementById('snipeButton').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ action: 'migrateMercari' });
+  let itemNumber = document.getElementById('itemNumber').value;
+  chrome.runtime.sendMessage({ action: 'migrateMercari', itemNumber: itemNumber});
 });
 
 function getSelectedStatusValue() {
