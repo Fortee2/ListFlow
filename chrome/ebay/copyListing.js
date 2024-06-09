@@ -161,8 +161,10 @@ export async function copyDescription(ebayListing) {
             console.log('retrieveDescription');
             console.log(descElement); 
             if (descElement) {
-              listing.description = descElement.innerText;
+              listing.description = descElement.innerText.trim();
+            
               chrome.runtime.sendMessage({ action: 'descCopied', listing: listing});
+              chrome.runtime.sendMessage({ action: 'updateDesc', desc: listing.desc, item: listing.itemNumber});
               resolve(ebayListing);
           } else {
             setTimeout(checkDescElement, 1000); // wait for 1 second before checking again

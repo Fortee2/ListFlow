@@ -29,14 +29,7 @@ export async function createMercariListing(ebayListing){
               console.log('focus event fired');
               console.log(e.target.value);
           });
-          el.addEventListener('keydown', (e) => { 
-              setTimeout(() => {
-                document.querySelector('button[data-testid="ListButton"]').click();
-              }, 2000);
-          
-              console.log('keydown event fired');
-              console.log(e.target.value);
-          });
+
           el.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
           el.value = parseFloat(price);
           el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -48,12 +41,38 @@ export async function createMercariListing(ebayListing){
           console.error('Input field not found');
           setTimeout(() => setPrice(price), 1000);
       }
-    }
+  }
     
+  function setWeight(pounds, ounces) { 
+    const el = document.querySelector('input[name="weight_in_pounds"]');
+    console.log('Weight in pounds');
+    console.log(el);
+    
+    if (el) {
+        setElementValue(el, pounds);
+        const el2 = document.querySelector('input[name="weight_in_ounces"]');
+        setElementValue(el2, ounces);
+    } else {
+        setTimeout(() => setWeight(pounds, ounces), 1000);
+    }
+  }
+
+  function setPackageDimensions(length, width, height) {
+      const el = document.querySelector('input[data-testid="InputLength"]');
+      const el2 = document.querySelector('input[data-testid="InputWidth"]');
+      const el3 = document.querySelector('input[data-testid="InputHeight"]');
+      
+      if (el) {
+        setElementValue(el, length);
+        setElementValue(el2, width);
+        setElementValue(el3, height);
+      } else {
+          setTimeout(() => setPackageDimensions(length, width, height), 1000);
+      }
+    }
+
     async function setDescription(listing) {
       try{
-
-          alert("Opening new listing page");
           listing.images.forEach(async image => {
             console.log('Attempting Image Upload ');
             let blob = await fetchImageAsBlob(image);
@@ -76,17 +95,22 @@ export async function createMercariListing(ebayListing){
             fileInput.files = dt.files;
   
             console.log('File added to input');
-            console.log(fileInput.files);
-  
             // Dispatch the 'change' event
             fileInput.dispatchEvent(event);
             console.log('change event dispatched file added to input');
           });
          
           let el = document.querySelector('[data-testid="Title"]');
-          setListingDetails(el, listing.itemTitle);
+          setElementValue(el, listing.itemTitle);
+
           el = document.querySelector('[data-testid="Description"]');
-          setListingDetails(el, listing.description);
+          if (listing.description.length < 1000 - listing.itemNumber.length - 4) {
+            listing.description = listing.description + '\n ['+listing.itemNumber+']';
+          }
+          setElementValue(el, listing.description);
+
+          setWeight(listing.shipping.majorWeight, listing.shipping.minorWeight);
+          setPackageDimensions(listing.shipping.packageLength, listing.shipping.packageWidth, listing.shipping.packageHeight);
           setPrice(listing.price);
       }catch(e){
         console.log(e);
@@ -95,17 +119,15 @@ export async function createMercariListing(ebayListing){
 
     async function fetchImageAsBlob(url) {
       // Fetch the image
-      console.log('starting download');
       let response = await fetch(url).catch(console.error);
   
       // Get the response as a blob
       let blob = await response.blob();
-      console.log('file downloaded');
       // Return the blob
       return blob;
     }
 
-    function setListingDetails(el, listingValue) {
+    function setElementValue(el, listingValue) {
 
       if (el) {
           el.addEventListener('input', (e) => {
@@ -127,6 +149,9 @@ export async function createMercariListing(ebayListing){
           el.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
           el.value = listingValue;
           el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          let event = new KeyboardEvent('keydown', {bubbles: true,  key: 'Enter' });
+          el.dispatchEvent(event);
       }
     }
 

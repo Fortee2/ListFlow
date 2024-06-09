@@ -97,15 +97,6 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
           likes: watchers,
           price: listPrice
         });  
-
-        if(activeListings){
-          chrome.runtime.sendMessage({ action: 'downloadEbayDesc', itemNumber: a.href.split('/')[4]});
-          chrome.runtime.sendMessage({ action: 'queueShippingInfo', itemNumber: a.href.split('/')[4]});
-
-          if(downloadImages){
-            chrome.runtime.sendMessage({ action: 'downloadEbayImage', itemNumber: a.href.split('/')[4]});           
-          }  
-        } 
       }
       
       chrome.runtime.sendMessage({ 
