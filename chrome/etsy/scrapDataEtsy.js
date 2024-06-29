@@ -1,15 +1,25 @@
 export async function scrapDataEtsy(completedListings, listingType) {
     let bulkData = [];
+    let itemCount = 0;
   
     function checkReadyState() {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         if(document.readyState === 'complete') {
           console.log('readyState is complete');
-          retrieveListings().then(resolve);
+          retrieveListings().then(data => resolve(data));
         } else {
           console.log('readyState is not complete');
           setTimeout(() => checkReadyState().then(resolve), 1000);
         }
+      });
+    }
+
+    function readTotalItems() {
+      return new Promise((resolve) => {
+        console.log('readTotalItems');
+        const btns = document.querySelector('div[data-region="pager"]').querySelectorAll('button');
+        let counts = btns[btns.length -2].innerText;
+        resolve(counts);
       });
     }
   
@@ -18,7 +28,7 @@ export async function scrapDataEtsy(completedListings, listingType) {
 
       // Extract the date string
       const dateString = text.split(' ')[1] + ' ' + text.split(' ')[2];
-
+      
       // Convert month name to month number
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const monthNumber = monthNames.indexOf(dateString.split(' ')[0]);
@@ -36,8 +46,8 @@ export async function scrapDataEtsy(completedListings, listingType) {
       return date;
     }
 
-    function retrieveListings() {
-      return new Promise((resolve, reject) => {
+    async function retrieveListings() {
+        itemCount = await readTotalItems();
         const lis = document.querySelectorAll('div[class="panel-body-row"]');
   
         lis.forEach(f => {
@@ -77,52 +87,14 @@ export async function scrapDataEtsy(completedListings, listingType) {
 
         });
   
-        chrome.runtime.sendMessage({ 
+         chrome.runtime.sendMessage({ 
           action: 'saveToListingAPI',
           item: bulkData
-        });
-  
-        resolve(bulkData);
-      });
-    }
-    await checkReadyState(); 
-    return bulkData;
-  }
+        }); 
 
-export async function retrievePageCount(listingType, tab){
-  const resultCnt = await new Promise(resolve => {
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: readTotalItems,
-    }, resolve);
-  });
-
-  if(resultCnt[0].result) {
-    let indx = 0;  //defaulting to Active
-
-    switch(listingType) {
-      case 'inactive':
-        indx = 1;
-        break;
-      case 'inprogress':
-        indx = 2;
-        break;
-      case 'complete':
-        indx = 3;
-        break;
+        return  {'result': bulkData, 'count': itemCount};
     }
 
-    let itemCount = +resultCnt[0].result[indx].replace(',', '');
-    return Math.ceil(itemCount / 20);
+    return checkReadyState();
+    
   }
-
-  return 0;
-}
-
-function readTotalItems() {
-  console.log('readTotalItems');
-  const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
-  let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
-  return counts;
-}
-

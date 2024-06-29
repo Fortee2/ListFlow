@@ -1,9 +1,9 @@
 export async function createMercariListing(ebayListing){
   function checkReadyState(){
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       if(document.readyState === 'complete'){
         console.log('Document is ready');
-        setDescription(ebayListing);
+        await setDescription(ebayListing);
         resolve();
       }else{
         console.log('Document is not ready, checking again in 1 second');
@@ -37,16 +37,13 @@ export async function createMercariListing(ebayListing){
           let event = new KeyboardEvent('keydown', {bubbles: true,  key: 'Enter' });
           el.dispatchEvent(event);
           console.log(price);
-      } else {
-          console.error('Input field not found');
+      } else {;
           setTimeout(() => setPrice(price), 1000);
       }
   }
     
   function setWeight(pounds, ounces) { 
     const el = document.querySelector('input[name="weight_in_pounds"]');
-    console.log('Weight in pounds');
-    console.log(el);
     
     if (el) {
         setElementValue(el, pounds);
@@ -112,6 +109,7 @@ export async function createMercariListing(ebayListing){
           setWeight(listing.shipping.majorWeight, listing.shipping.minorWeight);
           setPackageDimensions(listing.shipping.packageLength, listing.shipping.packageWidth, listing.shipping.packageHeight);
           setPrice(listing.price);
+          tagListButton();
       }catch(e){
         console.log(e);
       }    
@@ -152,6 +150,22 @@ export async function createMercariListing(ebayListing){
           el.dispatchEvent(new Event('change', { bubbles: true }));
           let event = new KeyboardEvent('keydown', {bubbles: true,  key: 'Enter' });
           el.dispatchEvent(event);
+      }
+    }
+
+    function tagListButton() {
+      const el = document.querySelector('button[data-testid="ListButton"]');
+      if (el) {
+          el.addEventListener('click', (e) => {
+              setTimeout(() => {
+                  let url = window.location.href;
+                  ebayListing.itemNumber = url.split('/')[5],
+                  console.log('Listing Created');
+                  chrome.runtime.sendMessage({ action: 'mercariCreated', listing: ebayListing});
+              }, 2000);
+          });
+      } else {
+          setTimeout(() => tagListButton(), 1000);
       }
     }
 
