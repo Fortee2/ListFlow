@@ -25,16 +25,15 @@ namespace ListFlow.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(ListingDTO[] listingDtos) {
+        public IActionResult Create(ListingDTO[] listingDtos) {
             try
             {
                 _listingService.CreateListings(listingDtos);
-                await _listingService.CreateMetrics(listingDtos);
             }catch(Exception ex)
             {
                 _logger.LogError(ex.Message, ex);
             }
-                         
+
             return Ok();
         }
     }

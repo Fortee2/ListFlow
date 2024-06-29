@@ -1,4 +1,6 @@
- import { scrapDataEbay, scrapEbayImages, scrapEbayDescriptions } from "./ebay/scrapDataEbay.js";
+ import { scrapDataEbay } from "./ebay/scrapDataEbay.js";
+ import { scrapEbayImages } from "./ebay/scrapImages.js";
+ import { scrapEbayDescriptions } from "./ebay/scrapDescription.js";
 import { scrapEbayPostage } from "./ebay/postage.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
 import { searchEbayURLs, searchMercariURLs, getEtsyURLs, getMercariItemURL } from './utils/urls.js';
@@ -10,6 +12,8 @@ import { endEbayListings } from "./ebay/endListings.js";
 import { removeInactive } from "./mercari/removeInactive.js";
 import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
+import { createMercariListing } from "./mercari/createMercariListing.js";
+import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -28,13 +32,16 @@ let isDownloading = false;
 let isDownloadingImage = false;
 let oldTab = [];
 let serverURI = "http://demo.api.com";
+let lastTimeInactive = "2024-01-01";
+let removeInactiveListings = false;
 
 chrome.runtime.onInstalled.addListener(() => {
   // Set Default Settings
   chrome.storage.sync.get({
     serverURI: null,
     createExport: null,
-    updatePrice: null
+    updatePrice: null, 
+    removeInactiveListings: null,
   }, function(data) {
     if (data.serverURI === null) {
       chrome.storage.sync.set({ serverURI: "http://demo.api.com" }, function() {
@@ -53,6 +60,18 @@ chrome.runtime.onInstalled.addListener(() => {
         console.log('Default updatePrice saved.');
       });
     }
+
+    if (data.ebayLastInactive === null) {
+      chrome.storage.sync.set({ ebayLastInactive: "2024-01-01" }, function() {
+        console.log('Default ebayLastInactive saved.');
+      });
+    }
+
+    if (data.removeInactiveListings === null) {
+      chrome.storage.sync.set({ removeInactiveListings: false }, function() {
+        console.log('Default removeInactiveListings saved.');
+      });
+    }
   });
 });
 
@@ -60,11 +79,15 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.storage.sync.get({
   serverURI: "http://demo.api.com",
   createExport: false,
-  updatePrice: false
+  updatePrice: false,
+  removeInactiveListings: false,
+  lastTimeInactive: "2024-01-01",
 }, function(data) {
   serverURI = data.serverURI;
   createExport = data.createExport;
   updatePrice = data.updatePrice;
+  removeInactiveListings = data.removeInactiveListings;
+  lastTimeInactive = data.lastTimeInactive;
 });
 
 chrome.runtime.onMessage.addListener(async (request) => {
@@ -112,6 +135,29 @@ chrome.runtime.onMessage.addListener(async (request) => {
       downloadImages = request.downloadImages;
       ProcessSalesChannel(request.listingType);
       break;
+    case "migrateMercari":
+      console.log("Copy Requested");
+      await copyEbayListingDetails(request.itemNumber);
+      break;
+    case "listingCopied": 
+      console.log("Copy Complete");
+      console.log(request.listing);
+      console.log("Retrieve Description Requested");
+      await retrieveDescription(request.listing);
+      break;
+    case "descCopied":  
+      console.log("Description Copied");
+      console.log(request.listing);
+      console.log("Cross Post Requested");
+      await crossPostListing(request.listing);
+      updateCrossPostList(request.listing.itemNumber);
+      break;
+    case "mercariCreated":
+      saveNewListing(request.listing);
+      if(oldTab.length > 2){
+        chrome.tabs.remove(oldTab.shift());
+      }
+      break;
   }
 });
 
@@ -142,11 +188,24 @@ async function getEbayShippingDetails(itemNumber) {
   });
 }
 
+async function copyEbayListingDetails(itemNumber) {
+  const newTab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
+  chrome.scripting.executeScript({
+    args: [itemNumber],
+    target: { tabId: newTab.id },
+    function: copyEbayListing,
+  }).then(() => {
+    oldTab.push(newTab.id);
+  });
+}
+
 async function ProcessSalesChannel( listingType) {
   switch(currentSalesChannel) {
     case "Mercari":
       await retrieveMercariData(downloadImages, searchMercariURLs(listingType)).then(async () => {
-        await removeInactiveItems();
+        if(removeInactiveListings){
+          await removeInactiveItems();
+        }
       }); 
 
       if(updatePrice){
@@ -156,18 +215,17 @@ async function ProcessSalesChannel( listingType) {
       }
       break;
     case "eBay":
-      
       await endEbayInactive(listingType)
       .then(async () => {
-        await retrieveEbayData(listingType, downloadImages);
+        await retrieveEbayData(listingType, downloadImages, lastTimeInactive);
       })
-      //.then(() => {
-        //processDescQueue();
-      //})
+      .then(() => {
+        processDescQueue();
+      })
       .then(() => {
         console.log(postageQueue.length);
         processShippingInfoQueue();
-      }); 
+      });  
       break;
     case "Etsy":
       await retrieveEtsyData(listingType, downloadImages);
@@ -215,19 +273,27 @@ async function processImageQueue() {
   isDownloadingImage = true;
   let imgRequest = imageQueue.shift(); // dequeue the request
 
-  await new Promise((resolve) => {
-    chrome.downloads.download({
-      url: imgRequest.url,
-      filename: imgRequest.fileName,
-      saveAs: false,
-      conflictAction: "uniquify",
-    }, () => {
-      if(oldTab.length > 5){
-        chrome.tabs.remove(oldTab.shift());
-      }
-      delay(getRandomInt(5000, 30000)).then(resolve());
+  try {
+    let imageDto = {
+        "itemNumber": imgRequest.itemNumber,
+        "imageUrl": imgRequest.url,
+        "imageFile": imgRequest.fileName,
+    };
+
+    const response = await fetch(`${serverURI}/api/images`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(imageDto),
     });
-  });
+
+    if (!response.ok) {
+      console.error("Failed to save item to the database:", imageDto);
+    }
+  } catch (error) {
+    console.error("Error saving item to the database:", error);
+  }
 
   isDownloadingImage = false;
   processImageQueue(); // recursively process the next request in the queue
@@ -242,7 +308,7 @@ async function processQueue() {
   isDownloading = true;
 
   delay(getRandomInt(5000, 10000));
-  const tab = await loadTab("https://www.ebay.com/itm/" + itemNumber);
+  const tab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
   await new Promise((resolve) => {
     chrome.scripting.executeScript({
       args: [itemNumber, downloadImages],
@@ -272,6 +338,40 @@ async function processShippingInfoQueue() {
   isDownloading = false;
   await delay(getRandomInt(5000, 30000));
   processShippingInfoQueue(); // recursively process the next request in the queue
+}
+
+async function crossPostListing(ebayListing) {
+  let tab = await loadTab(mercariConstants.CreateListingUrl);
+  oldTab.push(tab.id);
+  await delay(getRandomInt(3000, 5000));
+  chrome.scripting.executeScript({
+    args: [ebayListing],
+    target: { tabId: tab.id },
+    function: createMercariListing,
+  }).catch((error) => {
+    console.error("Error executing script:", error);  
+  });
+
+}
+
+async function saveNewListing( ebayListing) {
+  console.log(ebayListing.itemNumber);
+  let bulkData = [];
+  bulkData.push(
+  {
+    itemTitle: ebayListing.itemTitle,
+    itemNumber: ebayListing.itemNumber,
+    description: ebayListing.description,
+    salesChannel: "Mercari",
+    active: true,
+    listingDate: new Date().toISOString(),
+    listingDateType: 0,
+    views: "0",
+    likes: "0",
+    price: "6.16"
+  });
+
+  await saveItemToDatabase(bulkData);
 }
 
 async function processDescQueue() {
@@ -354,9 +454,9 @@ async function saveDescToDatabase(desc, itemNumber) {
 
 async function saveItemToDatabase(item) {
   try {
-    if (typeof item === "object") {
-      item = JSON.stringify(item, null, 2); // Pretty print the JSON
-    }
+
+    item = JSON.stringify(item, null, 2); // Pretty print the JSON
+    
 
     const response = await fetch(`${serverURI}/api/BulkListing`, {
       method: "POST",
@@ -419,6 +519,13 @@ async function retrieveEbayData(listingType, downloadImages) {
         }
       }while(pageCount <= totalPages );
 
+      if(listingType === 'all'){
+        chrome.storage.sync.set({ ebayLastInactive: Date.now() }, function() {
+            console.log('EbayLastInactive saved.');
+          }
+        );
+      }
+
       processQueue(); // process the queue
             
     }
@@ -458,18 +565,18 @@ async function retrieveEtsyData(listingType, downloadImages) {
 
     //Use Type to find the URL
     let url = getEtsyURLs(listingType);
-   
+    console.log(url);
     for (const link of url) {
       const activeListings = link.activeListings;
       let totalPages = 0;
-      let pageCount = 0;
+      let pageCount = 1;
+      let url = link.url;
 
       do {
-        // Load first Page
-        const tab = await loadTab(link.url);
+        const tab = await loadTab(url);
         await delay(getRandomInt(3000, 5000));
 
-        await new Promise(resolve => {
+        const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
             args: [activeListings, link.type, downloadImages],
             target: { tabId: tab.id },
@@ -477,7 +584,12 @@ async function retrieveEtsyData(listingType, downloadImages) {
           }, resolve);
         });
 
+        if(result[0].result.count) {
+          totalPages = parseInt(result[0].result.count, 10);   // Pager can add pages as we scroll forward
+        }
+
         pageCount++;
+        url = link.url.replace(',view:table',',page:' + pageCount + ',view:table');
       } while (pageCount <= totalPages);
       // Loop through each page
     }
@@ -488,6 +600,23 @@ async function retrieveEtsyData(listingType, downloadImages) {
   } catch (error) {
     console.error("Error executing script:", error);
   }
+}
+
+async function retrieveDescription(listing) {
+  if(oldTab.length > 5){
+    chrome.tabs.remove(oldTab.shift());
+  }
+
+  const tab = await loadTab(`https://vi.vipr.ebaydesc.com/itmdesc/${listing.itemNumber}`);
+  chrome.scripting.executeScript({
+    args: [listing],
+    target: { tabId: tab.id },
+    function: copyDescription,
+  }).then(() => {
+    oldTab.push(tab.id);
+  }).catch((error) => {
+    console.error("Error executing script:", error);
+  });
 }
 
 async function removeInactiveItems() {
@@ -623,4 +752,17 @@ async function retrieveMercariDetails(data) {
     }
   
   return data;
+}
+
+function updateCrossPostList(itemNumber){
+  chrome.storage.sync.get(['listData'], function(result) {
+    if (result.listData) {
+      let data = result.listData;
+      let item = data.find(x => x.itemNumber === itemNumber);
+      data.splice(data.indexOf(item,1));
+      chrome.storage.sync.set({ listData: data }, function() {
+        console.log('Data is updated in Chrome storage');
+      });
+    }
+  }); 
 }

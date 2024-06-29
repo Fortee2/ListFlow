@@ -15,5 +15,6 @@ namespace ListFlow.Infrastructure.Repository.Interface
 
         IEnumerable<PriceMismatchDto> MispricedListings(Guid anchorSalesChannel);
         Dictionary<string, string> GetSoldListings();
+        IEnumerable<CrossListingResult> ItemsToCrossList(Guid anchorSalesChannel);
     }
 }

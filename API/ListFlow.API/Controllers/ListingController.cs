@@ -154,4 +154,11 @@ namespace ListFlow.API.Controllers;
 
             return NoContent();
         }
+        
+        [HttpGet("toCrossPost")]
+        public ActionResult<IEnumerable<CrossListingResult>> GetListingsToCrossPost()
+        {
+            var listing = _listingService.GetListingsToCrossPost();
+            return Ok(listing);
+        }
     }

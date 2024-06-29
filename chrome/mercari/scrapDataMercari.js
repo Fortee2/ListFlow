@@ -97,7 +97,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
 
           var parsedDate = parseDate(divLastUpdated.innerHTML);
 
-          bulkData.push({ 
+          var itm = { 
             itemTitle: ele.innerHTML,
             itemNumber: itmNumber,
             description: ele.innerHTML,
@@ -112,13 +112,18 @@ export async function scrapData(completedListings, listingType, downloadImages) 
             shippingCost: '',
             shippingService: '',
             shippingWeight: '',
-           });
+           };
+
+           console.log(itm);
+
+          bulkData.push(itm);
 
             if(imageUrl !== "" && downloadImages){
               chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
             } 
         });
 
+        console.log('bulkData', bulkData);
         chrome.runtime.sendMessage({ 
           action: 'saveToListingAPI',
           item: bulkData

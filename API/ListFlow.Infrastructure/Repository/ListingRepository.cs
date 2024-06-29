@@ -1,4 +1,5 @@
-﻿using ListFlow.Domain.Model;
+﻿using System.ComponentModel.Design.Serialization;
+using ListFlow.Domain.Model;
 using ListFlow.Domain.DTO;
 using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Infrastructure.Filters;
@@ -136,6 +137,18 @@ namespace ListFlow.Infrastructure.Repository
                     scList.SalesChannel.Name,
                     scList.ItemNumber
                 }).ToDictionary(x => x.ItemNumber, x => x.Name);
+
+            return listing;
+        }
+        
+        public IEnumerable<CrossListingResult> ItemsToCrossList(Guid anchorSalesChannel)
+        {
+            var listing = (from list in this._dbContext.Listings
+                where list.Active
+                      && list.SalesChannel.Id == anchorSalesChannel
+                      && list.CrossPostId == null
+                orderby list.Price descending
+                select new CrossListingResult(){ItemNumber = list.ItemNumber, Title = list.ItemTitle}).AsEnumerable();
 
             return listing;
         }

@@ -44,6 +44,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IListingMetricRepository, ListingMetricRepository>();
 builder.Services.AddScoped<BaseRepository<Postage>, PostageRepository>();
+builder.Services.AddScoped<IImageRepository, ImageRepository>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IListingService, ListingService>();
@@ -52,6 +53,7 @@ builder.Services.AddScoped<IBasicService<Inventory>, InventoryService>();
 builder.Services.AddScoped<IBasicService<Postage>, PostageService>();
 builder.Services.AddScoped<IListingMetricService, ListingMetricService>();
 builder.Services.AddScoped<IBasicService<Postage>, PostageService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 
 builder.Services.AddCors(options =>
 {
