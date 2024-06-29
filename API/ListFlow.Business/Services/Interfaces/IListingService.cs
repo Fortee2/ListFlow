@@ -9,7 +9,7 @@ namespace  ListFlow.Business.Services.Interfaces{
     {
         Task<ServiceResult<Listing>> Create(ListingDTO listing);
 
-        ServiceResult<Listing[]> CreateListings(ListingDTO[] listings);
+        Task CreateListings(ListingDTO[] listings);
         
         ServiceResult<Listing> Delete(Guid id);
 
@@ -35,6 +35,6 @@ namespace  ListFlow.Business.Services.Interfaces{
         ServiceResult<List<ItemNumberResponse>> GetCrossPostSold();
         ServiceResult<string> UpdateDescription(string itemNumber, string description);
 
-        List<Listing> GetListingsToCrossPost();
+        List<CrossListingResult> GetListingsToCrossPost();
     }
 }

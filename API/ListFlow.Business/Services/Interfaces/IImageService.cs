@@ -3,8 +3,7 @@ using ListFlow.Domain.Model;
 
 namespace ListFlow.Business.Services.Interfaces;
 
-public interface IImageService
+public interface IImageService:ISimpleService<Images>
 {
     IEnumerable<Images>? FindByItemNumber(string itemNumber);
-    Task Create(ImageDto obj);
 }

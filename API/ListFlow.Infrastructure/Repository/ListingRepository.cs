@@ -141,14 +141,14 @@ namespace ListFlow.Infrastructure.Repository
             return listing;
         }
         
-        public IEnumerable<Listing> ItemsToCrossList(Guid anchorSalesChannel)
+        public IEnumerable<CrossListingResult> ItemsToCrossList(Guid anchorSalesChannel)
         {
             var listing = (from list in this._dbContext.Listings
                 where list.Active
                       && list.SalesChannel.Id == anchorSalesChannel
                       && list.CrossPostId == null
                 orderby list.Price descending
-                select list).AsEnumerable();
+                select new CrossListingResult(){ItemNumber = list.ItemNumber, Title = list.ItemTitle}).AsEnumerable();
 
             return listing;
         }

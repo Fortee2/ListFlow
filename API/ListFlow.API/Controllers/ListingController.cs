@@ -156,7 +156,7 @@ namespace ListFlow.API.Controllers;
         }
         
         [HttpGet("toCrossPost")]
-        public ActionResult<IEnumerable<Listing>> GetListingsToCrossPost()
+        public ActionResult<IEnumerable<CrossListingResult>> GetListingsToCrossPost()
         {
             var listing = _listingService.GetListingsToCrossPost();
             return Ok(listing);

@@ -2,15 +2,16 @@ using ListFlow.Business.DTO;
 using ListFlow.Business.Services.Interfaces;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Repository;
+using ListFlow.Infrastructure.Repository.Interface;
 using Org.BouncyCastle.Bcpg.Attr;
 
 namespace ListFlow.Business.Services;
 
-public class ImageService:  ISimpleService<Images>, IImageService
+public class ImageService:  IImageService
 {
-    private ImageRepository _imageRepository;
+    private readonly IImageRepository _imageRepository;
     
-    public ImageService(ImageRepository imageRepository)
+    public ImageService(IImageRepository imageRepository)
     {
         _imageRepository = imageRepository;
     }

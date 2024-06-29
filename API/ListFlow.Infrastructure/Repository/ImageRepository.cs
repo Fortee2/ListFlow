@@ -1,8 +1,9 @@
 using ListFlow.Domain.Model;
+using ListFlow.Infrastructure.Repository.Interface;
 
 namespace ListFlow.Infrastructure.Repository;
 
-public class ImageRepository: BaseRepository<Images>
+public class ImageRepository: BaseRepository<Images>, IImageRepository
 {
     public ImageRepository(ApplicationDbContext context) : base(context)
     {
@@ -15,5 +16,10 @@ public class ImageRepository: BaseRepository<Images>
             select img);
 
         return image;
+    }
+
+    public IEnumerable<Images> GetAll()
+    {
+        throw new NotImplementedException();
     }
 }

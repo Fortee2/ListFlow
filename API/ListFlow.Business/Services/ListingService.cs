@@ -57,13 +57,13 @@ namespace ListFlow.Business.Services
             return new ServiceResult<Listing>(newListing);
         }
 
-        public ServiceResult<Listing[]> CreateListings(ListingDTO[] listings)
+        public async Task CreateListings(ListingDTO[] listings)
         {
             List<Listing> newListings = new();
 
-            if (listings == null || !listings.Any())
+            if (!listings.Any())
             {
-                return new ServiceResult<Listing[]>("No listings were provided.");
+                return;
             }
 
             //Listings are grouped by sales channel, so we only need to check the first one
@@ -71,7 +71,7 @@ namespace ListFlow.Business.Services
 
             if (salesChannel == null)
             {
-                return new ServiceResult<Listing[]>("The Sales Channel associated with these listings does not exist.");
+                return; // new ServiceResult<Listing[]>("The Sales Channel associated with these listings does not exist.");
             }
 
             foreach (var listingDto in listings)
@@ -95,15 +95,17 @@ namespace ListFlow.Business.Services
                         LastUpdated = DateTime.Now
                     };
 
-                    _listings.Add(newListing);
                     newListings.Add(newListing);
                     continue;
                 }
                 
-                UpdateListing(existing, listingDto);                
+                UpdateListing(existing, listingDto);
             }
+            
+            await _listings.AddRangeAsync(newListings);
 
-            return new ServiceResult<Listing[]>(newListings.ToArray());
+
+            return; // new ServiceResult<Listing[]>(newListings.ToArray());
         }
 
         public async Task CreateMetrics(ListingDTO[] listingDtos){
@@ -333,9 +335,9 @@ namespace ListFlow.Business.Services
             return new ServiceResult<string>(data:"Saved successfully.");
         }
 
-        public List<Listing> GetListingsToCrossPost()
+        public List<CrossListingResult> GetListingsToCrossPost()
         {
-            return _listings.ItemsToCrossList(Guid.Parse("28e91dfe-9a9d-482d-4aed-08db50d0bd42")).ToList();
+            return _listings.ItemsToCrossList(Guid.Parse("28e91dfe-9a9d-482d-4aed-08db50d0bd42")).Take(20).ToList();
         }
     }
 }
