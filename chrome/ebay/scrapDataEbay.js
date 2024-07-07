@@ -4,22 +4,35 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
     
     async function  checkReadyState() {
       return new Promise((resolve, reject) => {
-        if(document.readyState === 'complete') {
-          console.log('readyState is complete');
-          readTotalItems();
-          retrieveEbay(activeListings, lastTimeInactive).then(resolve);
-        }else{
-          console.log('readyState is not complete');
-          setTimeout(() => checkReadyState().then(resolve), 1000);
+        let timeoutId = setTimeout(() => {
+          clearTimeout(timeoutId);
+          reject(new Error('Page load timed out after 10 seconds'));
+        }, 10000); // 10 seconds timeout
+    
+        function check() {
+          if(document.readyState === 'complete') {
+            clearTimeout(timeoutId);
+            console.log('readyState is complete');
+            readTotalItems().then(retrieveEbay(activeListings, lastTimeInactive).then(resolve( {'result': bulkData, 'count': itemCount})));
+            resolve();
+          } else {
+            console.log('readyState is not complete');
+            setTimeout(check, 1000);
+          }
         }
+    
+        check();
       });
     } 
   
     function readTotalItems() {
-      console.log('readTotalItems');
-      const div = document.querySelector('span[class="result-range"]');
-      itemCount = div.innerHTML.split('of')[1].trim();
-      console.log(itemCount);
+      return new Promise((resolve) => {
+        console.log('readTotalItems');
+        const div = document.querySelector('span[class="result-range"]');
+        itemCount = div.innerHTML.split('of')[1].trim();
+        console.log(itemCount);
+        resolve(itemCount);
+      });
     }
   
     function parseEbayDate(dateString) {
@@ -180,8 +193,7 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
       }
     }
 
-    await checkReadyState();
-    return  {'result': bulkData, 'count': itemCount};
+    return checkReadyState();
   }
 
 

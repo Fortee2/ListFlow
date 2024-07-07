@@ -1,4 +1,4 @@
-export async function scrapData(completedListings, listingType, downloadImages) {
+export async function scrapData(activeListings, listingType, downloadImages) {
     let bulkData = [];
   
     function checkReadyState() {
@@ -57,9 +57,62 @@ export async function scrapData(completedListings, listingType, downloadImages) 
     }
 
     function retrieveMercari() {
+      if(listingType === 'active' || listingType === 'inactive') {
+        return parseListings();
+      } else {
+        return parseSoldListings();
+      }
+    }
+
+    function parseSoldListings() {
+      return new Promise((resolve, reject) => {
+        const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
+        
+        lis.forEach(f => {
+          const ele = f.getElementsByTagName('td')[1].getElementsByTagName('div')[0];
+          const titleLink = ele.getElementsByTagName('a')[0];
+          const itmNumber = titleLink.href.split('/')[5]
+          const itemTitle = titleLink.innerText;
+          const price = f.getElementsByTagName('p')[0].innerText.replace('$', '').trim();
+
+          const eleDate = f.getElementsByTagName('td')[5].innerText;
+          const parsedDate = parseDate(eleDate);
+
+          const eleLikes = f.getElementsByTagName('td')[3].innerText;
+          const eleViews = f.getElementsByTagName('td')[4].innerText;
+
+          var itm = {  
+            itemTitle: itemTitle,
+            itemNumber: itmNumber,
+            description: itemTitle,
+            salesChannel: 'Mercari',
+            active: activeListings,
+            listingDate: parsedDate,
+            listingDateType: 2,
+            views: eleViews,
+            likes: eleLikes,
+            price: price
+          };  
+
+          console.log(itm);
+
+          bulkData.push(itm);
+        });
+
+        console.log('bulkData', bulkData);
+        chrome.runtime.sendMessage({ 
+          action: 'saveToListingAPI',
+          item: bulkData
+        });
+
+        resolve(bulkData);
+      });
+    }
+
+    function parseListings() {
       return new Promise((resolve, reject) => {
         const lis = document.querySelectorAll('li[data-testid="ListingRow"]');
-  
+        
         lis.forEach(f => {
           const ele = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('a'); 
           const itmNumber = ele.href.split('/')[5]
@@ -69,10 +122,6 @@ export async function scrapData(completedListings, listingType, downloadImages) 
           const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
           let imageUrl = "";
             
-          if(ele.innerHTML.startsWith('Bundle')) {
-            return;
-          }
-
           if(listingType === 'active') {
             price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
             imageUrl ='https://u-mercari-images.mercdn.net/photos/' + itmNumber + '_1.jpg?format=pjpg&auto=webp&fit=crop';
@@ -97,12 +146,14 @@ export async function scrapData(completedListings, listingType, downloadImages) 
 
           var parsedDate = parseDate(divLastUpdated.innerHTML);
 
+          console.log('parsedDate', parsedDate);
+
           var itm = { 
             itemTitle: ele.innerHTML,
             itemNumber: itmNumber,
             description: ele.innerHTML,
             salesChannel: 'Mercari',
-            active: completedListings,
+            active: activeListings,
             likes: divLike.innerHTML,
             views: divViews.innerHTML,
             price: price,
@@ -132,6 +183,7 @@ export async function scrapData(completedListings, listingType, downloadImages) 
         resolve(bulkData);
       });
     }
+
 
     await checkReadyState(); 
     return bulkData;
