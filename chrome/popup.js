@@ -8,14 +8,10 @@ document.getElementById('openOptions').addEventListener('click', function() {
   chrome.runtime.openOptionsPage();
 });
 
-/* document.getElementById('selectChannel').addEventListener('change', function() {
-  let selectedOption = this.value;
-  //TODO:  Add logic to show/hide the listing type select list
-}); */
-
-document.getElementById('snipeButton').addEventListener('click', () => {
+document.getElementById('copyButton').addEventListener('click', () => {
+  let selectedSalesChannel = getSelectedSalesChannel();
   let itemNumber = document.getElementById('selectListing').value;
-  chrome.runtime.sendMessage({ action: 'migrateMercari', itemNumber: itemNumber});
+  chrome.runtime.sendMessage({ action: 'copyListing', itemNumber: itemNumber, salesChannel: selectedSalesChannel});
 });
 
 function getSelectedStatusValue() {
@@ -31,21 +27,21 @@ function getSelectedSalesChannel() {
 }
 
 window.onload = function() {
-  retrieveFromServer();
+  //retrieveFromServer();
   // Try to load the data from chrome.storage
-  /* chrome.storage.sync.get(['listData'], function(result) {
+  chrome.storage.sync.get(['listData'], function(result) {
     if (result.listData) {
-      if(result.listData.length > 0) {
+      if(result.listData.length > 3) {
         // If the data is already stored, load it from chrome.storage
         populateDropdown(result.listData);
         return;
+      } else {
+        retrieveFromServer();
       }
-      
-      retrieveFromServer();
     } else {
      retrieveFromServer();
     } 
-  });*/
+  });
 };
 
 function retrieveFromServer() {
@@ -56,9 +52,8 @@ function retrieveFromServer() {
       .then(data => {
         // Store the fetched data in chrome.storage for future use
         console.log(data);
-        chrome.storage.sync.set({listData: data}, function() {
-         
-        });
+        chrome.storage.sync.set({listData: data}, function() {   
+      });
 
         // Populate the dropdown with the fetched data
         populateDropdown(data);

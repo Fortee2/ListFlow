@@ -27,6 +27,12 @@ document.getElementById('close').addEventListener('click', function() {
   window.close();
 });
 
+document.getElementById('clear').addEventListener('click', function() {
+  chrome.storage.sync.set({listData: []}, function() {   
+  });
+});
+
+
 window.onload = function() {
     chrome.storage.sync.get('serverURI', function(data) {
       document.getElementById('serverURI').value = data.serverURI;

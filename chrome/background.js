@@ -14,6 +14,7 @@ import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
 import { createMercariListing } from "./mercari/createMercariListing.js";
 import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
+import { createDistrictListing } from "./district/createDistrictListing.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -30,6 +31,7 @@ const priceChanges = new Map();
 
 let isDownloading = false;
 let isDownloadingImage = false;
+let copyToSalesChannel = '';
 let oldTab = [];
 let serverURI = "http://demo.api.com";
 let lastTimeInactive = "2024-01-01";
@@ -135,8 +137,9 @@ chrome.runtime.onMessage.addListener(async (request) => {
       downloadImages = request.downloadImages;
       ProcessSalesChannel(request.listingType);
       break;
-    case "migrateMercari":
+    case "copyListing":
       console.log("Copy Requested");
+      copyToSalesChannel = request.salesChannel;
       await copyEbayListingDetails(request.itemNumber);
       break;
     case "listingCopied": 
@@ -149,7 +152,12 @@ chrome.runtime.onMessage.addListener(async (request) => {
       console.log("Description Copied");
       console.log(request.listing);
       console.log("Cross Post Requested");
-      await crossPostListing(request.listing);
+      if(copyToSalesChannel === "Mercari"){
+        await postListingToMercari(request.listing);
+      }
+      else{
+        await saveListingToDistrict(request.listing);
+      }
       updateCrossPostList(request.listing.itemNumber);
       break;
     case "mercariCreated":
@@ -340,7 +348,7 @@ async function processShippingInfoQueue() {
   processShippingInfoQueue(); // recursively process the next request in the queue
 }
 
-async function crossPostListing(ebayListing) {
+async function postListingToMercari(ebayListing) {
   let tab = await loadTab(mercariConstants.CreateListingUrl);
   oldTab.push(tab.id);
   await delay(getRandomInt(3000, 5000));
@@ -351,7 +359,21 @@ async function crossPostListing(ebayListing) {
   }).catch((error) => {
     console.error("Error executing script:", error);  
   });
+}
 
+async function saveListingToDistrict(ebayListing) {
+  let tab = await loadTab("https://district.net/admin/listings?createProductIn=niknax");
+  oldTab.push(tab.id);
+
+  await delay(getRandomInt(3000, 5000));
+
+  chrome.scripting.executeScript({
+    args: [ebayListing],
+    target: { tabId: tab.id },
+    function: createDistrictListing,
+  }).catch((error) => {
+    console.error("Error executing script:", error);
+  });
 }
 
 async function saveNewListing( ebayListing) {
@@ -368,7 +390,7 @@ async function saveNewListing( ebayListing) {
     listingDateType: 0,
     views: "0",
     likes: "0",
-    price: "6.16"
+    price: ebayListing.price,
   });
 
   await saveItemToDatabase(bulkData);
@@ -759,7 +781,7 @@ function updateCrossPostList(itemNumber){
     if (result.listData) {
       let data = result.listData;
       let item = data.find(x => x.itemNumber === itemNumber);
-      data.splice(data.indexOf(item,1));
+      data.splice(data.indexOf(item),1);
       chrome.storage.sync.set({ listData: data }, function() {
         console.log('Data is updated in Chrome storage');
       });
