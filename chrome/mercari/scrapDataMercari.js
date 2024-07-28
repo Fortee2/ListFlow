@@ -12,7 +12,7 @@ export async function scrapData(activeListings, listingType, downloadImages) {
           if(document.readyState === 'complete') {
             clearTimeout(timeoutId);
             console.log('readyState is complete');
-            retrieveMercari(); 
+            retrieveMercari().then(resolve).catch((error) => console.log(error)); 
             resolve();
           } else {
             console.log('readyState is not complete');
@@ -66,124 +66,102 @@ export async function scrapData(activeListings, listingType, downloadImages) {
 
     function parseSoldListings() {
       return new Promise((resolve, reject) => {
-        const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
+        try{
+          const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
         
-        lis.forEach(f => {
-          const ele = f.getElementsByTagName('td')[1].getElementsByTagName('div')[0];
-          const titleLink = ele.getElementsByTagName('a')[0];
-          const itmNumber = titleLink.href.split('/')[5]
-          const itemTitle = titleLink.innerText;
-          const price = f.getElementsByTagName('p')[0].innerText.replace('$', '').trim();
-
-          const eleDate = f.getElementsByTagName('td')[5].innerText;
-          const parsedDate = parseDate(eleDate);
-
-          const eleLikes = f.getElementsByTagName('td')[3].innerText;
-          const eleViews = f.getElementsByTagName('td')[4].innerText;
-
-          var itm = {  
-            itemTitle: itemTitle,
-            itemNumber: itmNumber,
-            description: itemTitle,
-            salesChannel: 'Mercari',
-            active: activeListings,
-            listingDate: parsedDate,
-            listingDateType: 2,
-            views: eleViews,
-            likes: eleLikes,
-            price: price
-          };  
-
-          console.log(itm);
-
-          bulkData.push(itm);
-        });
-
-        console.log('bulkData', bulkData);
-        chrome.runtime.sendMessage({ 
-          action: 'saveToListingAPI',
-          item: bulkData
-        });
-
-        resolve(bulkData);
+          lis.forEach(f => {
+            const ele = f.getElementsByTagName('td')[2].getElementsByTagName('div')[0];
+            const titleLink = ele.getElementsByTagName('a')[0];
+            const itmNumber = titleLink.href.split('/')[5]
+            const itemTitle = titleLink.innerText;
+            const price = f.getElementsByTagName('p')[0].innerText.replace('$', '').trim();
+  
+            const eleDate = f.getElementsByTagName('td')[6].innerText;
+            const parsedDate = parseDate(eleDate);
+  
+            const eleLikes = f.getElementsByTagName('td')[4].innerText;
+            const eleViews = f.getElementsByTagName('td')[5].innerText;
+  
+            var itm = {  
+              itemTitle: itemTitle,
+              itemNumber: itmNumber,
+              description: itemTitle,
+              salesChannel: 'Mercari',
+              active: activeListings,
+              listingDate: parsedDate,
+              listingDateType: 2,
+              views: eleViews,
+              likes: eleLikes,
+              price: price
+            };  
+  
+            console.log(itm);
+  
+            bulkData.push(itm);
+          });
+  
+          console.log('bulkData', bulkData);
+          chrome.runtime.sendMessage({ 
+            action: 'saveToListingAPI',
+            item: bulkData
+          });
+  
+          resolve(bulkData);
+        }
+        catch (error) {
+          reject(error);
+        }
       });
     }
 
     function parseListings() {
       return new Promise((resolve, reject) => {
-        const lis = document.querySelectorAll('li[data-testid="ListingRow"]');
+        try {
+          const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
         
-        lis.forEach(f => {
-          const ele = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('a'); 
-          const itmNumber = ele.href.split('/')[5]
-          let price; 
-          const divLike = f.querySelector('div[data-testid="RowItemWithLikes"]').querySelector('p');
-          const divViews = f.querySelector('div[data-testid="RowItemWithViews"]').querySelector('p');
-          const divLastUpdated = f.querySelector('div[data-testid="RowItemWithUpdated"]').querySelector('p'); 
-          let imageUrl = "";
-            
-          if(listingType === 'active') {
-            price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelector('input[name="price"]').value;
-            imageUrl ='https://u-mercari-images.mercdn.net/photos/' + itmNumber + '_1.jpg?format=pjpg&auto=webp&fit=crop';
-          } else {
-            price = f.querySelector('div[data-testid="RowItemWithMeta"]').querySelectorAll('a')[1].innerHTML.replace('$', '').trim();
-          }
+          lis.forEach(f => {
+            const ele = f.getElementsByTagName('td')[2].getElementsByTagName('div')[0];
+            const titleLink = ele.getElementsByTagName('a')[0];
+            const itmNumber = titleLink.href.split('/')[5]
+            const itemTitle = titleLink.innerText;
+            const price = f.querySelector('input[name="price"]').value.replace('$', '').trim();
   
-          let listingDateType;
+            const eleDate = f.getElementsByTagName('td')[6].innerText;
+            const parsedDate = parseDate(eleDate);
   
-          switch(listingType) {
-            case 'active':
-              listingDateType = 0;
-              break;
-            case 'inactive':
-              listingDateType = 1;
-              break;
-            case 'inprogress':
-            case 'complete':
-              listingDateType = 2;
-              break;
-          }
+            const eleLikes = f.getElementsByTagName('td')[4].innerText;
+            const eleViews = f.getElementsByTagName('td')[5].innerText;
+  
+            var itm = {  
+              itemTitle: itemTitle,
+              itemNumber: itmNumber,
+              description: itemTitle,
+              salesChannel: 'Mercari',
+              active: activeListings,
+              listingDate: parsedDate,
+              listingDateType: 2,
+              views: eleViews,
+              likes: eleLikes,
+              price: price
+            };  
+  
+            console.log(itm);
+  
+            bulkData.push(itm);
+          });
 
-          var parsedDate = parseDate(divLastUpdated.innerHTML);
+          console.log('bulkData', bulkData);
+          chrome.runtime.sendMessage({ 
+            action: 'saveToListingAPI',
+            item: bulkData
+          });
 
-          console.log('parsedDate', parsedDate);
-
-          var itm = { 
-            itemTitle: ele.innerHTML,
-            itemNumber: itmNumber,
-            description: ele.innerHTML,
-            salesChannel: 'Mercari',
-            active: activeListings,
-            likes: divLike.innerHTML,
-            views: divViews.innerHTML,
-            price: price,
-            listingDate: parsedDate,
-            listingDateType: listingDateType,
-            shipping: '',
-            shippingCost: '',
-            shippingService: '',
-            shippingWeight: '',
-           };
-
-           console.log(itm);
-
-          bulkData.push(itm);
-
-            if(imageUrl !== "" && downloadImages){
-              chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: ele.href.split('/')[5] + '.png'});
-            } 
-        });
-
-        console.log('bulkData', bulkData);
-        chrome.runtime.sendMessage({ 
-          action: 'saveToListingAPI',
-          item: bulkData
-        });
-
-        resolve(bulkData);
+          resolve(bulkData);
+        } catch (error) {
+          reject(error);
+        }
       });
     }
-
 
     await checkReadyState(); 
     return bulkData;
@@ -221,7 +199,7 @@ export async function retrievePageCount(listingType, tab){
 
 function readTotalItems() {
   console.log('readTotalItems');
-  const div = document.querySelectorAll('h5[data-testid="FilterCount"]');
+  const div = document.querySelectorAll('p[data-testid="FilterCount"]');
   let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
   return counts;
 }
