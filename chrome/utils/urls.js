@@ -26,10 +26,20 @@ export function getMercariURLs() {
     const urls = [
       {'type': 'active', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/sort:stock,order:ascending,view:table', 'activeListings': true}, 
       {'type': 'inactive', 'url': 'https://www.etsy.com/your/shops/thoughthemoondoor/tools/listings/state:inactive,view:table', 'activeListings': false},
-      {'type': 'complete', 'url': 'https://www.etsy.com/your/shops/me/tools/listings/state:sold_out,sort:stock,order:ascending,view:table', 'activeListings': false},
+      {'type': 'complete', 'url': 'https://www.etsy.com/your/shops/me/tools/listings/state:sold_out,view:table', 'activeListings': false},
     ];  
   
     return urls;
+  }
+
+  export function searchEtsyURLs(searchTerm) {
+    let etsyURLs = getEtsyURLs();
+
+    if(searchTerm === 'all') {
+      return etsyURLs;
+    }
+    
+    return etsyURLs.filter(x => x.type === searchTerm);
   }
 
   export function searchMercariURLs(searchTerm) {

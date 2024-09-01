@@ -1,4 +1,4 @@
-export async function scrapData(activeListings, listingType, downloadImages) {
+export async function scrapData(activeListings, listingType) {
     let bulkData = [];
   
     function checkReadyState() {
@@ -57,7 +57,7 @@ export async function scrapData(activeListings, listingType, downloadImages) {
     }
 
     function retrieveMercari() {
-      if(listingType === 'active' || listingType === 'inactive') {
+      if(listingType === 'active') {
         return parseListings();
       } else {
         return parseSoldListings();
@@ -68,19 +68,33 @@ export async function scrapData(activeListings, listingType, downloadImages) {
       return new Promise((resolve, reject) => {
         try{
           const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
+          let titleColumn = 2;
+          let dateColumn = 6;
+          let likesColumn = 4;
+          let viewsColumn = 5;
+          
+          switch(listingType) {
+            case 'inprogress':
+            case 'complete':
+              titleColumn = 1;
+              dateColumn = 5;
+              likesColumn = 3;
+              viewsColumn = 4;
+              break;
+          }
         
           lis.forEach(f => {
-            const ele = f.getElementsByTagName('td')[2].getElementsByTagName('div')[0];
+            const ele = f.getElementsByTagName('td')[titleColumn].getElementsByTagName('div')[0];
             const titleLink = ele.getElementsByTagName('a')[0];
             const itmNumber = titleLink.href.split('/')[5]
             const itemTitle = titleLink.innerText;
             const price = f.getElementsByTagName('p')[0].innerText.replace('$', '').trim();
   
-            const eleDate = f.getElementsByTagName('td')[6].innerText;
+            const eleDate = f.getElementsByTagName('td')[dateColumn].innerText;
             const parsedDate = parseDate(eleDate);
   
-            const eleLikes = f.getElementsByTagName('td')[4].innerText;
-            const eleViews = f.getElementsByTagName('td')[5].innerText;
+            const eleLikes = f.getElementsByTagName('td')[likesColumn].innerText;
+            const eleViews = f.getElementsByTagName('td')[viewsColumn].innerText;
   
             var itm = {  
               itemTitle: itemTitle,
@@ -89,7 +103,7 @@ export async function scrapData(activeListings, listingType, downloadImages) {
               salesChannel: 'Mercari',
               active: activeListings,
               listingDate: parsedDate,
-              listingDateType: 2,
+              listingDateType: listingType == "inactive" ? 1 : 2,
               views: eleViews,
               likes: eleLikes,
               price: price
@@ -139,7 +153,7 @@ export async function scrapData(activeListings, listingType, downloadImages) {
               salesChannel: 'Mercari',
               active: activeListings,
               listingDate: parsedDate,
-              listingDateType: 2,
+              listingDateType: 0,
               views: eleViews,
               likes: eleLikes,
               price: price

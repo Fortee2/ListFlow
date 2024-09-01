@@ -24,23 +24,15 @@ export async function scrapDataEtsy(completedListings, listingType) {
     }
   
     function parseDate(div) {
-      const text = div.textContent.trim();
+      const text = div.trim();
 
       // Extract the date string
-      const dateString = text.split(' ')[1] + ' ' + text.split(' ')[2];
+      const dateArray = text.split(' ');
       
-      // Convert month name to month number
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const monthNumber = monthNames.indexOf(dateString.split(' ')[0]);
-
-      // Construct a new date string with full month name
-      const newDateString = dateString.replace(dateString.split(' ')[0], monthNumber + 1);
+      const dateString = dateArray[dateArray.length-3] + ' ' + dateArray[dateArray.length-2] + ' ' + dateArray[dateArray.length - 1];
 
       // Parse the date string into a Date object
-      const date = new Date(newDateString);
-
-      // Subtract 4 months from the date
-      date.setMonth(date.getMonth() - 4);
+      const date = new Date(dateString);
 
       // Return the adjusted date
       return date;
@@ -51,12 +43,14 @@ export async function scrapDataEtsy(completedListings, listingType) {
         const lis = document.querySelectorAll('div[class="panel-body-row"]');
   
         lis.forEach(f => {
-          const itemLink = f.querySelector('div[class="listing-row-title vertical-align-top flag-body"]').querySelector('a'); 
+          const itemLink = f.querySelector('div[class="listing-row-title wt-vertical-align-top flag-body"]').querySelector('a'); 
           console.log(itemLink.href);
           const itmNumber = itemLink.href.split('/')[8].split('?')[0];
           console.log(itmNumber);
-          const divLastUpdated = f.querySelector('div.meta-listing-state');  
-          const price = f.querySelector('div[id="nondgp-price"]').querySelector('span[class="currency-value"]').innerText;
+          const divLastUpdated = f.querySelector('div.meta-listing-state').innerText;  
+          console.log(divLastUpdated);
+          console.log(parseDate(divLastUpdated));
+          const price = f.querySelector('div[id="nondgp-price"]').innerText;
           let listingDateType;
   
           switch(listingType) {

@@ -3,7 +3,7 @@
  import { scrapEbayDescriptions } from "./ebay/scrapDescription.js";
 import { scrapEbayPostage } from "./ebay/postage.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
-import { searchEbayURLs, searchMercariURLs, getEtsyURLs, getMercariItemURL } from './utils/urls.js';
+import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL } from './utils/urls.js';
 import {mercariConstants} from "./mercari/mercariConstants.js";
 import { correctPriceMercari } from "./mercari/priceMercari.js";
 import { retrieveItemDetails } from "./mercari/itemPageDetails.js";
@@ -586,7 +586,7 @@ async function retrieveEtsyData(listingType, downloadImages) {
     let titles = []; //Array to hold scraped data
 
     //Use Type to find the URL
-    let url = getEtsyURLs(listingType);
+    let url = searchEtsyURLs(listingType);
     console.log(url);
     for (const link of url) {
       const activeListings = link.activeListings;
