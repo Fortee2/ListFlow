@@ -14,6 +14,24 @@ document.getElementById('copyButton').addEventListener('click', () => {
   chrome.runtime.sendMessage({ action: 'copyListing', itemNumber: itemNumber, salesChannel: selectedSalesChannel});
 });
 
+document.getElementById('addBidButton').addEventListener('click', function() {
+  const itemNumber = document.getElementById('itemNumber').value;
+  const maxBid = document.getElementById('maxBid').value;
+
+  if (itemNumber && maxBid) {
+    const bidList = document.getElementById('bidList');
+    const bidItem = document.createElement('div');
+    bidItem.textContent = `Item Number: ${itemNumber}, Max Bid: $${maxBid}`;
+    bidList.appendChild(bidItem);
+
+    // Clear the input fields
+    document.getElementById('itemNumber').value = '';
+    document.getElementById('maxBid').value = '';
+  } else {
+    alert('Please enter both item number and max bid.');
+  }
+});
+
 function getSelectedStatusValue() {
   const selectList = document.getElementById('selectType');
   const isSelected = selectList.selectedOptions[0].value;

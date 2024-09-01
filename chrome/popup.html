@@ -70,7 +70,6 @@
           <option value="complete">Complete</option>
         </select>
       </div>
-        
     </div>
     
     <div style="padding: 4px;">
@@ -93,7 +92,28 @@
     <div style="float: left; width: 50%;">
       <button class="button-12" id="openOptions">Options</button>
     </div>
+    
+    <hr />
+    <div>
+      <h2>ShopGoodwill Bids</h2>
+      <form id="bidForm">
+        <div style="padding: 4px;">
+          <label for="itemNumber">Item Number:</label>
+          <input type="text" id="itemNumber" name="itemNumber" style="width: 100%;" />
+        </div>
+        <div style="padding: 4px;">
+          <label for="maxBid">Max Bid ($):</label>
+          <input type="number" id="maxBid" name="maxBid" style="width: 100%;" />
+        </div>
+        <div style="padding: 4px;">
+          <button type="button" class="button-12" id="addBidButton">Add Bid</button>
+        </div>
+      </form>
+      <div id="bidList" style="padding: 4px;">
+        <!-- List of bids will be displayed here -->
+      </div>
+    </div>
+    
     <script src="popup.js"></script>
-   
   </body>
 </html>
