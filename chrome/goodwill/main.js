@@ -45,32 +45,6 @@ function scrapGoodwill() {
         }
     }
 
-    function calculateFutureTime(timeString) {
-        const timeComponents = timeString.split(" ");
-        let totalMinutes = 0;
-
-        for (const component of timeComponents) {
-            const unit = component.slice(-1);
-            const value = parseInt(component.slice(0, -1));
-
-            switch (unit) {
-                case "d":
-                    totalMinutes += value * 24 * 60;
-                    break;
-                case "h":
-                    totalMinutes += value * 60;
-                    break;
-                case "m":
-                    totalMinutes += value;
-                    break;
-                default:
-                    console.error("Unknown time unit:", unit);
-            }
-        }
-
-        return totalMinutes * 60000;
-    }
-
     function executeBid() {
         try {
             let el = document.getElementById("currentBid");
@@ -115,3 +89,4 @@ function scrapGoodwill() {
 
     checkReadyState().catch(error => console.error(error));
 }
+

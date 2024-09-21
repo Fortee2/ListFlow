@@ -10,27 +10,33 @@ and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 
 select count(ItemNumber)
 from Listing
-where  ifnull(dateListed, dateSold) < '2024-06-01'
-and (dateSold > '2024-06-01'
-    or dateEnded > '2024-06-01'
+where  ifnull(dateListed, dateSold) < '2024-08-01'
+and (dateSold > '2024-08-01'
+    or dateEnded > '2024-08-01'
     or (ISNULL(DateEnded) and ISNULL(DateSold))
 )
 and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 
 
 
-select *
+select count(id)
 from Listing
-where (dateSold  BETWEEN '2024-05-01' and '2024-06-01');
+where (dateSold  BETWEEN '2024-08-01' and '2024-09-01');
 
 select *
 from Listing
-where  ifnull(dateListed, dateSold)  BETWEEN '2024-05-01' and '2024-06-01'
+where  ifnull(dateListed, dateSold)  BETWEEN '2024-06-01' and '2024-07-01'
 and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 
 
-select *
+select count(id)
 from Listing
-where DateEnded  BETWEEN '2024-05-01' and '2024-06-01'
+where DateEnded  BETWEEN '2024-07-01' and '2024-08-01'
     and ISNULL(DateSold)
+and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
+
+
+select count(id)
+from Listing
+where active = 1
 and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';

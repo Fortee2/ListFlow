@@ -1,4 +1,4 @@
-export async function scrapData(activeListings, listingType, downloadImages) {
+export async function scrapData(activeListings, listingType) {
     let bulkData = [];
   
     function checkReadyState() {

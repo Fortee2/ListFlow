@@ -15,6 +15,8 @@ import { getActiveTab, loadTab } from "./utils/tabs.js";
 import { createMercariListing } from "./mercari/createMercariListing.js";
 import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
 import { createDistrictListing } from "./district/createDistrictListing.js";
+import AuctionDetails from "./goodwill/auctionDetails.js";
+import retrieveAuctionDetails from "./goodwill/functions/retrieveAuctionDetails.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -34,7 +36,7 @@ let isDownloadingImage = false;
 let copyToSalesChannel = '';
 let oldTab = [];
 let serverURI = "http://demo.api.com";
-let lastTimeInactive = "2024-01-01";
+let ebayLastInactive = "2024-01-01";
 let removeInactiveListings = false;
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -44,6 +46,7 @@ chrome.runtime.onInstalled.addListener(() => {
     createExport: null,
     updatePrice: null, 
     removeInactiveListings: null,
+    ebayLastInactive: "2024-01-01",
   }, function(data) {
     if (data.serverURI === null) {
       chrome.storage.sync.set({ serverURI: "http://demo.api.com" }, function() {
@@ -83,18 +86,22 @@ chrome.storage.sync.get({
   createExport: false,
   updatePrice: false,
   removeInactiveListings: false,
-  lastTimeInactive: "2024-01-01",
+  ebayLastInactive: "2024-01-01",
 }, function(data) {
+  console.log(data);
   serverURI = data.serverURI;
   createExport = data.createExport;
   updatePrice = data.updatePrice;
   removeInactiveListings = data.removeInactiveListings;
-  lastTimeInactive = data.lastTimeInactive;
+  ebayLastInactive = data.ebayLastInactive;
 });
 
 chrome.runtime.onMessage.addListener(async (request) => {
   console.log("Received message:", request.action);
   switch(request.action) {
+    case "goodwillAuctionDetails":
+      processAuctionDetails(request.url);
+      break;
     case "downloadImage":
       imageQueue.push({"url":request.url, "fileName":request.filename}); // enqueue the request
       processImageQueue(); // process the queue
@@ -225,7 +232,8 @@ async function ProcessSalesChannel( listingType) {
     case "eBay":
       await endEbayInactive(listingType)
       .then(async () => {
-        await retrieveEbayData(listingType, downloadImages, lastTimeInactive);
+        console.log(ebayLastInactive);
+        await retrieveEbayData(listingType, downloadImages, ebayLastInactive);
       })
       .then(() => {
         processDescQueue();
@@ -512,7 +520,7 @@ function getMispricedItems() {
   });
 }
 
-async function retrieveEbayData(listingType, downloadImages) {
+async function retrieveEbayData(listingType, downloadImages, lastTimeInactive) {
   try {
     const urls =  searchEbayURLs(listingType);
 
@@ -525,7 +533,7 @@ async function retrieveEbayData(listingType, downloadImages) {
         await delay(getRandomInt(5000, 30000));
         const result = await new Promise(resolve => {
           chrome.scripting.executeScript({
-            args:[url.activeListings, downloadImages],
+            args:[url.activeListings, downloadImages, lastTimeInactive],
             target: { tabId: tab.id },
             function: scrapDataEbay,
           }, resolve);
@@ -541,7 +549,7 @@ async function retrieveEbayData(listingType, downloadImages) {
         }
       }while(pageCount <= totalPages );
 
-      if(listingType === 'all'){
+      if(listingType === 'all' || listingType === 'complete'){
         chrome.storage.sync.set({ ebayLastInactive: Date.now() }, function() {
             console.log('EbayLastInactive saved.');
           }
@@ -787,4 +795,33 @@ function updateCrossPostList(itemNumber){
       });
     }
   }); 
+}
+
+function processAuctionDetails(url) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    const currentTab = tabs[0];
+    //const auctionDetails = new AuctionDetails();
+    
+    console.log(currentTab);
+    chrome.scripting.executeScript({
+      target: { tabId: currentTab.id },
+      function: retrieveAuctionDetails
+     }, (results) => {
+      if (chrome.runtime.lastError) {
+        console.error("Script execution failed:", chrome.runtime.lastError);
+        return;
+      }
+
+      console.log(`Results: ${results[0]}`);
+      
+      if (results && results[0] && results[0].result) {
+        let auctionData = results[0].result;
+        auctionData.url = url;
+        console.log(auctionData);
+
+        const auctionDetails = new AuctionDetails();
+        auctionDetails.addAuctionDetailsToStorage(auctionData);
+      } 
+    });
+  });
 }

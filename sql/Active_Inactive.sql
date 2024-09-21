@@ -8,11 +8,9 @@ update listflow.Listing set active = 0 where itemnumber = '1363483067';
 UPDATE listflow.Listing set active = 0 where active = 1 and dateSold is not null;
 
 select * from listflow.Listing 
-where itemnumber = 'm22921426077'
+where itemtitle like '%starcraft%'
 order by dateSold desc;
 
-select * from listflow.SalesChannel;
-    
 
 update listflow.Listing set active =1, datesold = null where itemnumber ='m42834175894';
 

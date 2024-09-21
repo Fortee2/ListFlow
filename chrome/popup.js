@@ -15,21 +15,19 @@ document.getElementById('copyButton').addEventListener('click', () => {
 });
 
 document.getElementById('addBidButton').addEventListener('click', function() {
-  const itemNumber = document.getElementById('itemNumber').value;
-  const maxBid = document.getElementById('maxBid').value;
+  // Get the current tab URL
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    const currentTab = tabs[0];
+    const currentUrl = currentTab.url;
 
-  if (itemNumber && maxBid) {
-    const bidList = document.getElementById('bidList');
-    const bidItem = document.createElement('div');
-    bidItem.textContent = `Item Number: ${itemNumber}, Max Bid: $${maxBid}`;
-    bidList.appendChild(bidItem);
+    if (!currentUrl.includes('shopgoodwill')) {
+      alert('This feature only works on Goodwill pages.');
+      return;
+    }
+    
+    chrome.runtime.sendMessage({ action: 'goodwillAuctionDetails', url: currentUrl });
 
-    // Clear the input fields
-    document.getElementById('itemNumber').value = '';
-    document.getElementById('maxBid').value = '';
-  } else {
-    alert('Please enter both item number and max bid.');
-  }
+  });
 });
 
 function getSelectedStatusValue() {
@@ -45,20 +43,34 @@ function getSelectedSalesChannel() {
 }
 
 window.onload = function() {
-  //retrieveFromServer();
-  // Try to load the data from chrome.storage
   chrome.storage.sync.get(['listData'], function(result) {
     if (result.listData) {
       if(result.listData.length > 3) {
         // If the data is already stored, load it from chrome.storage
         populateDropdown(result.listData);
-        return;
       } else {
         retrieveFromServer();
       }
     } else {
      retrieveFromServer();
     } 
+  });
+
+   // Retrieve auctionDetails from chrome.storage
+   chrome.storage.sync.get(['auctionDetails'], function(data) {
+    if (data.auctionDetails) {
+      console.log("Retrieved auction details:", data.auctionDetails);
+      // Use the retrieved auction details as needed
+      for (const auctionDetail of data.auctionDetails) {
+        console.log(auctionDetail);
+        const bidList = document.getElementById('bidList');
+        const bidItem = document.createElement('div');
+        bidItem.textContent = `URL: <a href='${auctionDetail.url}'>${auctionDetail.itemTitle}</a> Max Bid: $${auctionDetail.maxBid}`;
+        bidList.appendChild(bidItem);
+      }
+    } else {
+      console.log("No auction details found in chrome.storage");
+    }
   });
 };
 

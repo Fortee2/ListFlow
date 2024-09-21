@@ -1,4 +1,5 @@
 update listflow.Listing set ItemTitle = replace(ItemTitle, '  ', ' ');
+update listflow.Listing set ItemTitle = replace(ItemTitle, '&amp;', '&');
 
 select concat('UPDATE listflow.Listing SET CrossPostId = ''', e.Id, ''' WHERE ID = ''', e.Id, '''; UPDATE listflow.Listing SET CrossPostId = ''', e.Id, ''' WHERE ID = ''', m.Id, ''';')
 FROM listflow.Listing e

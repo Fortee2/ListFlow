@@ -112,10 +112,12 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
         });  
       }
       
-      chrome.runtime.sendMessage({ 
-        action: 'saveToListingAPI',
-        item: bulkData
-      });
+      if(bulkData.length > 0) {
+        chrome.runtime.sendMessage({ 
+          action: 'saveToListingAPI',
+          item: bulkData
+        });
+      }
     }
 
     function parseEbayPrice(priceElement) {
