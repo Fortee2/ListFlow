@@ -30,6 +30,10 @@ document.getElementById('addBidButton').addEventListener('click', function() {
   });
 });
 
+document.getElementById('watchButton').addEventListener('click', function() {
+  chrome.runtime.sendMessage({ action: 'goodwillCheckAuctions'});
+});
+
 function getSelectedStatusValue() {
   const selectList = document.getElementById('selectType');
   const isSelected = selectList.selectedOptions[0].value;
@@ -57,15 +61,15 @@ window.onload = function() {
   });
 
    // Retrieve auctionDetails from chrome.storage
-   chrome.storage.sync.get(['auctionDetails'], function(data) {
+   chrome.storage.local.get(['auctionDetails'], function(data) {
     if (data.auctionDetails) {
       console.log("Retrieved auction details:", data.auctionDetails);
       // Use the retrieved auction details as needed
+      const bidList = document.getElementById('bidList');
       for (const auctionDetail of data.auctionDetails) {
         console.log(auctionDetail);
-        const bidList = document.getElementById('bidList');
         const bidItem = document.createElement('div');
-        bidItem.textContent = `URL: <a href='${auctionDetail.url}'>${auctionDetail.itemTitle}</a> Max Bid: $${auctionDetail.maxBid}`;
+        bidItem.textContent = `URL: <a href='${auctionDetail.url}'>${auctionDetail.itemTitle}</a> Max Bid: $${auctionDetail.maxBid} End Time: ${auctionDetail.actualEndTime}`;
         bidList.appendChild(bidItem);
       }
     } else {

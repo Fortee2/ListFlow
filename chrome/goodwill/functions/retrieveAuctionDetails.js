@@ -5,9 +5,13 @@ export default function retrieveAuctionDetails() {
         let timeLeft = document.querySelectorAll(`span[${serverAttribute}]`)[0].getElementsByTagName("span")[0].innerText;
         let price = document.querySelectorAll(`h3[${serverAttribute}]`)[1].innerText;
         let futureTime = calculateFutureTime(timeLeft);
+        const date = Date.now();
+
+        const endDate =  date + futureTime;
       
         console.log("futureTime: " + futureTime);
-
+        console.log("now: " + date);
+        console.log("newDate: " + endDate);
 
         // Prompt the user for their max bid
         const maxBid = prompt('Enter your max bid ($):');
@@ -15,10 +19,11 @@ export default function retrieveAuctionDetails() {
         if (!maxBid) {
           alert('Please enter a max bid.');
         }
-        
+
         return {
           itemTitle: document.querySelector('h1').innerText,
           endTime: futureTime,
+          actualEndTime: endDate,   
           currentPrice: price,
           maxBid: maxBid
         }

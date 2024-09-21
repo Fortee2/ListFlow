@@ -1,4 +1,4 @@
-function scrapGoodwill() {
+export default function executeBid(maxBid){
     function checkReadyState() {
         return new Promise((resolve, reject) => {
             let retries = 0;
@@ -25,18 +25,10 @@ function scrapGoodwill() {
     function retrieveAuction() {
         try {
             let serverAttribute = document.querySelector("app-loader-container").attributes[0].name;
-            let timeLeft = document.querySelectorAll(`span[${serverAttribute}]`)[0].getElementsByTagName("span")[0].innerText;
             let price = document.querySelectorAll(`h3[${serverAttribute}]`)[1].innerText;
-            let futureTime = calculateFutureTime(timeLeft);
-
-            console.log("futureTime: " + futureTime);
-
-            if (futureTime > 10000) {
-                setTimeout(() => {
-                    executeBid();
-                }, futureTime - 10000);
-            } else {
-                console.error("Not enough time to place a bid");
+            price = price.replace("$", "");
+            if (maxBid > parseFloat(price)) {
+                executeBid();
             }
 
             console.log("price: " + price);
@@ -74,7 +66,7 @@ function scrapGoodwill() {
                 });
 
                 el.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
-                el.value = parseFloat("60");
+                el.value = parseFloat(maxBid).toFixed(2);
                 el.dispatchEvent(new Event("input", { bubbles: true }));
 
                 let event = new KeyboardEvent("keydown", { bubbles: true, key: "Enter" });
@@ -89,4 +81,3 @@ function scrapGoodwill() {
 
     checkReadyState().catch(error => console.error(error));
 }
-

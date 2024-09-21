@@ -17,6 +17,7 @@ import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
 import { createDistrictListing } from "./district/createDistrictListing.js";
 import AuctionDetails from "./goodwill/auctionDetails.js";
 import retrieveAuctionDetails from "./goodwill/functions/retrieveAuctionDetails.js";
+import executeBid from "./goodwill/functions/executeBid.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -101,6 +102,9 @@ chrome.runtime.onMessage.addListener(async (request) => {
   switch(request.action) {
     case "goodwillAuctionDetails":
       processAuctionDetails(request.url);
+      break;
+    case "goodwillCheckAuctions":
+      checkGoodwillAuctions();
       break;
     case "downloadImage":
       imageQueue.push({"url":request.url, "fileName":request.filename}); // enqueue the request
@@ -795,6 +799,43 @@ function updateCrossPostList(itemNumber){
       });
     }
   }); 
+}
+
+async function checkGoodwillAuctions() {
+  chrome.storage.local.get(['auctionDetails'], async function(data) {
+    let auctions = data.auctionDetails;
+    let earliestAuction = 0;
+    if (auctions) {
+      for (const auctionDetail of auctions) {
+        if(Date.now() > auctionDetail.actualEndTime) {
+          continue;
+        }
+
+        let timeDiff = auctionDetail.actualEndTime - Date.now();
+
+        if (timeDiff <= 30000) {
+          const tab = await loadTab(auctionDetail.url);
+
+          chrome.scripting.executeScript({
+            tabId: tab.id,
+            args: [auctionDetail.maxBid],
+            function: executeBid,
+          });
+           
+        }else{
+          if(earliestAuction === 0 || timeDiff < earliestAuction){
+            earliestAuction = timeDiff - 30000;
+          }
+        }
+       
+      }
+
+      if(earliestAuction > 0){
+        setTimeout(checkGoodwillAuctions, earliestAuction);
+      }
+    }
+
+  });
 }
 
 function processAuctionDetails(url) {

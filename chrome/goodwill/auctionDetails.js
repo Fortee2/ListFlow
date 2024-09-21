@@ -1,18 +1,18 @@
 class AuctionDetails {
    addAuctionDetailsToStorage(auctionDetail) {
-        let auctionDetails = [];
+        
 
-        chrome.storage.sync.get({
-            auctionDetails: [],
-        }, function(data) {
-            auctionDetails = data.auctionDetails;
+        chrome.storage.local.get(['auctionDetails'], function(data) {
+            let auctionDetails = [];
+            if (data.auctionDetails){
+                auctionDetails = data.auctionDetails;
+            }
+            
+            auctionDetails.push(auctionDetail);
+            chrome.storage.local.set({'auctionDetails': auctionDetails});
         });
 
-        auctionDetails.push(auctionDetail);
-
-        chrome.storage.sync.set({auctionDetails: auctionDetails}, function() {
-            console.log("Auction details stored in chrome.storage");
-        });
+        
    }
 }
 
