@@ -805,9 +805,13 @@ async function checkGoodwillAuctions() {
   chrome.storage.local.get(['auctionDetails'], async function(data) {
     let auctions = data.auctionDetails;
     let earliestAuction = 0;
+    
+    const auctionDetails = new AuctionDetails();
+
     if (auctions) {
       for (const auctionDetail of auctions) {
         if(Date.now() > auctionDetail.actualEndTime) {
+          auctionDetails.removeAuctionDetailsFromStorage(auctionDetail);
           continue;
         }
 
