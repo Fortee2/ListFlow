@@ -27,6 +27,9 @@ export default function executeBid(maxBid){
             let serverAttribute = document.querySelector("app-loader-container").attributes[0].name;
             let price = document.querySelectorAll(`h3[${serverAttribute}]`)[1].innerText;
             price = price.replace("$", "");
+            console.log("maxBid: " + maxBid);
+            console.log("price: " + price); 
+
             if (maxBid > parseFloat(price)) {
                 executeBid();
             }
@@ -79,5 +82,6 @@ export default function executeBid(maxBid){
         }
     }
 
+    console.log("executeBid.js executed");
     checkReadyState().catch(error => console.error(error));
 }

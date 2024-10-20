@@ -3,7 +3,7 @@
  import { scrapEbayDescriptions } from "./ebay/scrapDescription.js";
 import { scrapEbayPostage } from "./ebay/postage.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
-import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL } from './utils/urls.js';
+import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL, getPoshmarkURLs } from './utils/urls.js';
 import {mercariConstants} from "./mercari/mercariConstants.js";
 import { correctPriceMercari } from "./mercari/priceMercari.js";
 import { retrieveItemDetails } from "./mercari/itemPageDetails.js";
@@ -14,7 +14,7 @@ import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
 import { createMercariListing } from "./mercari/createMercariListing.js";
 import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
-import { createDistrictListing } from "./district/createDistrictListing.js";
+import { scrapPoshmarkData } from "./poshmark/scrapData.js";
 import AuctionDetails from "./goodwill/auctionDetails.js";
 import retrieveAuctionDetails from "./goodwill/functions/retrieveAuctionDetails.js";
 import executeBid from "./goodwill/functions/executeBid.js";
@@ -249,6 +249,9 @@ async function ProcessSalesChannel( listingType) {
       break;
     case "Etsy":
       await retrieveEtsyData(listingType, downloadImages);
+      break;
+    case "Poshmark":
+      await retrievePoshmark();
       break;
   } 
 }
@@ -568,6 +571,20 @@ async function retrieveEbayData(listingType, downloadImages, lastTimeInactive) {
   }
 }
 
+async function retrievePoshmark() {
+  const url = getPoshmarkURLs()[0].url;
+
+  const tab = await loadTab(url);
+  await delay(getRandomInt( 3000, 5000));
+  
+  await new Promise(resolve => {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: scrapPoshmarkData,
+    }, resolve);
+  });
+}
+
 async function endEbayInactive(listingType) {
   try {
     if(listingType !== 'active' && listingType !== 'all') {
@@ -821,9 +838,14 @@ async function checkGoodwillAuctions() {
           const tab = await loadTab(auctionDetail.url);
 
           chrome.scripting.executeScript({
-            tabId: tab.id,
+            target: { tabId: tab.id },
             args: [auctionDetail.maxBid],
             function: executeBid,
+          }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Script execution failed:", chrome.runtime.lastError);
+              return;
+            }
           });
            
         }else{

@@ -32,6 +32,14 @@ export function getMercariURLs() {
     return urls;
   }
 
+  export function getPoshmarkURLs() {
+    const urls = [
+      {'type': 'active', 'url': 'https://poshmark.com/vm-rest/users/yanciecostner/posts/filtered?request=%7B%22filters%22%3A%7B%22department%22%3A%22All%22%2C%22inventory_status%22%3A%5B%22all%22%5D%7D%2C%22facets%22%3A%5B%22brand%22%2C%22color%22%2C%22department%22%5D%2C%22experience%22%3A%22all%22%2C%22count%22%3A500%7D&summarize=true&app_version=2.55&pm_version=2024.41.1', 'activeListings': true},
+    ];
+
+    return urls;
+  }
+
   export function searchEtsyURLs(searchTerm) {
     let etsyURLs = getEtsyURLs();
 

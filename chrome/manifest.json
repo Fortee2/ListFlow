@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Listing Retrieval",
-	"version": "2024.9.21.01",
+	"version": "2024.10.12.03",
 	"description": "Retrieve listing from a website",
 	"permissions": [
 		"storage",
@@ -14,6 +14,8 @@
 		"https://www.mercari.com/*",
 		"https://www.ebay.com/*",
 		"https://www.etsy.com/*",
+		"https://www.poshmark.com/*",
+		"https://poshmark.com/*",
 		"https://shopgoodwill.com/*",
 		"https://vi.vipr.ebaydesc.com/*"
 	],

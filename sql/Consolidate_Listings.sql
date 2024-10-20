@@ -6,20 +6,18 @@ START TRANSACTION;
 JOIN (
     SELECT 
         ItemTitle,
-        SalesChannelId,
         MAX(ifnull(DateListed, ifnull( DateEnded, DateSold))) AS MaxListedDate,
         MIN(ifnull(DateListed, ifnull( DateEnded, DateSold))) AS EarliestListDate
     FROM Listing
-    GROUP BY ItemTitle, SalesChannelId
+    GROUP BY ItemTitle
     HAVING COUNT(*) > 1
 ) AS duplicates ON l.ItemTitle = duplicates.ItemTitle 
-    AND l.SalesChannelId = duplicates.SalesChannelId
     AND l.DateListed = duplicates.MaxListedDate
 SET l.DateListed = duplicates.EarliestListDate;
 
 SELECT * 
 FROM Listing
-WHERE ItemTitle = 'Spartan (PC, 2004) Complete with Manual';
+WHERE ItemTitle = 'Civilization IV Bundle with Warlords and Beyond the Sword Expansions';
 
 -- Step 2: Delete the older duplicate records
 delete from Listing
