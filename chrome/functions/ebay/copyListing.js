@@ -1,6 +1,4 @@
 export async function copyEbayListing(itemNumber) {
-
-
   function checkReadyState() {
     return new Promise((resolve, reject) => {
       let timeoutId = setTimeout(() => {

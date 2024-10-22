@@ -24,51 +24,14 @@ export async function scrapPoshmarkData() {
     });
   }
 
-  function parseDate(dateString) {
-    if (dateString.includes('ago')) {
-      let timePortion = dateString.split('ago')[0].trim();
-    
-      if (timePortion.includes('h')) {
-        let hours = timePortion.split('h')[0].trim();
-        let date = new Date();
-        date.setHours(date.getHours() - hours);
-        return date.toISOString();
-      }
-  
-      if (timePortion.includes('d')) {  
-        let days = timePortion.split('d')[0].trim();
-        let date = new Date();
-        date.setDate(date.getDate() - days);
-        return date.toISOString();
-      }
-  
-      if (timePortion.includes('m')) {
-        let minutes = timePortion.split('m')[0].trim();
-        let date = new Date();
-        date.setMinutes(date.getMinutes() - minutes);
-        return date.toISOString();
-      }
-  
-      console.log('Unable to parse date');
-      return null;
-    }
-  
-    return new Date(dateString).toISOString();
-  }
-
-
-
   function parseListings() {
     return new Promise((resolve, reject) => {
       try {
-        alert('parseListings');
         const items = document.querySelectorAll('pre')[0].innerText;
         const data = JSON.parse(items);
 
         for (let i = 0; i < data.data.length; i++) {
           let item = data.data[i];
-
-
 
           var itm = {  
             itemTitle: item.title,
@@ -91,7 +54,6 @@ export async function scrapPoshmarkData() {
           bulkData.push(itm);
         }
 
-        //console.log('bulkData', bulkData);
         resolve(bulkData);
       } catch (error) {
         reject(error);
@@ -101,41 +63,4 @@ export async function scrapPoshmarkData() {
 
   await checkReadyState(); 
   return bulkData;
-}
-
-export async function retrievePageCount(listingType, tab){
-const resultCnt = await new Promise(resolve => {
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    function: readTotalItems,
-  }, resolve);
-});
-
-if(resultCnt[0].result) {
-  let indx = 0;  //defaulting to Active
-
-  switch(listingType) {
-    case 'inactive':
-      indx = 1;
-      break;
-    case 'inprogress':
-      indx = 2;
-      break;
-    case 'complete':
-      indx = 3;
-      break;
-  }
-
-  let itemCount = +resultCnt[0].result[indx].replace(',', '');
-  return Math.ceil(itemCount / 20);
-}
-
-return 0;
-}
-
-function readTotalItems() {
-console.log('readTotalItems');
-const div = document.querySelectorAll('p[data-testid="FilterCount"]');
-let counts = [div[0].innerHTML , div[1].innerHTML, div[4].innerHTML, div[5].innerHTML];
-return counts;
 }
