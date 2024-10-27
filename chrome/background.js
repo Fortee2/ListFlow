@@ -152,12 +152,12 @@ chrome.runtime.onMessage.addListener(async (request) => {
       console.log("Description Copied");
       console.log(request.listing);
       console.log("Cross Post Requested");
-      if(copyToSalesChannel === "Mercari"){
+   /*    if(copyToSalesChannel === "Mercari"){
         await postListingToMercari(request.listing);
       }
-      else{
+      else{ */
         await saveListingToDistrict(request.listing);
-      }
+      // }
       updateCrossPostList(request.listing.itemNumber);
       break;
     case "mercariCreated":

@@ -3,7 +3,7 @@ export async function createDistrictListing(ebayListing){
     return new Promise(async (resolve, reject) => {
       if(document.readyState === 'complete'){
         console.log('Document is ready');
-        await setDescription(ebayListing);
+        await loadNewItemPage(ebayListing);
         resolve();
       }else{
         console.log('Document is not ready, checking again in 1 second');
