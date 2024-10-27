@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Listing Retrieval",
-	"version": "2024.10.12.03",
+	"version": "2024.10.27.03",
 	"description": "Retrieve listing from a website",
 	"permissions": [
 		"storage",

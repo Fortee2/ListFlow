@@ -5,6 +5,7 @@ using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Infrastructure.Filters;
 using Microsoft.EntityFrameworkCore;
 using System.Xml.Schema;
+using System.Linq;
 
 namespace ListFlow.Infrastructure.Repository
 {
@@ -26,7 +27,7 @@ namespace ListFlow.Infrastructure.Repository
         public Listing? FindByTitle(string ListingTitle)
         {
             var listing = (from list in this._dbContext.Listings
-                           where list.ItemTitle.Contains(ListingTitle)
+                           where list.ItemTitle.ToLower() == ListingTitle.ToLower()
                            select list).FirstOrDefault();
 
             return listing;

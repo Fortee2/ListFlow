@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/ListFlow.API/bin/Debug/net7.0/ListFlow.API.dll",
+            "program": "${workspaceFolder}/ListFlow.API/bin/Debug/net8.0/ListFlow.API.dll",
             "args": [],
             "cwd": "${workspaceFolder}/ListFlow.API",
             "stopAtEntry": false,
