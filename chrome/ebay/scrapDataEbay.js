@@ -111,7 +111,7 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
           price: listPrice
         });  
       }
-      
+
       chrome.runtime.sendMessage({ 
         action: 'saveToListingAPI',
         item: bulkData

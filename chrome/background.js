@@ -1,19 +1,14 @@
- import { scrapDataEbay } from "./ebay/scrapDataEbay.js";
- import { scrapEbayImages } from "./ebay/scrapImages.js";
- import { scrapEbayDescriptions } from "./ebay/scrapDescription.js";
-import { scrapEbayPostage } from "./ebay/postage.js";
+import { scrapEbayImages, scrapEbayDescriptions, scrapEbayPostage, copyEbayListing, copyDescription, endEbayListings } from "./ebay/interface.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
 import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL } from './utils/urls.js';
 import {mercariConstants} from "./mercari/mercariConstants.js";
 import { correctPriceMercari } from "./mercari/priceMercari.js";
 import { retrieveItemDetails } from "./mercari/itemPageDetails.js";
 import { scrapDataEtsy } from "./etsy/scrapDataEtsy.js";
-import { endEbayListings } from "./ebay/endListings.js";
 import { removeInactive } from "./mercari/removeInactive.js";
 import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
 import { createMercariListing } from "./mercari/createMercariListing.js";
-import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
 import { createDistrictListing } from "./district/createDistrictListing.js";
 
 let ebayImageQueue = [];
@@ -152,12 +147,12 @@ chrome.runtime.onMessage.addListener(async (request) => {
       console.log("Description Copied");
       console.log(request.listing);
       console.log("Cross Post Requested");
-   /*    if(copyToSalesChannel === "Mercari"){
+      if(copyToSalesChannel === "Mercari"){
         await postListingToMercari(request.listing);
       }
-      else{ */
+      else{ 
         await saveListingToDistrict(request.listing);
-      // }
+     }
       updateCrossPostList(request.listing.itemNumber);
       break;
     case "mercariCreated":
@@ -277,34 +272,34 @@ async function processImageQueue() {
   if (imageQueue.length === 0 || isDownloadingImage) {
     return;
   }
-
+  
   isDownloadingImage = true;
   let imgRequest = imageQueue.shift(); // dequeue the request
-
+  
   try {
-    let imageDto = {
-        "itemNumber": imgRequest.itemNumber,
-        "imageUrl": imgRequest.url,
-        "imageFile": imgRequest.fileName,
-    };
-
-    const response = await fetch(`${serverURI}/api/images`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(imageDto),
+    let imageUrl = imgRequest.url;
+    let fileName = imgRequest.fileName;
+  
+    chrome.downloads.download({
+      url: imageUrl,
+      filename: fileName,
+      conflictAction: 'uniquify', // Handle filename conflicts by appending a unique identifier
+      saveAs: false // Do not show the Save As dialog
+    }, function(downloadId) {
+      if (chrome.runtime.lastError) {
+        console.error("Download failed:", chrome.runtime.lastError);
+      } else {
+        console.log("Download started with ID:", downloadId);
+      }
+  
+      isDownloadingImage = false;
+      processImageQueue(); // recursively process the next request in the queue
     });
-
-    if (!response.ok) {
-      console.error("Failed to save item to the database:", imageDto);
-    }
   } catch (error) {
-    console.error("Error saving item to the database:", error);
+    console.error("Error downloading image:", error);
+    isDownloadingImage = false;
+    processImageQueue(); // recursively process the next request in the queue
   }
-
-  isDownloadingImage = false;
-  processImageQueue(); // recursively process the next request in the queue
 }
 
 async function processQueue() {
@@ -330,7 +325,7 @@ async function processQueue() {
 
   isDownloading = false;
   await delay(getRandomInt(5000, 30000));
-  processQueue(); // recursively process the next request in the queue
+  await processQueue(); // recursively process the next request in the queue
 }
 
 async function processShippingInfoQueue() {
@@ -477,9 +472,10 @@ async function saveDescToDatabase(desc, itemNumber) {
 async function saveItemToDatabase(item) {
   try {
 
+    item.map((itm) => { ebayImageQueue.push(itm.itemNumber); });
+
     item = JSON.stringify(item, null, 2); // Pretty print the JSON
     
-
     const response = await fetch(`${serverURI}/api/BulkListing`, {
       method: "POST",
       headers: {
@@ -490,6 +486,10 @@ async function saveItemToDatabase(item) {
 
     if (!response.ok) {
       console.error("Failed to save item to the database:", item);
+    }
+
+    if(downloadImages){
+      await processQueue(); // process the queue
     }
   } catch (error) {
     console.error("Error saving item to the database:", error);
@@ -748,30 +748,30 @@ async function downloadData(data, createExport, currentSalesChannel) {
 async function retrieveMercariDetails(data) {
   //Enhance Data for download
 
-    for(const item of data){
+  for(const item of data){
 
-      item.description  = "";
-      item.itemTitle = item.itemTitle.replace(/,/g, '');
+    item.description  = "";
+    item.itemTitle = item.itemTitle.replace(/,/g, '');
 
-      const link = getMercariItemURL() + item.itemNumber;
-      const tab = await loadTab(link);
-      await delay(getRandomInt(3000, 5000));
+    const link = getMercariItemURL() + item.itemNumber;
+    const tab = await loadTab(link);
+    await delay(getRandomInt(3000, 5000));
 
-      await new Promise(resolve => {
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: retrieveItemDetails,
-        }, resolve);
+    await new Promise(resolve => {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: retrieveItemDetails,
+      }, resolve);
 
-        } ).then((shipping) => {
-          item.shipping = shipping[0].result;
-          console.log('Shipping: ' + shipping);
-          
-      }).then(() => {
-        chrome.tabs.remove(tab.id);
-      });
-      
-    }
+      } ).then((shipping) => {
+        item.shipping = shipping[0].result;
+        console.log('Shipping: ' + shipping);
+        
+    }).then(() => {
+      chrome.tabs.remove(tab.id);
+    });
+    
+  }
   
   return data;
 }

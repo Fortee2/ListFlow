@@ -36,6 +36,7 @@ export async function scrapEbayImages(itemNumber, downloadImages) {
             console.log('retrieveImages');
 
             let imageUrl = backgroundImageString.substring(startIdx, endIdx);
+            console.log(imageUrl);
             chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: `${itemNumber}_${count}.png`, itemNumber: itemNumber });
             count++;
           });

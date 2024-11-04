@@ -40,7 +40,7 @@ export async function endEbayListings(){
     }
 
     const checkReadyState = async () => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           if(document.readyState === 'complete') {
             console.log('readyState is complete');
             parseListings().then(resolve);
