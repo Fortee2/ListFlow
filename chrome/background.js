@@ -1,5 +1,5 @@
  import { scrapDataEbay } from "./ebay/scrapDataEbay.js";
- import { scrapEbayImages } from "./ebay/scrapImages.js";
+ import { scrapEbayImages } from "./ebay/scrapEbayImages.js";
  import { scrapEbayDescriptions } from "./ebay/scrapDescription.js";
 import { scrapEbayPostage } from "./ebay/postage.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
