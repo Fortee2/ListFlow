@@ -3,7 +3,7 @@ export async function createDistrictListing(ebayListing){
     return new Promise(async (resolve, reject) => {
       if(document.readyState === 'complete'){
         console.log('Document is ready');
-        await setDescription(ebayListing);
+        await loadNewItemPage(ebayListing);
         resolve();
       }else{
         console.log('Document is not ready, checking again in 1 second');
@@ -69,8 +69,10 @@ export async function createDistrictListing(ebayListing){
     }
 
   function loadNewItemPage() {
-    let popUp = document.querySelector('div[class="inline-flex sm:w-full sm:px-4 justify-center"]');
-    let buttons = popUp.querySelectorAll('button');
+    let buttons = document.querySelectorAll('button');
+
+    console.log(buttons);
+    alert('Please click the "Create New Listing" button to continue');
 
     buttons.forEach((button) => {
       if (button.innerText === 'Continue') {

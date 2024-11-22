@@ -10,7 +10,7 @@ export async function scrapEbayImages(itemNumber, downloadImages) {
         if (document.readyState === 'complete') {
           clearTimeout(timeoutId);
           console.log('readyState is complete');
-          retrieveImages().then(resolve);
+          retrieveImages(itemNumber).then(resolve);
         } else {
           console.log('readyState is not complete');
           setTimeout(check, 1000);
@@ -21,21 +21,22 @@ export async function scrapEbayImages(itemNumber, downloadImages) {
     });
   }
 
-  function retrieveImages() {
+  function retrieveImages(itemNumber) {
     return new Promise((resolve, reject) => {
       function checkImageElement() {
-        let imageElement = document.querySelectorAll('.uploader-thumbnails__inline-edit');
-        if (imageElement) {
+        let imageElements = document.querySelectorAll('.uploader-thumbnails__inline-edit');
+        if (imageElements.length > 0) {
           let count = 0;
-          imageElement.forEach((element) => {
+          imageElements.forEach((element) => {
             const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style');
 
-            const startIdx = backgroundImageString.indexOf('url(') + 5;
-            const endIdx = backgroundImageString.indexOf('\')');
+            const startIdx = backgroundImageString.indexOf('url(') + 4;
+            const endIdx = backgroundImageString.indexOf(')');
 
             console.log('retrieveImages');
 
             let imageUrl = backgroundImageString.substring(startIdx, endIdx);
+            console.log(imageUrl);
             chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: `${itemNumber}_${count}.png`, itemNumber: itemNumber });
             count++;
           });

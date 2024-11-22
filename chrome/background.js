@@ -1,5 +1,5 @@
  import { scrapDataEbay } from "./ebay/scrapDataEbay.js";
- import { scrapEbayImages } from "./ebay/scrapImages.js";
+ import { scrapEbayImages } from "./ebay/scrapEbayImages.js";
  import { scrapEbayDescriptions } from "./ebay/scrapDescription.js";
 import { scrapEbayPostage } from "./ebay/postage.js";
 import { scrapData, retrievePageCount } from "./mercari/scrapDataMercari.js";
@@ -15,6 +15,7 @@ import { getActiveTab, loadTab } from "./utils/tabs.js";
 import { createMercariListing } from "./mercari/createMercariListing.js";
 import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
 import { createDistrictListing } from "./district/createDistrictListing.js";
+import { scrapPoshmarkData } from "./poshmark/scrapPoshmark.js";
 
 let ebayImageQueue = [];
 let imageQueue = [];  // queue for image downloads
@@ -238,7 +239,39 @@ async function ProcessSalesChannel( listingType) {
     case "Etsy":
       await retrieveEtsyData(listingType, downloadImages);
       break;
+    case "Poshmark":
+      await retrievePoshmarkData(listingType, downloadImages);
+      break;
   } 
+}
+
+async function retrievePoshmarkData() {
+  try {
+    let titles = []; //Array to hold scraped data
+
+    //Use Type to find the URL
+    let url = "https://poshmark.com/closet/yanciecostner";
+    console.log(url);
+
+    const tab = await loadTab(url);
+    let result  = await new Promise(resolve => {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: scrapPoshmarkData,
+      }, resolve);
+    });
+
+    if(result[0].result) {
+      titles.push(...result[0].result);
+    }
+
+    if(titles.length > 0) {
+      downloadData(titles, createExport);
+    }
+
+  } catch (error) {
+    console.error("Error executing script:", error);
+  }
 }
 
 async function correctPrice() {
