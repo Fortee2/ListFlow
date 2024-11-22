@@ -1,33 +1,33 @@
 {
 	"manifest_version": 3,
 	"name": "Listing Retrieval",
-	"version": "2024.10.27.03",
+	"version": "2024.11.22.1",
 	"description": "Retrieve listing from a website",
 	"permissions": [
-		"storage",
-		"tabs",
-		"activeTab",
-		"scripting",
-		"downloads"
+	  "storage",
+	  "tabs",
+	  "activeTab",
+	  "scripting",
+	  "downloads"
 	],
 	"host_permissions": [
-		"https://www.mercari.com/*",
-		"https://www.ebay.com/*",
-		"https://www.etsy.com/*",
-		"https://www.poshmark.com/*",
-		"https://poshmark.com/*",
-		"https://shopgoodwill.com/*",
-		"https://vi.vipr.ebaydesc.com/*"
+	  "https://www.mercari.com/*",
+	  "https://www.ebay.com/*",
+	  "https://www.etsy.com/*",
+	  "https://www.poshmark.com/*",
+	  "https://poshmark.com/*",
+	  "https://shopgoodwill.com/*",
+	  "https://vi.vipr.ebaydesc.com/*"
 	],
 	"action": {
-		"default_popup": "popup.html"
+	  "default_popup": "popup.html"
 	},
 	"background": {
-		"service_worker": "background.js",
-		"type": "module"
+	  "service_worker": "dist/background.js",
+	  "type": "module"
 	},
 	"options_page": "options.html",
 	"icons": {
-		"128": "ListFlow_icon.png"
+	  "128": "ListFlow_icon.png"
 	}
-}
+  }
