@@ -2,15 +2,18 @@
   "name": "chrome",
   "version": "1.0.0",
   "description": "Sales Auction Extension",
-  "main": "background.js",
+  "main": "./src/background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --config webpack.config.js" 
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@eslint/js": "^9.3.0",
     "@types/chrome": "^0.0.283",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^12.0.2",
     "eslint": "^9.3.0",
     "globals": "^15.3.0",
     "ts-loader": "^9.5.1",

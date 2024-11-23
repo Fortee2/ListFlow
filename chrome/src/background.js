@@ -13,7 +13,7 @@ import { removeInactive } from "./functions/mercari/removeInactive.js";
 import { getRandomInt, delay } from "./utils/utils.js";
 import { getActiveTab, loadTab } from "./utils/tabs.js";
 import { createMercariListing } from "./functions/mercari/createMercariListing.js";
-import { copyDescription, copyEbayListing } from "./ebay/copyListing.js";
+import { copyDescription, copyEbayListing } from "./functions/ebay/copyListing.js";
 import { createDistrictListing } from "./functions/district/createDistrictListing.js";
 
 let ebayImageQueue = [];
