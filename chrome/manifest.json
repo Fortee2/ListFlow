@@ -17,7 +17,9 @@
 	  "https://www.poshmark.com/*",
 	  "https://poshmark.com/*",
 	  "https://shopgoodwill.com/*",
-	  "https://vi.vipr.ebaydesc.com/*"
+	  "https://vi.vipr.ebaydesc.com/*",
+	  "https://poshmark.com/closet/*",
+	  "https://district.net/*"
 	],
 	"action": {
 	  "default_popup": "pages/popup.html"

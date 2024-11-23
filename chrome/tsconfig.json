@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true, // Allow JavaScript files to be compiled
-    "checkJs": true, // Enable type checking for JavaScript files
+    "checkJs": false, // Enable type checking for JavaScript files
     "outDir": "./dist", // Output directory for compiled files
     "rootDir": "./src" // Root directory of source files
   },

@@ -115,6 +115,9 @@ To contribute to the development of this extension, follow these steps:
 
 ## Contributing
 
+Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute.
+
+
 
 ### Reporting Issues
 

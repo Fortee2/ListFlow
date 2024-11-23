@@ -10,16 +10,19 @@ import { retrieveItemDetails } from "./functions/mercari/itemPageDetails.js";
 import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy.js";
 import { endEbayListings } from "./functions/ebay/endListings.js";
 import { removeInactive } from "./functions/mercari/removeInactive.js";
-import { getRandomInt, delay } from "./utils/utils.js";
-import { getActiveTab, loadTab } from "./utils/tabs.js";
+import { getRandomInt, delay } from "./utils/utils.ts";
+import { getActiveTab, loadTab } from "./utils/tabs.ts";
 import { createMercariListing } from "./functions/mercari/createMercariListing.js";
 import { copyDescription, copyEbayListing } from "./functions/ebay/copyListing.js";
 import { createDistrictListing } from "./functions/district/createDistrictListing.js";
+import ImgRequest from "./domain/imgRequest.js";
+import OnInstall from "./events/onInstall.js";
+import PostageRequest from "./domain/postageRequest.js";
 
-let ebayImageQueue = [];
-let imageQueue = [];  // queue for image downloads
-let descQueue = [];  // queue for description updates
-let postageQueue = [];  // queue for postage updates
+let ebayImageQueue: ImgRequest[] = [];
+let imageQueue: ImgRequest[] = [];  // queue for image downloads
+let descQueue:string[] = [];  // queue for description updates
+let postageQueue:PostageRequest[] = [];  // queue for postage updates
 let shippingInfoQueue = [];  // queue for shipping info updates
 let currentSalesChannel = '';
 let updatePrice = false;
@@ -38,43 +41,8 @@ let lastTimeInactive = "2024-01-01";
 let removeInactiveListings = false;
 
 chrome.runtime.onInstalled.addListener(() => {
- // Set Default Settings
- chrome.storage.sync.get({
-   serverURI: null,
-   createExport: null,
-   updatePrice: null, 
-   removeInactiveListings: null,
- }, function(data) {
-   if (data.serverURI === null) {
-     chrome.storage.sync.set({ serverURI: "http://demo.api.com" }, function() {
-       console.log('Default serverURI saved.');
-     });
-   }
-
-   if (data.createExport === null) {
-     chrome.storage.sync.set({ createExport: false }, function() {
-       console.log('Default createExport saved.');
-     });
-   }
-
-   if (data.updatePrice === null) {
-     chrome.storage.sync.set({ updatePrice: false }, function() {
-       console.log('Default updatePrice saved.');
-     });
-   }
-
-   if (data.ebayLastInactive === null) {
-     chrome.storage.sync.set({ ebayLastInactive: "2024-01-01" }, function() {
-       console.log('Default ebayLastInactive saved.');
-     });
-   }
-
-   if (data.removeInactiveListings === null) {
-     chrome.storage.sync.set({ removeInactiveListings: false }, function() {
-       console.log('Default removeInactiveListings saved.');
-     });
-   }
- });
+  let installer = new OnInstall(chrome);
+  installer.create();
 });
 
 // Load settings when the extension is loaded
@@ -196,11 +164,11 @@ async function getEbayShippingDetails(itemNumber) {
  });
 }
 
-async function copyEbayListingDetails(itemNumber) {
+async function copyEbayListingDetails(itemNumber: string) {
  const newTab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
  chrome.scripting.executeScript({
    args: [itemNumber],
-   target: { tabId: newTab.id },
+   target: { tabId: newTab.id ?? chrome.tabs.TAB_ID_NONE },
    function: copyEbayListing,
  }).then(() => {
    oldTab.push(newTab.id);

@@ -3,11 +3,8 @@ update listflow.Listing set crosspostid = NULL where itemnumber = '175872219290'
 SELECT * FROM listflow.active_inactive
 order by datesold desc;    
 
-update listflow.Listing set active = 0 where itemnumber = '1363483067';
-
-UPDATE listflow.Listing set active = 0 where active = 1 and dateSold is not null;
-
 select * from listflow.Listing 
+<<<<<<< HEAD
 where itemtitle like '%starcraft%'
 order by dateSold desc;
 
@@ -21,3 +18,7 @@ from listflow.Listing l
 where active = true
 and crosspostid is null
 order by itemtitle;
+=======
+where itemnumber = 'm20598766426'
+order by dateSold desc;
+>>>>>>> main
