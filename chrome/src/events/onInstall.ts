@@ -10,7 +10,6 @@ export default class OnInstall {
         chrome.storage.sync.get({
             serverURI: null,
             createExport: null,
-            updatePrice: null, 
             removeInactiveListings: null,
         }, function(data) {
             if (data.serverURI === null) {
@@ -22,12 +21,6 @@ export default class OnInstall {
             if (data.createExport === null) {
             chrome.storage.sync.set({ createExport: false }, function() {
                 console.log('Default createExport saved.');
-            });
-            }
-        
-            if (data.updatePrice === null) {
-            chrome.storage.sync.set({ updatePrice: false }, function() {
-                console.log('Default updatePrice saved.');
             });
             }
         

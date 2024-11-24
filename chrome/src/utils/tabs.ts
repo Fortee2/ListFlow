@@ -1,4 +1,4 @@
-export async function getActiveTab(targetUrl:string, page: number, salesChannel: string, activeListings = true) {
+export async function getActiveTab(targetUrl:string, page: number, salesChannel: string, activeListings = true) : Promise<chrome.tabs.Tab> {
   return new Promise((resolve) => {
     
     chrome.windows.getLastFocused({ populate: true }, (focusedWindow) => {

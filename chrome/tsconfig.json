@@ -9,7 +9,8 @@
     "allowJs": true, // Allow JavaScript files to be compiled
     "checkJs": false, // Enable type checking for JavaScript files
     "outDir": "./dist", // Output directory for compiled files
-    "rootDir": "./src" // Root directory of source files
+    "rootDir": "./src", // Root directory of source files
+    "typeRoots": ["node_modules/@types"]
   },
   "include": [
     "src/**/*.ts",
@@ -18,5 +19,6 @@
   "exclude": [
     "node_modules",
     "static"
+
   ]
 }
