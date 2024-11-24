@@ -2,46 +2,45 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { MispricedListing } from './mispricedListing';
 
-// Define the type for the slice state
-interface MispricedListingState {
-  listings: MispricedListing[];
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
-  error: string | null;
+if (!process.env.REACT_APP_API_URL) {
+  throw new Error('REACT_APP_API_URL is not defined');
 }
 
-// Define the initial state
-const initialState: MispricedListingState = {
-  listings: [],
-  status: 'idle',
-  error: null,
-};
+const API_URL = `${process.env.REACT_APP_API_URL}/Listing/mispriced`;
 
-// Define the async thunk for fetching mispriced listings
-export const fetchMispricedListings = createAsyncThunk('listings/fetchMispricedListings', async () => {
-  const response = await axios.get<MispricedListing[]>('http://localhost:5227/api/Listing/mispriced');
+export const fetchMispricedListings = createAsyncThunk('mispricedListings/fetchMispricedListings', async () => {
+  const response = await axios.get<MispricedListing[]>(API_URL);
   return response.data;
 });
 
-// Define the slice
-const listingSlice = createSlice({
-  name: 'listings',
+const initialState = {
+  mispricedListings: [] as MispricedListing[],
+  status: 'idle',
+  error: null as string | null,
+};
+
+const mispricedListingSlice = createSlice({
+  name: 'mispricedListings',
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-    .addCase(fetchMispricedListings.pending, (state: MispricedListingState) => {
-      state.status = 'loading';
-    })
-    .addCase(fetchMispricedListings.fulfilled, (state: MispricedListingState, action) => {
-      state.status = 'succeeded';
-      // Add the listings to the state array
-      state.listings = action.payload;
-    })
-    .addCase(fetchMispricedListings.rejected, (state: MispricedListingState, action) => {
-      state.status = 'failed';
-      state.error = action.error.message ?? null;
-    });
+      .addCase(fetchMispricedListings.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchMispricedListings.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.mispricedListings = action.payload;
+      })
+      .addCase(fetchMispricedListings.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message ?? 'Something went wrong';
+      });
   },
 });
 
-export default listingSlice.reducer;
+export const getMispricedListings = (state: any) => state.mispricedListings.mispricedListings;
+export const getStatus = (state: any) => state.mispricedListings.status;
+export const getError = (state: any) => state.mispricedListings.error;
+
+export default mispricedListingSlice.reducer;

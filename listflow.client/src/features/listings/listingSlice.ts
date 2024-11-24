@@ -1,20 +1,24 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { RootState } from '../../app/store';
-import { Listing } from './listing';
 
-interface ListingState {
-  listings: Listing[];
-  selectedListing: Listing | null;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
-  error: string | null;
+if (!process.env.REACT_APP_API_URL) {
+  throw new Error('REACT_APP_API_URL is not defined');
 }
+
+const API_URL = process.env.REACT_APP_API_URL;
 
 interface Filter {
   salesChannel?: string;
   itemNumber?: string;
   startDate?: string;
   endDate?: string;
+}
+
+interface ListingState {
+  listings: any[];
+  selectedListing: any | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
 }
 
 const initialState: ListingState = {
@@ -25,7 +29,7 @@ const initialState: ListingState = {
 };
 
 export const fetchListingsByFilter = createAsyncThunk('listings/fetchListingsByFilter', async (filter: Filter) => {
-  const response = await axios.get('http://localhost:5227/api/listing', { params: filter });
+  const response = await axios.get(`${API_URL}/listing`, { params: filter });
   return response.data;
 });
 
@@ -55,9 +59,9 @@ export const listingSlice = createSlice({
 
 export const { setSelectedListing } = listingSlice.actions;
 
-export const getListings = (state: RootState) => state.listings.listings;
-export const getSelectedListing = (state: RootState) => state.listings.selectedListing;
-export const getStatus = (state: RootState) => state.listings.status;
-export const getError = (state: RootState) => state.listings.error;
+export const getListings = (state: any) => state.listings.listings;
+export const getSelectedListing = (state: any) => state.listings.selectedListing;
+export const getStatus = (state: any) => state.listings.status;
+export const getError = (state: any) => state.listings.error;
 
 export default listingSlice.reducer;
