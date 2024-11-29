@@ -121,7 +121,10 @@ chrome.runtime.onMessage.addListener(async (request) => {
    case "mercariCreated":
      saveNewListing(request.listing);
      if(oldTab.length > 2){
-       chrome.tabs.remove(oldTab.shift());
+      let tab = oldTab.shift();
+      if(tab){
+        chrome.tabs.remove(tab);
+      }
      }
      break;
  }
@@ -143,14 +146,14 @@ async function copyEbayListingDetails(itemNumber: string) {
  const newTab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
  chrome.scripting.executeScript({
    args: [itemNumber],
-   target: { tabId: newTab.id ?? chrome.tabs.TAB_ID_NONE },
+   target: { tabId: newTab.id as number},
    func: copyEbayListing,
  }).then(() => {
-   oldTab.push(newTab.id);
+   oldTab.push(newTab.id as number);
  });
 }
 
-async function ProcessSalesChannel( listingType) {
+async function ProcessSalesChannel( listingType : string) {
  switch(currentSalesChannel) {
    case "Mercari":
      await retrieveMercariData(downloadImages, searchMercariURLs(listingType)).then(async () => {
