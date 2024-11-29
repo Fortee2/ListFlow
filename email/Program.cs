@@ -6,6 +6,5 @@ var mailClient = new EmailDownloader(
     "mail.privateemail.com", 
     "You made the sale for");
 
-var de = mailClient.DownloadEmails("You made the sale for");
-
+var de = mailClient.DownloadEmails();
 await mailClient.SearchKeyword(de);

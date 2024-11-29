@@ -1,3 +1,4 @@
+using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using MimeKit;
@@ -17,7 +18,7 @@ public class EmailDownloader
         this.subject = subject;
     }
 
-    public List<MimeMessage> DownloadEmails(string subject = "")
+    public List<MimeMessage> DownloadEmails()
     {
         using (var client = new ImapClient())
         {
@@ -31,11 +32,17 @@ public class EmailDownloader
             var uids = inbox.Search(query);
 
             var emails = new List<MimeMessage>();
-
+            var count = 0;
             foreach (var uid in uids)
             {
                 var message = inbox.GetMessage(uid);
                 emails.Add(message);
+                count++;
+
+                if (count == 100)
+                {
+                    break;
+                }
             }
 
             client.Disconnect(true);
@@ -49,33 +56,49 @@ public class EmailDownloader
         const string keyword = "Item number:";
         const string phraseEnd = "Quantity sold:";
 
-        foreach (var email in emails)
+        using (var imapClient = new ImapClient())
         {
-            
-            var body = email.HtmlBody;
-            var start = body.IndexOf(keyword);
-            var end = body.IndexOf(phraseEnd);
+            imapClient.Connect(domain, 993, true);
+            imapClient.Authenticate(address, password);
 
-            var dataSection = body[start..end].Trim().Split('\n');
+            var inbox = imapClient.Inbox;
+            inbox.Open(MailKit.FolderAccess.ReadWrite);
 
-            var itemNumber = dataSection[3].Trim();
-            start = body.IndexOf("Date sold:");
-            dataSection = body[start..end].Trim().Split('\n');
-
-            var dateSold = dataSection[3].Trim();
-
-            Console.WriteLine("{0} - {1}",itemNumber, dateSold);
-
-            ApiClient client = new ApiClient();
-
-            var data = new
+            foreach (var email in emails)
             {
-                soldDate = dateSold
-            };
+                var body = email.HtmlBody;
+                var start = body.IndexOf(keyword);
+                var end = body.IndexOf(phraseEnd);
 
-            await client.PutAsync( string.Format("http://ec2-54-82-24-126.compute-1.amazonaws.com/api/listing/{0}/sold" , itemNumber), data).ConfigureAwait(false);
-            
-            
+                var dataSection = body[start..end].Trim().Split('\n');
+
+                var itemNumber = dataSection[3].Trim();
+                start = body.IndexOf("Date sold:");
+                dataSection = body[start..end].Trim().Split('\n');
+
+                var dateSold = dataSection[3].Trim();
+
+                Console.WriteLine("{0} - {1}", itemNumber, dateSold);
+
+                ApiClient client = new ApiClient();
+
+                var data = new
+                {
+                    soldDate = dateSold
+                };
+
+                try{
+                     //This function throws an exception if the response is not successful
+                    await client.PutAsync(string.Format("http://listflow-api.fenchurch.tech/api/listing/{0}/sold", itemNumber), data).ConfigureAwait(false);
+                    var uid = await inbox.SearchAsync(SearchQuery.HeaderContains("Subject", email.Subject));
+                    await inbox.AddFlagsAsync(uid.FirstOrDefault(), MessageFlags.Deleted, true);
+                }catch(Exception e){
+                    Console.WriteLine(e.Message);
+                }
+            }
+
+            await inbox.ExpungeAsync();
+            await imapClient.DisconnectAsync(true);
         }
     }
 }
