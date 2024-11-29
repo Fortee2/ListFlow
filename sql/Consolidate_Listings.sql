@@ -1,8 +1,9 @@
 START TRANSACTION;
-
+update listflow.Listing set ItemTitle = replace(ItemTitle, '  ', ' ');
+update listflow.Listing set ItemTitle = replace(ItemTitle, '&amp;', '&');
 -- Step 1: Update the latest records with the earliest DateListed
 
-    UPDATE Listing l
+UPDATE Listing l
 JOIN (
     SELECT 
         ItemTitle,
@@ -14,10 +15,6 @@ JOIN (
 ) AS duplicates ON l.ItemTitle = duplicates.ItemTitle 
     AND l.DateListed = duplicates.MaxListedDate
 SET l.DateListed = duplicates.EarliestListDate;
-
-SELECT * 
-FROM Listing
-WHERE ItemTitle = 'Civilization IV Bundle with Warlords and Beyond the Sword Expansions';
 
 -- Step 2: Delete the older duplicate records
 delete from Listing
@@ -34,4 +31,4 @@ where ItemNumber in (
 
 COMMIT;
 
-select * from Listing where itemtitle like '%China Woods%'
+ 

@@ -1,24 +1,12 @@
-update listflow.Listing set crosspostid = NULL where itemnumber = '175872219290';
-
-SELECT * FROM listflow.active_inactive
+SELECT sc.Name As 'Sold/Ended On',  ai.itemnumber, ai.ItemTitle, ai.dateEnded, ai.datesold, scc.Name As 'Still On', ai.CPitemnumber, ai.CPTitle
+FROM listflow.active_inactive ai
+    inner JOIN listflow.SalesChannel sc on ai.soldChannel = sc.id
+    inner JOIN listflow.SalesChannel scc on ai.cpSalesChannel = scc.id
 order by datesold desc;    
 
-select * from listflow.Listing 
-<<<<<<< HEAD
-where itemtitle like '%starcraft%'
-order by dateSold desc;
-
-
-update listflow.Listing set active =1, datesold = null where itemnumber ='m42834175894';
-
-update listflow.Listing set crosspostid = uuid() where itemnumber in ('m38029026701' , '186618464257' );
-
-select  *
-from listflow.Listing l
-where active = true
-and crosspostid is null
-order by itemtitle;
-=======
-where itemnumber = 'm20598766426'
-order by dateSold desc;
->>>>>>> main
+select sc.Name, ai.* 
+from Listing ai
+ inner JOIN listflow.SalesChannel sc on ai.SalesChannelId = sc.id
+where active =1 
+and CrossPostId  is null
+Order by ItemTitle, dateListed;
