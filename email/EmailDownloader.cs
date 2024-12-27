@@ -1,104 +1,94 @@
+using ListFlow.Email.Clients;
+using ListFlow.Email.Templates;
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using MimeKit;
+using Org.BouncyCastle.Crypto.Engines;
 
-public class EmailDownloader
+namespace ListFlow.Email;
+
+public class EmailDownloader(string address, string password, string domain, string subject)
 {
-    private string address;
-    private string password;
-    private string domain;
-    private string subject;
-
-    public EmailDownloader(string address, string password, string domain, string subject)
-    {
-        this.address = address;
-        this.password = password;
-        this.domain = domain;
-        this.subject = subject;
-    }
-
     public List<MimeMessage> DownloadEmails()
     {
-        using (var client = new ImapClient())
+        using var client = new ImapClient();
+        client.Connect(domain, 993, true);
+        client.Authenticate(address, password);
+
+        var inbox = client.Inbox;
+        inbox.Open(MailKit.FolderAccess.ReadOnly);
+
+        var query = SearchQuery.SubjectContains(subject);
+        var uids = inbox.Search(query);
+
+        var emails = new List<MimeMessage>();
+        var count = 0;
+        foreach (var uid in uids)
         {
-            client.Connect(domain, 993, true);
-            client.Authenticate(address, password);
+            var message = inbox.GetMessage(uid);
+            emails.Add(message);
+            count++;
 
-            var inbox = client.Inbox;
-            inbox.Open(MailKit.FolderAccess.ReadOnly);
-
-            var query = SearchQuery.SubjectContains(subject);
-            var uids = inbox.Search(query);
-
-            var emails = new List<MimeMessage>();
-            var count = 0;
-            foreach (var uid in uids)
+            if (count == 100)
             {
-                var message = inbox.GetMessage(uid);
-                emails.Add(message);
-                count++;
-
-                if (count == 100)
-                {
-                    break;
-                }
+                break;
             }
-
-            client.Disconnect(true);
-
-            return emails;
         }
+
+        client.Disconnect(true);
+
+        return emails;
+    }
+
+    public List<MimeMessage> ExtractFromMbox(string mboxFilePath)
+    {
+        return MboxProcessor.ProcessMboxFile(mboxFilePath);
     }
 
     public async Task SearchKeyword(List<MimeMessage> emails)
     {
-        const string keyword = "Item number:";
-        const string phraseEnd = "Quantity sold:";
+        using var imapClient = new ImapClient();
+        var soldClient = new ListingClient();
+        imapClient.Connect(domain, 993, true);
+        imapClient.Authenticate(address, password);
 
-        using (var imapClient = new ImapClient())
+        var inbox = imapClient.Inbox;
+        inbox.Open(MailKit.FolderAccess.ReadWrite);
+
+        foreach (var email in emails)
         {
-            imapClient.Connect(domain, 993, true);
-            imapClient.Authenticate(address, password);
-
-            var inbox = imapClient.Inbox;
-            inbox.Open(MailKit.FolderAccess.ReadWrite);
-
-            foreach (var email in emails)
+            if (email.From.FirstOrDefault()?.Name == "eBay")
             {
-                var body = email.HtmlBody;
-                var start = body.IndexOf(keyword);
-                var end = body.IndexOf(phraseEnd);
-
-                var dataSection = body[start..end].Trim().Split('\n');
-
-                var itemNumber = dataSection[3].Trim();
-                start = body.IndexOf("Date sold:");
-                dataSection = body[start..end].Trim().Split('\n');
-
-                var dateSold = dataSection[3].Trim();
-
-                Console.WriteLine("{0} - {1}", itemNumber, dateSold);
-
-                ApiClient client = new ApiClient();
-
-                var data = new
+                try
                 {
-                    soldDate = dateSold
-                };
-
-                try{
-                     //This function throws an exception if the response is not successful
-                    await client.PutAsync(string.Format("http://listflow-api.fenchurch.tech/api/listing/{0}/sold", itemNumber), data).ConfigureAwait(false);
-                    var uid = await inbox.SearchAsync(SearchQuery.HeaderContains("Subject", email.Subject));
-                    await inbox.AddFlagsAsync(uid.FirstOrDefault(), MessageFlags.Deleted, true);
-                }catch(Exception e){
+                    if (email.Subject.StartsWith("You made the sale"))
+                    {
+                        var extractedData = EbaySoldTemplate.ExtractData(email);
+                        await soldClient.MarkSold(extractedData);
+                    }
+                    else if (email.Subject.EndsWith("has been listed"))
+                    {
+                        var extractedData = EbayListingTemplate.ExtractData(email);
+                        await soldClient.AddMissingListing(extractedData);
+                    }
+                } catch( Exception e)
+                {
                     Console.WriteLine(e.Message);
                 }
-            }
+                
+                var uid = await inbox.SearchAsync(SearchQuery.HeaderContains("Subject", email.Subject));
 
-            await inbox.ExpungeAsync();
-            await imapClient.DisconnectAsync(true);
+                if (uid.Any())
+                {
+                    await inbox.AddFlagsAsync(uid.FirstOrDefault(), MessageFlags.Deleted, true);
+                }
+                    
+            }
+         
         }
+
+        await inbox.ExpungeAsync();
+        await imapClient.DisconnectAsync(true);
     }
 }

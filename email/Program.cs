@@ -1,5 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using ListFlow.Email;
+
 var mailClient = new EmailDownloader(
     "sales.parser@fenchurch.tech",
     "*9RZYBW_G69yx8f",
@@ -8,3 +10,6 @@ var mailClient = new EmailDownloader(
 
 var de = mailClient.DownloadEmails();
 await mailClient.SearchKeyword(de);
+
+/*var mbox = mailClient.ExtractFromMbox("unprocessed.mbox");
+await mailClient.SearchKeyword(mbox);*/
