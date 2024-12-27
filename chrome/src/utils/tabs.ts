@@ -23,7 +23,7 @@ export async function getActiveTab(targetUrl:string, page: number, salesChannel:
         }
 
         chrome.tabs.update(currTab.id as number, { url: updatedURL }, function() {
-          resolve(currTab);
+          resolve(currTab as chrome.tabs.Tab);
         });
       } else {
         console.error("No focused window found.");

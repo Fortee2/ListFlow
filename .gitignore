@@ -7,3 +7,5 @@ __pycache__
 /chrome/node_modules
 API/ListFlow.API/debug.log
 .DS_Store
+email/unprocessed.mbox
+chrome/.DS_Store

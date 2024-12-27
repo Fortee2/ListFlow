@@ -1,9 +1,12 @@
-export async function scrapDataEbay(activeListings, downloadImages, lastTimeInactive) {
-    let bulkData = [];
+import { IScrapResult } from "../../domain/IScrapResult";
+import IListingRequest from "../../domain/IListingRequest";
+
+export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: string) : Promise<IScrapResult> {
+    let bulkData: IListingRequest[] = [];
     let itemCount = 0;
     
     async function  checkReadyState() {
-      return new Promise((resolve, reject) => {
+      return new Promise<IScrapResult>((resolve, reject) => {
         let timeoutId = setTimeout(() => {
           clearTimeout(timeoutId);
           reject(new Error('Page load timed out after 10 seconds'));
@@ -13,8 +16,13 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
           if(document.readyState === 'complete') {
             clearTimeout(timeoutId);
             console.log('readyState is complete');
-            readTotalItems().then(retrieveEbay(activeListings, lastTimeInactive).then(resolve( {'result': bulkData, 'count': itemCount})));
-            resolve();
+            readTotalItems().then(() => {
+              retrieveEbay(activeListings, lastTimeInactive).then(
+                () => {
+                  resolve({'result': bulkData, 'count': itemCount});
+                }
+              );
+            });
           } else {
             console.log('readyState is not complete');
             setTimeout(check, 1000);
@@ -29,13 +37,16 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
       return new Promise((resolve) => {
         console.log('readTotalItems');
         const div = document.querySelector('span[class="result-range"]');
-        itemCount = div.innerHTML.split('of')[1].trim();
+        if(!div) {
+          resolve(0);
+        }
+        itemCount = parseInt( div!.innerHTML.split('of')[1].trim());
         console.log(itemCount);
         resolve(itemCount);
       });
     }
   
-    function parseEbayDate(dateString) {
+    function parseEbayDate(dateString:string) {
       let testString = dateString.replace(' at ', ' ');
       let idx = testString.indexOf('am');
   
@@ -50,7 +61,7 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
       return date;
     }
   
-   async function retrieveEbay(activeListings, lastTimeInactive) {
+   async function retrieveEbay(activeListings:boolean, lastTimeInactive:string) {
       const trs = Array.from(document.querySelectorAll('tr[class="grid-row"]'));
       
       for(const f of trs) {
@@ -68,17 +79,21 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
           views = parseEbayViewsFromElement(f);
           watchers = parseEbayWatchersFromElement(f);
           listPrice = parseEbayPrice(f);
-          qty = parseAvailableQuantity(f);
+          //qty = parseAvailableQuantity(f);
         }else{
-          divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
+          divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]')?.querySelector('div[class="shui-dt--text-column"]')?.querySelectorAll('div')[0].innerHTML;
           endedStatus = parseEbayEndedStatus(f);
-          listPrice = f.querySelector('td[class="shui-dt-column__price shui-dt--right"]').querySelector('div[class="col-price__current"]').querySelector('span').innerHTML.replace('$', '').trim();
+          listPrice = f.querySelector('td[class="shui-dt-column__price shui-dt--right"]')?.querySelector('div[class="col-price__current"]')?.querySelector('span')?.innerHTML.replace('$', '').trim() || "0";
         }
 
         let listingType;
-        let listingDate = parseEbayDate(divDate);
-        let a = div.querySelector('a');
-        let itemNumber = a.href.split('/')[4];
+        let listingDate = parseEbayDate(divDate as string);
+        let a = div?.querySelector('a');
+        let itemNumber = a?.href.split('/')[4];
+
+        if(!a) {
+          continue;
+        }
 
         if (activeListings) {        
           listingType = 0;
@@ -99,8 +114,8 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
         }
 
         bulkData.push({ 
-          itemTitle: a.innerHTML,
-          itemNumber: itemNumber,
+          itemTitle: a.innerHTML ,
+          itemNumber: itemNumber ?? "",
           description: a.innerHTML,
           salesChannel: 'eBay',
           active: listStatus,
@@ -120,11 +135,11 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
       }
     }
 
-    function parseEbayPrice(priceElement) {
+    function parseEbayPrice(priceElement: Element):string {
         try{
-            if(priceElement == null) return "0";
+            if(!priceElement) return "0";
 
-            let price = priceElement.querySelector('td[class="shui-dt-column__price shui-dt--right inline-editable"]').querySelector('div[class="col-price__current"]').querySelector('span').innerText;
+            let price = priceElement.querySelector('td[class="shui-dt-column__price shui-dt--right inline-editable"]')?.querySelector('div[class="col-price__current"]')?.querySelector('span')?.innerText ?? "0";
 
             if(price.includes('to')){
                 return price.split('to')[0].replace('$', '').trim();
@@ -138,57 +153,62 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
         }
     }
 
-    function parseAvailableQuantity(element) {
+    function parseAvailableQuantity(element: Element):string {
       try{
         const availableQuantityElement = element.querySelector(
             'td[class="shui-dt-column__availableQuantity shui-dt--right editable inline-editable"]'
-        ).querySelector('div[class="shui-dt--text-column"]').querySelector('div');
+        )?.querySelector('div[class="shui-dt--text-column"]')?.querySelector('div');
     
-        return availableQuantityElement ? availableQuantityElement.innerText : null;
+        return availableQuantityElement ? availableQuantityElement.innerText : "0";
       }catch(e){
         console.log(e);
         return "0";
       }
     }
     
-    function parseEbayDateFromElement(element) {
+    function parseEbayDateFromElement(element:Element):string {
       try{
-        const fromElement = element.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]').querySelector('div[class="shui-dt--text-column"]').querySelectorAll('div')[0].innerHTML;
+        const fromElement = element.querySelector('td[class="shui-dt-column__scheduledStartDate shui-dt--left"]')?.querySelector('div[class="shui-dt--text-column"]')?.querySelectorAll('div')[0]?.innerHTML ?? "";
     
-        return fromElement ? fromElement : "";
+        return fromElement;
       }catch(e){
         console.log(e);
         return "";
       }
     }
 
-    function parseEbayViewsFromElement(element) {
+    function parseEbayViewsFromElement(element:Element):string {
       try{
-        const viewsElement = element.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]').querySelector('button[class="fake-link"]').value;
-    
-        return viewsElement ? viewsElement : "0";
+        const viewsElement = element.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]')?.querySelector('button[class="fake-link"]');
+        if(!viewsElement) return "0";
+
+        let viewsButton = viewsElement.getAttribute('value');
+
+        return viewsButton as string;
       }catch(e){
         console.log(e);
         return "0";
       }
     }
 
-    function parseEbayWatchersFromElement(element) {
+    function parseEbayWatchersFromElement(element:Element):string {
       try{
-        const watchersElement = element.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+        const watchersElement = element.querySelector('td[class="shui-dt-column__watchCount shui-dt--right"]')?.querySelector('div[class="shui-dt--text-column"]')?.querySelector('div')?.innerHTML;
     
-        return watchersElement ? watchersElement : "0";
+        return watchersElement ?? "0";
       }catch(e){
         console.log(e);
         return "0";
       }
     }
 
-    function parseEbayEndedStatus(element) {
+    function parseEbayEndedStatus(element:Element):string {
       try{
-        const endedStatusElement = element.querySelector('td[class="shui-dt-column__soldStatus "]').querySelector('div[class="shui-dt--text-column"]').querySelector('div').innerHTML;
+        if(!element) return "Unsold";
+
+        const endedStatusElement = element.querySelector('td[class="shui-dt-column__soldStatus "]')?.querySelector('div[class="shui-dt--text-column"]')?.querySelector('div')?.innerHTML ?? "Unsold";
     
-        return endedStatusElement ? endedStatusElement : "Unsold";
+        return endedStatusElement;
       }catch(e){
         console.log(e);
         return "Unsold";
