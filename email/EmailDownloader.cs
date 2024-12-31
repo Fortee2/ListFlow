@@ -18,8 +18,8 @@ public class EmailDownloader(string address, string password, string domain, str
 
         var inbox = client.Inbox;
         inbox.Open(MailKit.FolderAccess.ReadOnly);
-
-        var query = SearchQuery.SubjectContains(subject);
+    
+        var query = SearchQuery.All;
         var uids = inbox.Search(query);
 
         var emails = new List<MimeMessage>();
@@ -58,6 +58,7 @@ public class EmailDownloader(string address, string password, string domain, str
 
         foreach (var email in emails)
         {
+            Console.WriteLine(email.From.FirstOrDefault()?.Name );
             if (email.From.FirstOrDefault()?.Name == "eBay")
             {
                 try
