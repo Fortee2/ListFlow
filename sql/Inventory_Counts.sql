@@ -1,9 +1,12 @@
+set @startDate = '2024-06-01';
+set @endDate = '2024-07-01';
+
 -- item count during month
 select count(ItemNumber)
 from Listing
-where  ifnull(dateListed, dateSold) < '2024-10-01'
-and (dateSold > '2024-10-01'
-    or dateEnded > '2024-10-01'
+where  ifnull(dateListed, dateSold) < @startDate
+and (dateSold > @startDate
+    or dateEnded > @startDate
     or (ISNULL(DateEnded) and ISNULL(DateSold))
 )
 and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
@@ -12,18 +15,18 @@ and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 --items sold during month
 select count(id)
 from Listing
-where (dateSold  BETWEEN '2024-10-01' and '2024-11-01');
+where (dateSold  BETWEEN @startDate and @endDate);
 
 --Items bought during month
 select *
 from Listing
-where  ifnull(dateListed, dateSold)  BETWEEN '2024-10-01' and '2024-11-01'
+where  ifnull(dateListed, dateSold)  BETWEEN @startDate and @endDate
 and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 
 --Items ended during month on ebay
 select *
 from Listing
-where DateEnded  BETWEEN '2024-10-01' and '2024-11-01'
+where DateEnded  BETWEEN @startDate and @endDate
     and ISNULL(DateSold)
 and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 
@@ -31,7 +34,7 @@ and SalesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 -- should give you the told number of items ended and not relist
 select count(id)
 from Listing
-where (dateSold  BETWEEN '2024-10-01' and '2024-11-01')
+where (dateSold  BETWEEN @startDate and @endDate)
 and SalesChannelId <> '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 
 select count(id)

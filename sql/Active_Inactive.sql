@@ -4,9 +4,7 @@ FROM listflow.active_inactive ai
     inner JOIN listflow.SalesChannel scc on ai.cpSalesChannel = scc.id
 order by datesold desc;    
 
-select sc.Name, ai.* 
-from Listing ai
- inner JOIN listflow.SalesChannel sc on ai.SalesChannelId = sc.id
-where active =1 
-and CrossPostId  is null
-Order by ItemTitle, dateListed;
+
+
+select * from Listing where active = 1
+order by ItemTitle, DateListed;
