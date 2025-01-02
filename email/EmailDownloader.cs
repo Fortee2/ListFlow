@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ListFlow.Email.Clients;
 using ListFlow.Email.Templates;
 using MailKit;
@@ -5,12 +6,13 @@ using MailKit.Net.Imap;
 using MailKit.Search;
 using MimeKit;
 using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace ListFlow.Email;
 
 public class EmailDownloader(string address, string password, string domain, string subject)
 {
-    public List<MimeMessage> DownloadEmails()
+    public List<(MimeMessage, UniqueId)> DownloadEmails()
     {
         using var client = new ImapClient();
         client.Connect(domain, 993, true);
@@ -22,18 +24,11 @@ public class EmailDownloader(string address, string password, string domain, str
         var query = SearchQuery.All;
         var uids = inbox.Search(query);
 
-        var emails = new List<MimeMessage>();
-        var count = 0;
+        var emails = new List<(MimeMessage Message, UniqueId Uid)>();
         foreach (var uid in uids)
         {
             var message = inbox.GetMessage(uid);
-            emails.Add(message);
-            count++;
-
-            if (count == 100)
-            {
-                break;
-            }
+            emails.Add((message, uid));
         }
 
         client.Disconnect(true);
@@ -46,7 +41,7 @@ public class EmailDownloader(string address, string password, string domain, str
         return MboxProcessor.ProcessMboxFile(mboxFilePath);
     }
 
-    public async Task SearchKeyword(List<MimeMessage> emails)
+    public async Task SearchKeyword(List<(MimeMessage message, UniqueId uniqueId)>  emails)
     {
         using var imapClient = new ImapClient();
         var soldClient = new ListingClient();
@@ -58,35 +53,44 @@ public class EmailDownloader(string address, string password, string domain, str
 
         foreach (var email in emails)
         {
-            Console.WriteLine(email.From.FirstOrDefault()?.Name );
-            if (email.From.FirstOrDefault()?.Name == "eBay")
+            try
             {
-                try
+                Console.WriteLine(email.message.From.FirstOrDefault()?.Name );
+            
+                switch (email.message.From.FirstOrDefault()?.Name)
                 {
-                    if (email.Subject.StartsWith("You made the sale"))
-                    {
-                        var extractedData = EbaySoldTemplate.ExtractData(email);
-                        await soldClient.MarkSold(extractedData);
-                    }
-                    else if (email.Subject.EndsWith("has been listed"))
-                    {
-                        var extractedData = EbayListingTemplate.ExtractData(email);
-                        await soldClient.AddMissingListing(extractedData);
-                    }
-                } catch( Exception e)
-                {
-                    Console.WriteLine(e.Message);
+                    case "eBay":
+  
+                        if (email.message.Subject.StartsWith("You made the sale"))
+                        {
+                            var extractedData = EbaySoldTemplate.ExtractData(email.message);
+                            await soldClient.MarkSold(extractedData);
+                            await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
+                        }
+                        else if (email.message.Subject.EndsWith("has been listed"))
+                        {
+                            var extractedData = EbayListingTemplate.ExtractData(email.message);
+                            await soldClient.AddMissingListing(extractedData);
+                            await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
+                        }
+             
+                        
+                        break;
+                    case "Poshmark":
+                        if(email.message.Subject.Contains(" just sold to "))
+                        {
+                            var extractedData = PoshmarkSoldTemplate.ExtractData(email.message);
+                            await soldClient.MarkSold(extractedData);
+                            await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
+                        }
+                        break;
                 }
-                
-                var uid = await inbox.SearchAsync(SearchQuery.HeaderContains("Subject", email.Subject));
 
-                if (uid.Any())
-                {
-                    await inbox.AddFlagsAsync(uid.FirstOrDefault(), MessageFlags.Deleted, true);
-                }
-                    
+            } 
+            catch( Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
-         
         }
 
         await inbox.ExpungeAsync();
