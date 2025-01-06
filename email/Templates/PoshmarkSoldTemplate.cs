@@ -3,24 +3,26 @@ using MimeKit;
 
 namespace ListFlow.Email.Templates;
 
-public class PoshmarkSoldTemplate:IEmailTemplate
+public abstract class PoshmarkSoldTemplate:IEmailTemplate
 {
     public static AuctionData ExtractData(MimeMessage email)
     {
         var doc = new HtmlDocument();
         doc.LoadHtml(email.HtmlBody);
-        
-        var start = body.IndexOf("<td class=\"price\"");
-        var end = body.IndexOf("</td>", start);
-        
-        var price = body[start..end].Trim().Replace("$", "");
-        
-        var orderIdNode = doc.DocumentNode.SelectSingleNode("//td[text()='Order ID']/following-sibling::tr/td");
 
-        start = 0;
-        end = email.Subject.IndexOf('"', 1 );
-        var subject = email.Subject.Substring(start, end-1);
+        var orderIdNode = doc.DocumentNode.SelectNodes("//td").First(w => w.InnerText == "Order ID").ParentNode
+            .NextSibling.SelectSingleNode("td").InnerText;
+        var dateSoldNode = doc.DocumentNode.SelectNodes("//td").First(w => w.InnerText == "Order Date")
+            .ParentNode.NextSibling.SelectSingleNode("td").InnerText;
+        var orderTotal = doc.DocumentNode.SelectNodes("//td[@class='price']")[1].InnerText;
         
-        return  new AuctionData(orderIdNode.InnerText, subject, email.Date.DateTime, price);
+        orderTotal = !string.IsNullOrEmpty(orderTotal) ? orderTotal.Replace("$", "") : "0";
+        
+        var actualDate = DateTime.Parse(dateSoldNode);
+
+        var end = email.Subject.IndexOf('"', 1 );
+        var subject = email.Subject.Substring(0, end);
+        
+        return  new AuctionData(orderIdNode, subject, actualDate, orderTotal);
     }
 }

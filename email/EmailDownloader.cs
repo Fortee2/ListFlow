@@ -64,7 +64,7 @@ public class EmailDownloader(string address, string password, string domain, str
                         if (email.message.Subject.StartsWith("You made the sale"))
                         {
                             var extractedData = EbaySoldTemplate.ExtractData(email.message);
-                            await soldClient.MarkSold(extractedData);
+                            await soldClient.MarkSold(extractedData, "eBay");
                             await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
                         }
                         else if (email.message.Subject.EndsWith("has been listed"))
@@ -73,14 +73,21 @@ public class EmailDownloader(string address, string password, string domain, str
                             await soldClient.AddMissingListing(extractedData);
                             await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
                         }
-             
-                        
                         break;
                     case "Poshmark":
                         if(email.message.Subject.Contains(" just sold to "))
                         {
                             var extractedData = PoshmarkSoldTemplate.ExtractData(email.message);
-                            await soldClient.MarkSold(extractedData);
+                            await soldClient.MarkSold(extractedData, "Poshmark");
+                            await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
+                        }
+                        break;
+                    case "Etsy Transactions":
+                    case "":
+                        if(email.message.Subject.Contains("You made a sale on Etsy"))
+                        {
+                            var extractedData = EtsySoldTemplate.ExtractData(email.message);
+                            await soldClient.MarkSold(extractedData, "Etsy");
                             await inbox.AddFlagsAsync(email.uniqueId, MessageFlags.Deleted, true);
                         }
                         break;

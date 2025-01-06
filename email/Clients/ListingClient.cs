@@ -21,11 +21,30 @@ public class ListingClient
         return null;
     }
     
-    public async Task MarkSold(AuctionData auctionData)
+    public async Task<Listing[]?> GetListingByTitle(string listingTitle, string salesChannel)
     {
+        try{
+            //This function throws an exception if the response is not successful
+            var url = $"http://listflow-api.fenchurch.tech/api/Listing?ItemTitle={listingTitle}&SalesChannel={salesChannel}";
+            var result = await _client.GetAsync<Listing[]>(url: url);
 
-        var listing = await GetListing(auctionData.ItemNumber).ConfigureAwait(false);
-
+            return result;
+        }catch(Exception e){
+            Console.WriteLine(e.Message);
+        }
+        
+        return null;
+    }
+    
+    public async Task MarkSold(AuctionData auctionData, string salesChannel)
+    {
+        Listing[]? listing; 
+            
+        if(salesChannel == "eBay")
+            listing = await GetListing(auctionData.ItemNumber).ConfigureAwait(false);
+        else
+            listing = await GetListingByTitle(auctionData.Title, salesChannel).ConfigureAwait(false);
+        
         if (listing != null && listing.Any())
         {
             await UpdateSold(auctionData).ConfigureAwait(false);
