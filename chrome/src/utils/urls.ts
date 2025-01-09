@@ -1,4 +1,4 @@
-import IUrlResult from "../domain/IURLResult";
+import IUrlResult from "../domain/IUrlResult";
 
 
 export function getMercariURLs() {

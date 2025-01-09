@@ -1,28 +1,53 @@
 import { scrapDataEbay } from "./functions/ebay/scrapDataEbay";
-import { scrapEbayImages } from "./functions/ebay/scrapImages.js";
-import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription.js";
-import { scrapEbayPostage } from "./functions/ebay/postage.js";
-import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari.js";
-import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL } from './utils/urls.js';
-import {mercariConstants} from "./functions/mercari/mercariConstants.js";
-import { retrieveItemDetails } from "./functions/mercari/itemPageDetails.js";
-import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy.js";
-import { endEbayListings } from "./functions/ebay/endListings.js";
-import { removeInactive } from "./functions/mercari/removeInactive.js";
+import { scrapEbayImages } from "./functions/ebay/scrapImages";
+import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
+import { scrapEbayPostage } from "./functions/ebay/postage";
+import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
+import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL } from './utils/urls';
+import {mercariConstants} from "./functions/mercari/mercariConstants";
+import { retrieveItemDetails } from "./functions/mercari/itemPageDetails";
+import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy";
+import { endEbayListings } from "./functions/ebay/endListings";
+import { removeInactive } from "./functions/mercari/removeInactive";
 import { getRandomInt, delay } from "./utils/utils";
 import { getActiveTab, loadTab } from "./utils/tabs";
-import { createMercariListing } from "./functions/mercari/createMercariListing.js";
-import { copyDescription, copyEbayListing } from "./functions/ebay/copyListing.js";
-import { createDistrictListing } from "./functions/district/createDistrictListing.js";
-import ImgRequest from "./domain/imgRequest.js";
+import { createMercariListing } from "./functions/mercari/createMercariListing";
+import { copyDescription, copyEbayListing } from "./functions/ebay/copyListing";
+import { createDistrictListing } from "./functions/district/createDistrictListing";
+import ImgRequest from "./domain/imgRequest";
 import OnInstall from "./events/onInstall";
-import PostageRequest from "./domain/postageRequest.js";
-import IListing from "./domain/IListing.js";
-import IListingRequest from "./domain/IListingRequest.js";
-import { IScrapResult } from "./domain/IScrapResult.js";
-import IUrlResult from "./domain/IURLResult";
+import PostageRequest from "./domain/postageRequest";
+import IListing from "./domain/IListing";
+import IListingRequest from "./domain/IListingRequest";
+import { IScrapResult } from "./domain/IScrapResult";
+import IUrlResult from "./domain/IUrlResult";
 
-let ebayImageQueue: ImgRequest[] = [];
+interface MessageRequest {
+  action: string;
+  itemNumber?: string;
+  item?: IListingRequest[] | string;  // Can be either array for saveToListingAPI or string for updateDesc
+  majorElement?: string;
+  minorElement?: string;
+  packageLength?: string;
+  packageWidth?: string;
+  packageHeight?: string;
+  data?: any[];
+  desc?: string;
+  salesChannel?: string;
+  downloadImages?: boolean;
+  listingType?: string;
+  listing?: IListing;
+}
+
+interface StorageData {
+  listData?: any[];
+  serverURI?: string;
+  createExport?: boolean;
+  removeInactiveListings?: boolean;
+  lastTimeInactive?: string;
+}
+
+let ebayImageQueue: string[] = [];
 let descQueue:string[] = [];  // queue for description updates
 let postageQueue:PostageRequest[] = [];  // queue for postage updates
 let shippingInfoQueue:string[] = [];  // queue for shipping info updates
@@ -51,84 +76,111 @@ chrome.storage.sync.get({
  createExport: false,
  removeInactiveListings: false,
  lastTimeInactive: "2024-01-01",
-}, function(data) {
- serverURI = data.serverURI;
- createExport = data.createExport;
- removeInactiveListings = data.removeInactiveListings;
- lastTimeInactive = data.lastTimeInactive;
+}, function(data: StorageData) {
+ if (data.serverURI) serverURI = data.serverURI;
+ if (data.createExport !== undefined) createExport = data.createExport;
+ if (data.removeInactiveListings !== undefined) removeInactiveListings = data.removeInactiveListings;
+ if (data.lastTimeInactive) lastTimeInactive = data.lastTimeInactive;
 });
 
-chrome.runtime.onMessage.addListener(async (request) => {
+chrome.runtime.onMessage.addListener(async (request: MessageRequest) => {
  console.log("Received message:", request.action);
  switch(request.action) {
    case "downloadEbayImage":
-     ebayImageQueue.push(request.itemNumber); // enqueue the request
-     processQueue(); // process the queue
+     if (request.itemNumber) {
+       ebayImageQueue.push(request.itemNumber); // enqueue the request
+       processQueue(); // process the queue
+     }
      break;
    case "downloadEbayDesc":
-     descQueue.push(request.itemNumber); // enqueue the request
+     if (request.itemNumber) {
+       descQueue.push(request.itemNumber); // enqueue the request
+     }
      break;
    case "saveToListingAPI":
-     saveItemToDatabase(request.item);
+     if (request.item && Array.isArray(request.item)) {
+       saveItemToDatabase(request.item as IListingRequest[]);
+     }
      break;
    case "queueEbayNoQty":
-     zeroQtyQueue.push(request.itemNumber);
+     if (request.itemNumber) {
+       zeroQtyQueue.push(request.itemNumber);
+     }
      break;
    case "queueShippingInfo":
-     shippingInfoQueue.push(request.itemNumber);
+     if (request.itemNumber) {
+       shippingInfoQueue.push(request.itemNumber);
+     }
      break;
    case "queueEbayPostage":
-     postageQueue.push({
-       "majorElement": request.majorElement,
-       "minorElement": request.minorElement,
-       "packageLength": request.packageLength,
-       "packageWidth": request.packageWidth,
-       "packageHeight": request.packageHeight,
-       "itemNumber": request.item
-     });
-     processPostageQueue(); // process the queue
+     if (request.majorElement && request.minorElement && request.packageLength && 
+         request.packageWidth && request.packageHeight && request.item && typeof request.item === 'string') {
+       postageQueue.push({
+         majorElement: request.majorElement,
+         minorElement: request.minorElement,
+         packageLength: request.packageLength,
+         packageWidth: request.packageWidth,
+         packageHeight: request.packageHeight,
+         itemNumber: request.item
+       });
+       processPostageQueue(); // process the queue
+     }
      break;
    case "downloadData":
-     downloadData(request.data, createExport, currentSalesChannel);
+     if (request.data) {
+       downloadData(request.data, createExport, currentSalesChannel);
+     }
      break;
    case "updateDesc":  
-     saveDescToDatabase(request.desc, request.item);
+     if (request.desc && typeof request.item === 'string') {
+       saveDescToDatabase(request.desc, request.item);
+     }
      break; 
    case "retrieveSalesChannel":
-     currentSalesChannel = request.salesChannel;
-     downloadImages = request.downloadImages;
-     ProcessSalesChannel(request.listingType);
+     if (request.salesChannel && request.downloadImages !== undefined && request.listingType) {
+       currentSalesChannel = request.salesChannel;
+       downloadImages = request.downloadImages;
+       ProcessSalesChannel(request.listingType);
+     }
      break;
    case "copyListing":
-     console.log("Copy Requested");
-     copyToSalesChannel = request.salesChannel;
-     await copyEbayListingDetails(request.itemNumber);
+     if (request.salesChannel && request.itemNumber) {
+       console.log("Copy Requested");
+       copyToSalesChannel = request.salesChannel;
+       await copyEbayListingDetails(request.itemNumber);
+     }
      break;
    case "listingCopied": 
-     console.log("Copy Complete");
-     console.log(request.listing);
-     console.log("Retrieve Description Requested");
-     await retrieveDescription(request.listing);
+     if (request.listing) {
+       console.log("Copy Complete");
+       console.log(request.listing);
+       console.log("Retrieve Description Requested");
+       await retrieveDescription(request.listing);
+     }
      break;
    case "descCopied":  
-     console.log("Description Copied");
-     console.log(request.listing);
-     console.log("Cross Post Requested");
-     if(copyToSalesChannel === "Mercari"){
-       await postListingToMercari(request.listing);
+     if (request.listing) {
+       console.log("Description Copied");
+       console.log(request.listing);
+       console.log("Cross Post Requested");
+       if(copyToSalesChannel === "Mercari"){
+         await postListingToMercari(request.listing);
+       }
+       else{
+         await saveListingToDistrict(request.listing);
+       }
+       updateCrossPostList(request.listing.itemNumber);
      }
-     else{
-       await saveListingToDistrict(request.listing);
-     }
-     updateCrossPostList(request.listing.itemNumber);
      break;
    case "mercariCreated":
-     saveNewListing(request.listing);
-     if(oldTab.length > 2){
-      let tab = oldTab.shift();
-      if(tab){
-        chrome.tabs.remove(tab);
-      }
+     if (request.listing) {
+       saveNewListing(request.listing);
+       if(oldTab.length > 2){
+        let tab = oldTab.shift();
+        if(tab){
+          chrome.tabs.remove(tab);
+        }
+       }
      }
      break;
  }
@@ -157,7 +209,7 @@ async function copyEbayListingDetails(itemNumber: string) {
  });
 }
 
-async function ProcessSalesChannel( listingType : string) {
+async function ProcessSalesChannel(listingType: string) {
  switch(currentSalesChannel) {
    case "Mercari":
      await retrieveMercariData(searchMercariURLs(listingType)).then(async () => {
@@ -165,7 +217,6 @@ async function ProcessSalesChannel( listingType : string) {
          await removeInactiveItems();
        }
      }); 
-
      break;
    case "eBay":
      await endEbayInactive(listingType)
@@ -192,6 +243,8 @@ async function processQueue() {
  }
 
  let itemNumber = ebayImageQueue.shift(); // dequeue the request  
+ if (!itemNumber) return;
+
  isDownloading = true;
 
  delay(getRandomInt(5000, 10000));
@@ -262,11 +315,10 @@ async function saveListingToDistrict(ebayListing:IListing) {
  });
 }
 
-async function saveNewListing( ebayListing : IListing) {
+async function saveNewListing(ebayListing: IListing) {
  console.log(ebayListing.itemNumber);
  let bulkData:IListingRequest[] = [];
- bulkData.push(
- {
+ bulkData.push({
    itemTitle: ebayListing.itemTitle,
    itemNumber: ebayListing.itemNumber,
    description: ebayListing.description,
@@ -283,7 +335,6 @@ async function saveNewListing( ebayListing : IListing) {
 }
 
 async function processDescQueue() {
- 
  if(oldTab.length > 5){
    chrome.tabs.remove(oldTab.shift() as number);
  }
@@ -293,18 +344,20 @@ async function processDescQueue() {
  }
 
  let itemNumber = descQueue.shift(); // dequeue the request  
+ if (!itemNumber) return;
+
  isDownloading = true;
 
  const tab = await loadTab(`https://vi.vipr.ebaydesc.com/itmdesc/${itemNumber}`);
- await new Promise((resolve, reject) => {
+ await new Promise<void>((resolve, reject) => {
    chrome.scripting.executeScript({
      args: [itemNumber],
      target: { tabId: tab.id as number },
      func: scrapEbayDescriptions,
    }).then(() => {
      oldTab.push(tab.id as number);
-     isDownloading = false;;
-     delay(getRandomInt(5000, 30000)).then(() => processDescQueue()).then(resolve); // recursively process the next request in the queue
+     isDownloading = false;
+     delay(getRandomInt(5000, 30000)).then(() => processDescQueue()).then(() => resolve()); // recursively process the next request in the queue
    }).catch((error) => {
      console.error("Error executing script:", error);
      reject(error);
@@ -346,7 +399,7 @@ async function processPostageQueue() {
  }
 }
 
-async function saveDescToDatabase(desc :string, itemNumber: string) {
+async function saveDescToDatabase(desc: string, itemNumber: string) {
  try {
    const response = await fetch(`${serverURI}/api/listing/${itemNumber}/description`, {
      method: "Put",
@@ -366,10 +419,8 @@ async function saveDescToDatabase(desc :string, itemNumber: string) {
 
 async function saveItemToDatabase(item: IListingRequest[]) {
  try {
-
    let jsonItem = JSON.stringify(item, null, 2); // Pretty print the JSON
    
-
    const response = await fetch(`${serverURI}/api/BulkListing`, {
      method: "POST",
      headers: {
@@ -388,7 +439,7 @@ async function saveItemToDatabase(item: IListingRequest[]) {
 
 async function retrieveEbayData(listingType: string, lastTimeInactive: string) {
  try {
-   const urls =  searchEbayURLs(listingType);
+   const urls = searchEbayURLs(listingType);
 
    for(const url of urls){
      let pageCount = 1;
@@ -411,19 +462,16 @@ async function retrieveEbayData(listingType: string, lastTimeInactive: string) {
            totalPages = Math.ceil(itemCount / 200);
          }
          pageCount++;
-
        }
      }while(pageCount <= totalPages );
 
      if(listingType === 'all'){
        chrome.storage.sync.set({ ebayLastInactive: Date.now() }, function() {
            console.log('EbayLastInactive saved.');
-         }
-       );
+       });
      }
 
      processQueue(); // process the queue
-           
    }
  } catch (error) {
    console.error("Error executing script:", error);
@@ -436,18 +484,18 @@ async function endEbayInactive(listingType: string) {
      return;
    }
 
-   const urls =  searchEbayURLs('active');
+   const urls = searchEbayURLs('active');
 
    for(const url of urls){
      let pageCount = 1;
   
      const tab = await getActiveTab(url.url, pageCount, "eBay");
      await delay(getRandomInt(5000, 30000));
-     await new Promise(resolve => {
+     await new Promise<void>(resolve => {
        chrome.scripting.executeScript({
          target: { tabId: tab.id as number },
          func: endEbayListings,
-       }, resolve);
+       }, () => resolve());
      });
    }
  } catch (error) {
@@ -455,9 +503,9 @@ async function endEbayInactive(listingType: string) {
  }
 }
 
-async function retrieveEtsyData(listingType:string) {
+async function retrieveEtsyData(listingType: string) {
  try {
-   let titles:string[] = []; //Array to hold scraped data
+   let titles: string[] = []; //Array to hold scraped data
 
    //Use Type to find the URL
    let url = searchEtsyURLs(listingType);
@@ -517,15 +565,15 @@ async function retrieveDescription(listing: IListing) {
 
 async function removeInactiveItems() {
  try {
-   const urls =  searchMercariURLs('inactive')[0];
+   const urls = searchMercariURLs('inactive')[0];
 
    const tab = await loadTab(urls.url);
    await delay(getRandomInt(5000, 30000));
-   await new Promise(resolve => {
+   await new Promise<void>(resolve => {
      chrome.scripting.executeScript({
        target: { tabId: tab.id as number },
        func: removeInactive,
-     }, resolve);
+     }, () => resolve());
    });
    
  } catch (error) {
@@ -533,9 +581,9 @@ async function removeInactiveItems() {
  }
 }
 
-async function retrieveMercariData( mercariURLs: IUrlResult[]) {
+async function retrieveMercariData(mercariURLs: IUrlResult[]) {
  try {
-   let titles = []; //Array to hold scraped data
+   let titles: IListingRequest[] = []; //Array to hold scraped data
 
    //Use Type to find the URL
    let url = mercariURLs;
@@ -554,7 +602,7 @@ async function retrieveMercariData( mercariURLs: IUrlResult[]) {
          totalPages = await retrievePageCount(link.type, tab);
        }
 
-       let result  = await new Promise<IScrapResult[]>(resolve => {
+       let result = await new Promise<IScrapResult[]>(resolve => {
          chrome.scripting.executeScript({
            args: [activeListings, link.type],
            target: { tabId: tab.id as number },
@@ -580,7 +628,7 @@ async function retrieveMercariData( mercariURLs: IUrlResult[]) {
  }
 }
 
-async function downloadData(data, createExport, currentSalesChannel) {
+async function downloadData(data: Array<IListingRequest | string>, createExport: boolean, currentSalesChannel: string): Promise<void> {
  if(!createExport) { 
      return;
  }
@@ -590,9 +638,8 @@ async function downloadData(data, createExport, currentSalesChannel) {
      data = await retrieveMercariDetails(data);
  }
 
+ let csvContent = '';
  if (Array.isArray(data) && data.length > 0) {
-     let csvContent = '';
-
      // Header row
      const header = Object.keys(data[0]).join(',');
      csvContent += header + '\n';
@@ -602,63 +649,70 @@ async function downloadData(data, createExport, currentSalesChannel) {
          const rowData = Object.values(row).join(',');
          csvContent += rowData + '\n';
      });
-
-     data = csvContent;
  }
 
- const blob = new Blob([data], { type: 'text/csv' });
+ const blob = new Blob([csvContent], { type: 'text/csv' });
 
  const reader = new FileReader();
  reader.onloadend = function() {
      const base64data = reader.result;
-     chrome.downloads.download({
-         url: base64data,
-         filename: 'data.csv'
-     });
+     if (typeof base64data === 'string') {
+       chrome.downloads.download({
+           url: base64data,
+           filename: 'data.csv'
+       });
+     }
  }
  reader.readAsDataURL(blob);
 }
 
-async function retrieveMercariDetails(data) {
+async function retrieveMercariDetails(data: Array<IListingRequest | string>): Promise<Array<IListingRequest | string>> {
  //Enhance Data for download
-
-   for(const item of data){
-
-     item.description  = "";
-     item.itemTitle = item.itemTitle.replace(/,/g, '');
-
-     const link = getMercariItemURL() + item.itemNumber;
-     const tab = await loadTab(link);
-     await delay(getRandomInt(3000, 5000));
-
-     await new Promise(resolve => {
-       chrome.scripting.executeScript({
-         target: { tabId: tab.id as number },
-         func: retrieveItemDetails,
-       }, resolve);
-
-       } ).then((shipping) => {
-         item.shipping = shipping[0].result;
-         console.log('Shipping: ' + shipping);
-         
-     }).then(() => {
-       chrome.tabs.remove(tab.id as number);
-     });
-     
+ for(let i = 0; i < data.length; i++) {
+   const item = data[i];
+   if (typeof item === 'string') {
+     continue; // Skip string items
    }
+
+   // Now TypeScript knows item is IListingRequest
+   item.description = "";
+   if (item.itemTitle) {
+     item.itemTitle = item.itemTitle.replace(/,/g, '');
+   }
+
+   const link = getMercariItemURL() + item.itemNumber;
+   const tab = await loadTab(link);
+   await delay(getRandomInt(3000, 5000));
+
+   const shipping = await new Promise<any>(resolve => {
+     chrome.scripting.executeScript({
+       target: { tabId: tab.id as number },
+       func: retrieveItemDetails,
+     }, (result) => resolve(result));
+   });
+
+   if (shipping && shipping[0] && shipping[0].result) {
+     (item as any).shipping = shipping[0].result;
+     console.log('Shipping: ' + shipping);
+   }
+
+   chrome.tabs.remove(tab.id as number);
+ }
  
  return data;
 }
 
 function updateCrossPostList(itemNumber: string) {
- chrome.storage.sync.get(['listData'], function(result) {
+ chrome.storage.sync.get(['listData'], function(result: StorageData) {
    if (result.listData) {
      let data = result.listData;
-     let item = data.find(x => x.itemNumber === itemNumber);
-     data.splice(data.indexOf(item),1);
-     chrome.storage.sync.set({ listData: data }, function() {
-       console.log('Data is updated in Chrome storage');
-     });
+     let item = data.find((x: { itemNumber: string }) => x.itemNumber === itemNumber);
+     if (item) {
+       data.splice(data.indexOf(item), 1);
+       chrome.storage.sync.set({ listData: data }, function() {
+         console.log('Data is updated in Chrome storage');
+       });
+     }
    }
  }); 
 }
