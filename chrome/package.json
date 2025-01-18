@@ -1,13 +1,13 @@
 {
-  "name": "chrome",
+  "name": "Listing Retrieval",
   "version": "1.0.0",
   "description": "Sales Auction Extension",
   "main": "./src/background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "prebuild": "node scripts/bump_version.js",
     "build": "webpack --config webpack.config.js"
   },
-  "author": "",
+  "author": "Randy Costner",
   "license": "ISC",
   "devDependencies": {
     "@eslint/js": "^9.3.0",
