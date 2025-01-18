@@ -5,7 +5,8 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 module.exports = {
   entry: {
     background: './src/background.ts',
-    popup: './src/pages/popup.ts'
+    popup: './src/pages/popup.ts',
+    options: './src/pages/options.ts'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -14,6 +15,7 @@ module.exports = {
     }
   },
   mode: 'development',
+  devtool: 'inline-source-map',
   resolve: {
     extensions: ['.ts', '.js']
   },
@@ -30,10 +32,9 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'static', to: '.', globOptions: { ignore: ['**/pages/**'] } },
         { from: 'manifest.json', to: '.' },
-        { from: 'src/pages/popup.html', to: 'pages/popup.html' },
-        { from: 'static/pages/popup.css', to: 'pages/popup.css' }
+        { from: 'imgs', to: './imgs' },
+        {from: 'src/pages/*.{html,css}', to: 'pages/[name][ext]'}
       ]
     })
   ]
