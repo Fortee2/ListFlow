@@ -36,11 +36,13 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
     function readTotalItems() {
       return new Promise((resolve) => {
         console.log('readTotalItems');
-        const div = document.querySelector('span[class="result-range"]');
+        const div = document.querySelector('span[class="results-count"]');
         if(!div) {
+          console.log('No results-count element found');
           resolve(0);
+          return;
         }
-        itemCount = parseInt( div!.innerHTML.split('of')[1].trim());
+        itemCount = parseInt(div.textContent??"".trim());
         console.log(itemCount);
         resolve(itemCount);
       });
