@@ -448,17 +448,17 @@ async function retrieveEbayData(listingType: string, lastTimeInactive: string) {
      do{
        const tab = await getActiveTab(url.url, pageCount, "eBay");
        await delay(getRandomInt(5000, 30000));
-       const result = await new Promise<IScrapResult[]>(resolve => {
+       const result = await new Promise<IScrapResult>(resolve => {
          chrome.scripting.executeScript({
            args:[url.activeListings, lastTimeInactive],
            target: { tabId: tab.id as number },
            func: scrapDataEbay,
-         }, (results) => resolve(results as unknown as IScrapResult[]));
+         }, (injectionResults) => resolve(injectionResults[0].result as IScrapResult));
        });
        
-       if(result[0].result) {
+       if(result) {
          if(totalPages === 0) {
-           let itemCount = +result[0].count;
+           let itemCount = +result.count;
            totalPages = Math.ceil(itemCount / 200);
          }
          pageCount++;

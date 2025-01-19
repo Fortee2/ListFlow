@@ -16,9 +16,12 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
           if(document.readyState === 'complete') {
             clearTimeout(timeoutId);
             console.log('readyState is complete');
-            readTotalItems().then(() => {
+            readTotalItems().then((itemCount) => {
+              alert('itemCount: ' + itemCount);
               retrieveEbay(activeListings, lastTimeInactive).then(
                 () => {
+                  console.log(bulkData);
+                  console.log(itemCount);
                   resolve({'result': bulkData, 'count': itemCount});
                 }
               );
@@ -34,7 +37,7 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
     } 
   
     function readTotalItems() {
-      return new Promise((resolve) => {
+      return new Promise<number>((resolve) => {
         console.log('readTotalItems');
         const div = document.querySelector('span[class="results-count"]');
         if(!div) {
@@ -42,7 +45,13 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
           resolve(0);
           return;
         }
-        itemCount = parseInt(div.textContent??"".trim());
+        let totalText = div.textContent?.trim() ?? "";
+        console.log(totalText);
+        alert('totalText: ' + totalText);
+        totalText = totalText.replace('(', '').replace(')','').trim();
+        alert('totalText: ' + totalText);
+        itemCount = parseInt(totalText);
+        alert('itemCount: ' + itemCount);
         console.log(itemCount);
         resolve(itemCount);
       });
