@@ -15,19 +15,14 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
         function check() {
           if(document.readyState === 'complete') {
             clearTimeout(timeoutId);
-            console.log('readyState is complete');
             readTotalItems().then((itemCount) => {
-              alert('itemCount: ' + itemCount);
               retrieveEbay(activeListings, lastTimeInactive).then(
                 () => {
-                  console.log(bulkData);
-                  console.log(itemCount);
                   resolve({'result': bulkData, 'count': itemCount});
                 }
               );
             });
           } else {
-            console.log('readyState is not complete');
             setTimeout(check, 1000);
           }
         }
@@ -41,18 +36,12 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
         console.log('readTotalItems');
         const div = document.querySelector('span[class="results-count"]');
         if(!div) {
-          console.log('No results-count element found');
           resolve(0);
           return;
         }
         let totalText = div.textContent?.trim() ?? "";
-        console.log(totalText);
-        alert('totalText: ' + totalText);
         totalText = totalText.replace('(', '').replace(')','').trim();
-        alert('totalText: ' + totalText);
         itemCount = parseInt(totalText);
-        alert('itemCount: ' + itemCount);
-        console.log(itemCount);
         resolve(itemCount);
       });
     }
@@ -64,10 +53,10 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
         return new Promise<number>((resolve) => {
           const span = document.querySelector('span[class="result-range"]');
           let totalText = span?.textContent?.trim() ?? "";
-          console.log(totalText);
+
           let totalPieces = totalText.split('of');
           totalText= totalPieces[1].replace(',','').trim();
-          console.log(totalText);
+
           resolve(parseInt(totalText));
         });
       }
@@ -206,12 +195,13 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
 
     function parseEbayViewsFromElement(element:Element):string {
       try{
-        const viewsElement = element.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]')?.querySelector('button[class="fake-link"]');
+        const viewsElement = element.querySelector('td[class="shui-dt-column__visitCount shui-dt--right"]')?.querySelector('button[class="fake-link"]')  as HTMLButtonElement;
         if(!viewsElement) return "0";
 
-        let viewsButton = viewsElement.getAttribute('value');
+        let viewsButton = viewsElement.innerText.trim();
+        viewsButton = viewsButton.split('\n')[0].trim();
 
-        return viewsButton as string;
+        return viewsButton;
       }catch(e){
         console.log(e);
         return "0";
