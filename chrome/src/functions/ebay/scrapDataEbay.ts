@@ -35,8 +35,8 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
         check();
       });
     } 
-  
-    function readTotalItems() {
+
+    function readTotalActiveListings(): Promise<number> {
       return new Promise<number>((resolve) => {
         console.log('readTotalItems');
         const div = document.querySelector('span[class="results-count"]');
@@ -55,6 +55,22 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
         console.log(itemCount);
         resolve(itemCount);
       });
+    }
+
+    function readTotalItems(): Promise<number> {
+      if(activeListings) {
+        return readTotalActiveListings();
+      }else{
+        return new Promise<number>((resolve) => {
+          const span = document.querySelector('span[class="result-range"]');
+          let totalText = span?.textContent?.trim() ?? "";
+          console.log(totalText);
+          let totalPieces = totalText.split('of');
+          totalText= totalPieces[1].replace(',','').trim();
+          console.log(totalText);
+          resolve(parseInt(totalText));
+        });
+      }
     }
   
     function parseEbayDate(dateString:string) {
