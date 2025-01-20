@@ -1,5 +1,5 @@
+import { ISiteUrls } from "../domain/ISiteUrls";
 import IUrlResult from "../domain/IUrlResult";
-
 
 export function getMercariURLs() {
     const urls: IUrlResult[] = [
@@ -80,4 +80,16 @@ export function getMercariURLs() {
         return ebayURLs;
     }
     return ebayURLs.filter(x => x.type === searchTerm);
+  }
+
+  export class Urls {
+    private urlData: ISiteUrls[] = [];
+   
+    constructor(siteUrls: ISiteUrls[]) {
+      this.urlData = siteUrls;
+    }
+
+    public GetCreateUrl(marketplace: string): string { 
+      return this.urlData.find(x => x.marketplace === marketplace)?.createUrl ?? '';
+    }
   }

@@ -12,11 +12,12 @@
       <div>
         <span>Sales Channel:</span>
         <select id="selectChannel">
-          <option>Mercari</option>
           <option selected>eBay</option>
           <option>Etsy</option>
+          <option>Facebook</option>
+          <option>Mercari</option>
           <option>Poshmark</option>
-          <option>District.net</option>
+          <option disabled="true">District.net</option>
         </select>
       </div>
       
@@ -42,7 +43,14 @@
     <hr />
     
     <div>
+      <h2>Copy Listings</h2>
+      <label for="selectListing">Available Listings:</label>
       <select id="selectListing"></select>
+      <label for="selectDestination">Copy To:</label>
+      <select id="selectDestination">
+        <option>Mercari</option>
+        <option>Facebook</option>
+      </select>
       <button id="copyButton">Copy Listing</button>
     </div>
 

@@ -60,8 +60,7 @@ export async function removeInactive(){
             await delay(3000);
             dropDown.dispatchEvent(new MouseEvent('click', { bubbles: true }));
             await delay(3000); 
-            //dropDown.focus();
-            //dropDown.click();
+
             console.log(dropDown.checked);
 
             var deleteAllButton = null;
@@ -71,17 +70,6 @@ export async function removeInactive(){
                     console.log(deleteAllButton);
                     await delay(3000);
                     if(deleteAllButton){
-    /*                     deleteAllButton.addEventListener('focus', (e) => {
-                            console.log('delete button focus event fired');
-                            console.log(e.target.value);  
-                        });
-                        deleteAllButton.addEventListener('click', (e) => {
-                            console.log('delete button click event fired');
-                            console.log(e.target.value);  
-                        });
-
-                        deleteAllButton.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
-                        deleteAllButton.dispatchEvent(new MouseEvent('click', { bubbles: true })); */
                         deleteAllButton.focus();
                         deleteAllButton.click();
                         await delay(3000);

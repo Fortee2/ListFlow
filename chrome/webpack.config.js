@@ -6,7 +6,8 @@ module.exports = {
   entry: {
     background: './src/background.ts',
     popup: './src/pages/popup.ts',
-    options: './src/pages/options.ts'
+    options: './src/pages/options.ts',
+    facebookCreate: './src/functions/facebook/createListing.ts'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -34,6 +35,7 @@ module.exports = {
       patterns: [
         { from: 'manifest.json', to: '.' },
         { from: 'imgs', to: './imgs' },
+        { from: 'data', to: './data' },
         {from: 'src/pages/*.{html,css}', to: 'pages/[name][ext]'}
       ]
     })

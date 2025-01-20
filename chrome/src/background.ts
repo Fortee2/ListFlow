@@ -3,7 +3,7 @@ import { scrapEbayImages } from "./functions/ebay/scrapImages";
 import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
 import { scrapEbayPostage } from "./functions/ebay/postage";
 import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
-import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL } from './utils/urls';
+import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL, Urls } from './utils/urls';
 import {mercariConstants} from "./functions/mercari/mercariConstants";
 import { retrieveItemDetails } from "./functions/mercari/itemPageDetails";
 import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy";
@@ -19,33 +19,15 @@ import OnInstall from "./events/onInstall";
 import PostageRequest from "./domain/postageRequest";
 import IListing from "./domain/IListing";
 import IListingRequest from "./domain/IListingRequest";
+import IMessageRequest from "./domain/IMessageRequest";
 import { IScrapResult } from "./domain/IScrapResult";
+import IStorageData from "./domain/IStorageData";
 import IUrlResult from "./domain/IUrlResult";
+import { createListing as createFacebookListing } from "./functions/facebook/createListing";
+import { ISiteUrls } from "./domain/ISiteUrls";
+import ImageQueues from "./ebay/imageQueues";
 
-interface MessageRequest {
-  action: string;
-  itemNumber?: string;
-  item?: IListingRequest[] | string;  // Can be either array for saveToListingAPI or string for updateDesc
-  majorElement?: string;
-  minorElement?: string;
-  packageLength?: string;
-  packageWidth?: string;
-  packageHeight?: string;
-  data?: any[];
-  desc?: string;
-  salesChannel?: string;
-  downloadImages?: boolean;
-  listingType?: string;
-  listing?: IListing;
-}
-
-interface StorageData {
-  listData?: any[];
-  serverURI?: string;
-  createExport?: boolean;
-  removeInactiveListings?: boolean;
-  lastTimeInactive?: string;
-}
+const imageQueues = new ImageQueues(chrome);
 
 let ebayImageQueue: string[] = [];
 let descQueue:string[] = [];  // queue for description updates
@@ -55,6 +37,7 @@ let currentSalesChannel = '';
 let createExport = false;
 let zeroQtyQueue:string[] = [];
 let downloadImages = false;
+let urlData = new Urls([]);
 
 const priceChanges = new Map();
 
@@ -70,28 +53,39 @@ chrome.runtime.onInstalled.addListener(() => {
   installer.create();
 });
 
+chrome.runtime.onStartup.addListener(() => {
+  let url = chrome.extension.getURL("data/urls.json");
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      urlData = new Urls(JSON.parse(data) as ISiteUrls[]);
+    })
+});
+
 // Load settings when the extension is loaded
 chrome.storage.sync.get({
  serverURI: "http://demo.api.com",
  createExport: false,
  removeInactiveListings: false,
  lastTimeInactive: "2024-01-01",
-}, function(data: StorageData) {
+}, function(data: IStorageData) {
  if (data.serverURI) serverURI = data.serverURI;
  if (data.createExport !== undefined) createExport = data.createExport;
  if (data.removeInactiveListings !== undefined) removeInactiveListings = data.removeInactiveListings;
  if (data.lastTimeInactive) lastTimeInactive = data.lastTimeInactive;
 });
 
-chrome.runtime.onMessage.addListener(async (request: MessageRequest) => {
+chrome.runtime.onMessage.addListener(async (request: IMessageRequest) => {
  console.log("Received message:", request.action);
  switch(request.action) {
-   case "downloadEbayImage":
+   case "extractEbayImages":
      if (request.itemNumber) {
-       ebayImageQueue.push(request.itemNumber); // enqueue the request
-       processQueue(); // process the queue
+       imageQueues.addItemToQueue(request.itemNumber); // enqueue the request
      }
      break;
+   case "downloadImage":
+    imageQueues.addItemToDownloadQueue(request.url, request.filename, request.folderName);
+    break;
    case "downloadEbayDesc":
      if (request.itemNumber) {
        descQueue.push(request.itemNumber); // enqueue the request
@@ -99,7 +93,7 @@ chrome.runtime.onMessage.addListener(async (request: MessageRequest) => {
      break;
    case "saveToListingAPI":
      if (request.item && Array.isArray(request.item)) {
-       saveItemToDatabase(request.item as IListingRequest[]);
+       saveItemToDatabase(request.item);
      }
      break;
    case "queueEbayNoQty":
@@ -163,11 +157,13 @@ chrome.runtime.onMessage.addListener(async (request: MessageRequest) => {
        console.log("Description Copied");
        console.log(request.listing);
        console.log("Cross Post Requested");
-       if(copyToSalesChannel === "Mercari"){
-         await postListingToMercari(request.listing);
-       }
-       else{
-         await saveListingToDistrict(request.listing);
+       switch(copyToSalesChannel) {
+        case "Mercari":
+         await copyListingToMercari(request.listing);
+         break;
+        case "Facebook":
+          await copyListingToFacebook(request.listing);
+          break;
        }
        updateCrossPostList(request.listing.itemNumber);
      }
@@ -287,7 +283,7 @@ async function processShippingInfoQueue() {
  processShippingInfoQueue(); // recursively process the next request in the queue
 }
 
-async function postListingToMercari(ebayListing: IListing) {
+async function copyListingToMercari(ebayListing: IListing) {
  let tab = await loadTab(mercariConstants.CreateListingUrl);
  oldTab.push(tab.id as number);
  await delay(getRandomInt(3000, 5000));
@@ -298,6 +294,20 @@ async function postListingToMercari(ebayListing: IListing) {
  }).catch((error) => {
    console.error("Error executing script:", error);  
  });
+}
+
+async function copyListingToFacebook(ebayListing: IListing) {
+  let createUrl = "https://www.facebook.com/marketplace/create/item"; // urlData.GetCreateUrl("Facebook");
+  let tab = await loadTab(createUrl);
+  oldTab.push(tab.id as number);
+  await delay(getRandomInt(3000, 5000));
+  chrome.scripting.executeScript({
+    args: [ebayListing],
+    target: { tabId: tab.id as number },
+    func: createFacebookListing,
+  }).catch((error) => {
+    console.error("Error executing script:", error);  
+  });
 }
 
 async function saveListingToDistrict(ebayListing:IListing) {
@@ -703,7 +713,7 @@ async function retrieveMercariDetails(data: Array<IListingRequest | string>): Pr
 }
 
 function updateCrossPostList(itemNumber: string) {
- chrome.storage.sync.get(['listData'], function(result: StorageData) {
+ chrome.storage.sync.get(['listData'], function(result: IStorageData) {
    if (result.listData) {
      let data = result.listData;
      let item = data.find((x: { itemNumber: string }) => x.itemNumber === itemNumber);

@@ -1,20 +1,7 @@
-interface ListItem {
-  itemNumber: string;
-  title: string;
-}
+import ListItem from "../domain/IListItem";
+import IMessageRequest from "../domain/IMessageRequest";
+import IStorageData from "../domain/IStorageData";
 
-interface StorageData {
-  listData?: ListItem[];
-  serverURI?: string;
-}
-
-interface MessageRequest {
-  action: string;
-  salesChannel?: string;
-  listingType?: string;
-  downloadImages?: boolean;
-  itemNumber?: string;
-}
 
 // DOM Elements
 const retrieveButton = document.getElementById('retrieveButton') as HTMLButtonElement;
@@ -23,6 +10,7 @@ const copyButton = document.getElementById('copyButton') as HTMLButtonElement;
 const selectType = document.getElementById('selectType') as HTMLSelectElement;
 const selectChannel = document.getElementById('selectChannel') as HTMLSelectElement;
 const selectListing = document.getElementById('selectListing') as HTMLSelectElement;
+const selectDestination = document.getElementById('selectDestination') as HTMLSelectElement;
 const downloadImagesCheckbox = document.getElementById('downloadImages') as HTMLInputElement;
 
 // Event Listeners
@@ -34,7 +22,7 @@ retrieveButton.addEventListener('click', () => {
     salesChannel: selectedSalesChannel, 
     listingType: selectedStatus, 
     downloadImages: downloadImagesCheckbox.checked 
-  } as MessageRequest);
+  } as IMessageRequest);
 });
 
 optionsButton.addEventListener('click', () => {
@@ -42,13 +30,13 @@ optionsButton.addEventListener('click', () => {
 });
 
 copyButton.addEventListener('click', () => {
-  const selectedSalesChannel = getSelectedSalesChannel();
+  const destinationSalesChannel = getDestinationSalesChannel();
   const itemNumber = selectListing.value;
   chrome.runtime.sendMessage({ 
     action: 'copyListing', 
     itemNumber: itemNumber, 
-    salesChannel: selectedSalesChannel
-  } as MessageRequest);
+    salesChannel: destinationSalesChannel
+  } as IMessageRequest);
 });
 
 function getSelectedStatusValue(): string {
@@ -59,8 +47,13 @@ function getSelectedSalesChannel(): string {
   return selectChannel.selectedOptions[0].value;
 }
 
+function getDestinationSalesChannel(): string {
+  return selectDestination.selectedOptions[0].value;
+}
+
+
 function retrieveFromServer(): void {
-  chrome.storage.sync.get(['serverURI'], (result: StorageData) => {
+  chrome.storage.sync.get(['serverURI'], (result: IStorageData) => {
     if (!result.serverURI) return;
 
     fetch(`${result.serverURI}/api/Listing/toCrossPost`)
@@ -96,7 +89,7 @@ function populateDropdown(data: ListItem[]): void {
 
 // Initialize on window load
 window.addEventListener('load', () => {
-  chrome.storage.sync.get(['listData'], (result: StorageData) => {
+  chrome.storage.sync.get(['listData'], (result: IStorageData) => {
     if (result.listData) {
       if (result.listData.length > 3) {
         // If the data is already stored, load it from chrome.storage

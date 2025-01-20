@@ -6,5 +6,10 @@ order by datesold desc;
 
 
 
-select * from Listing where active = 1
+select * from Listing 
 order by ItemTitle, DateListed;
+
+
+UPDATE Listing set CrossPostId = null where ItemTitle like '%Perfect Mason%'
+
+select * from Listing where ItemTitle like '%Perfect Mason%'
