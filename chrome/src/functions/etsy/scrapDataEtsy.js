@@ -17,8 +17,8 @@ export async function scrapDataEtsy(completedListings, listingType) {
     function readTotalItems() {
       return new Promise((resolve) => {
         console.log('readTotalItems');
-        const btns = document.querySelector('div[data-region="pager"]').querySelectorAll('button');
-        let counts = btns[btns.length -2].innerText;
+        const btns = document.querySelector('div[data-region="pager"]').querySelectorAll('option');
+        let counts = btns[btns.length -1].innerText;
         resolve(counts);
       });
     }
