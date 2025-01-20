@@ -6,3 +6,12 @@ __pycache__
 /email/bin/Debug/net8.0
 /chrome/node_modules
 API/ListFlow.API/debug.log
+.DS_Store
+<<<<<<< Updated upstream
+email/unprocessed.mbox
+chrome/.DS_Store
+email/unprocessed.mbox
+.DS_Store
+.DS_Store
+=======
+>>>>>>> Stashed changes

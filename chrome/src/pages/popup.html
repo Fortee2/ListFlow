@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>List Flow</title>
+    <link rel="stylesheet" href="./popup.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <h1>List Flow</h1>
+    
+    <div>
+      <div>
+        <span>Sales Channel:</span>
+        <select id="selectChannel">
+          <option>Mercari</option>
+          <option selected>eBay</option>
+          <option>Etsy</option>
+          <option>Poshmark</option>
+          <option>District.net</option>
+        </select>
+      </div>
+      
+      <div>
+        <span>Listing Type</span>
+        <select id="selectType">
+          <option value="all" selected>All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="inprogress">Inprogress</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
+    </div>
+    
+    <div>
+      <label for="downloadImages">Download Listing Images:</label>
+      <input type="checkbox" id="downloadImages"/>
+    </div>
+    
+    <button id="retrieveButton">Retrieve Listings</button>
+    
+    <hr />
+    
+    <div>
+      <select id="selectListing"></select>
+      <button id="copyButton">Copy Listing</button>
+    </div>
+
+    <div> 
+      <button id="openOptions">Options</button>
+    </div>
+    
+    <script src="./popup.js"></script>
+  </body>
+</html>

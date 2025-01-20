@@ -7,10 +7,10 @@ using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.OpenAI;
 using ListFlow.OpenAI.Interfaces;
-using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
+using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,12 +18,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-builder.Host.UseSerilog((ctx, lc) => lc
-    .WriteTo.Console()
-    .WriteTo.File("debug.log",Serilog.Events.LogEventLevel.Error)
-);
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ListFlow", Version = "v1" });
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -69,15 +68,22 @@ var app = builder.Build();
 
 app.UseCors("mypolicy");
 
-app.UseHttpLogging();
+app.UseSwagger();
+
+app.UseSwaggerUI(options => // UseSwaggerUI is called only in Development.
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+    options.RoutePrefix = string.Empty;
+});
 
 app.UseFileServer();
 
-app.UseSwagger();
+app.UseRouting();
 
-app.UseSwaggerUI();
-
-app.UseSerilogRequestLogging();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
 
 //app.UseHttpsRedirection();
 

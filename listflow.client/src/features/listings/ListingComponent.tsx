@@ -81,7 +81,7 @@ const ListingComponent = () => {
             </tr>
           </thead>
           <tbody>
-            {currentPageListings().map((listing) => (
+            {currentPageListings().map((listing: any) => (
               <tr key={listing.id}>
                 <td>{listing.itemNumber}</td>
                 <td>{listing.itemTitle}</td>

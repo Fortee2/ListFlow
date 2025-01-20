@@ -28,8 +28,8 @@ export async function scrapDataEbay(activeListings, downloadImages, lastTimeInac
     function readTotalItems() {
       return new Promise((resolve) => {
         console.log('readTotalItems');
-        const div = document.querySelector('span[class="results-count"]');
-        itemCount = div.innerText.trim();
+        const div = document.querySelector('span[class="result-range"]');
+        itemCount = div.innerHTML.split('of')[1].trim();
         console.log(itemCount);
         resolve(itemCount);
       });
