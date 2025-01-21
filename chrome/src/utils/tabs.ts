@@ -39,3 +39,11 @@ export async function loadTab(targetUrl: string) : Promise<chrome.tabs.Tab> {
     });
   });
 }
+
+export async function closeTab(tabId: number) : Promise<void> {
+  return new Promise((resolve) => {
+    chrome.tabs.remove(tabId, () => {
+      resolve();
+    });
+  });
+}

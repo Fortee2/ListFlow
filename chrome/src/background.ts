@@ -1,5 +1,5 @@
 import { scrapDataEbay } from "./functions/ebay/scrapDataEbay";
-import { scrapEbayImages } from "./functions/ebay/scrapImages";
+import scrapImages  from "./functions/ebay/scrapImages";
 import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
 import { scrapEbayPostage } from "./functions/ebay/postage";
 import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
@@ -14,22 +14,23 @@ import { getActiveTab, loadTab } from "./utils/tabs";
 import { createMercariListing } from "./functions/mercari/createMercariListing";
 import { copyDescription, copyEbayListing } from "./functions/ebay/copyListing";
 import { createDistrictListing } from "./functions/district/createDistrictListing";
-import ImgRequest from "./domain/imgRequest";
 import OnInstall from "./events/onInstall";
 import PostageRequest from "./domain/postageRequest";
 import IListing from "./domain/IListing";
 import IListingRequest from "./domain/IListingRequest";
-import IMessageRequest from "./domain/IMessageRequest";
+import MessageRequest from "./domain/MessageRequest";
 import { IScrapResult } from "./domain/IScrapResult";
 import IStorageData from "./domain/IStorageData";
 import IUrlResult from "./domain/IUrlResult";
 import { createListing as createFacebookListing } from "./functions/facebook/createListing";
 import { ISiteUrls } from "./domain/ISiteUrls";
-import ImageQueues from "./ebay/imageQueues";
+import ImageQueues from "./functions/ebay/ImageQueues";
+import ImgRequest from "./domain/ImgRequest";
+import IBaseRequest from "./domain/IBaseRequest";
+import IPostageRequest from "./domain/IPostageRequest";
 
 const imageQueues = new ImageQueues(chrome);
 
-let ebayImageQueue: string[] = [];
 let descQueue:string[] = [];  // queue for description updates
 let postageQueue:PostageRequest[] = [];  // queue for postage updates
 let shippingInfoQueue:string[] = [];  // queue for shipping info updates
@@ -75,7 +76,7 @@ chrome.storage.sync.get({
  if (data.lastTimeInactive) lastTimeInactive = data.lastTimeInactive;
 });
 
-chrome.runtime.onMessage.addListener(async (request: IMessageRequest) => {
+chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
  console.log("Received message:", request.action);
  switch(request.action) {
    case "extractEbayImages":
@@ -84,7 +85,8 @@ chrome.runtime.onMessage.addListener(async (request: IMessageRequest) => {
      }
      break;
    case "downloadImage":
-    imageQueues.addItemToDownloadQueue(request.url, request.filename, request.folderName);
+    let imgRequest = request as ImgRequest;
+    imageQueues.addItemToDownloadQueue(imgRequest.url, imgRequest.filename, imgRequest.folderName);
     break;
    case "downloadEbayDesc":
      if (request.itemNumber) {
@@ -92,8 +94,9 @@ chrome.runtime.onMessage.addListener(async (request: IMessageRequest) => {
      }
      break;
    case "saveToListingAPI":
-     if (request.item && Array.isArray(request.item)) {
-       saveItemToDatabase(request.item);
+     let saveRequest = request as MessageRequest;
+     if (saveRequest.item && Array.isArray(saveRequest.item)) {
+       saveItemToDatabase(saveRequest.item);
      }
      break;
    case "queueEbayNoQty":
@@ -107,70 +110,81 @@ chrome.runtime.onMessage.addListener(async (request: IMessageRequest) => {
      }
      break;
    case "queueEbayPostage":
-     if (request.majorElement && request.minorElement && request.packageLength && 
-         request.packageWidth && request.packageHeight && request.item && typeof request.item === 'string') {
+     let postageRequest = request as IPostageRequest;
+
+     if (postageRequest.majorElement && postageRequest.minorElement && postageRequest.packageLength && 
+      postageRequest.packageWidth && postageRequest.packageHeight && request.itemNumber) {
        postageQueue.push({
-         majorElement: request.majorElement,
-         minorElement: request.minorElement,
-         packageLength: request.packageLength,
-         packageWidth: request.packageWidth,
-         packageHeight: request.packageHeight,
-         itemNumber: request.item
+         majorElement: postageRequest.majorElement,
+         minorElement: postageRequest.minorElement,
+         packageLength: postageRequest.packageLength,
+         packageWidth: postageRequest.packageWidth,
+         packageHeight: postageRequest.packageHeight,
+         itemNumber: postageRequest.itemNumber!,
        });
        processPostageQueue(); // process the queue
      }
      break;
    case "downloadData":
-     if (request.data) {
-       downloadData(request.data, createExport, currentSalesChannel);
+     let downloadRequest = request as MessageRequest;
+
+     if (downloadRequest.data) {
+       downloadData(downloadRequest.data, createExport, currentSalesChannel);
      }
      break;
    case "updateDesc":  
-     if (request.desc && typeof request.item === 'string') {
-       saveDescToDatabase(request.desc, request.item);
+    let updateRequest = request as MessageRequest;
+
+     if (updateRequest.desc && typeof updateRequest.itemNumber === 'string') {
+       saveDescToDatabase(updateRequest.desc, updateRequest.itemNumber);
      }
      break; 
    case "retrieveSalesChannel":
-     if (request.salesChannel && request.downloadImages !== undefined && request.listingType) {
-       currentSalesChannel = request.salesChannel;
-       downloadImages = request.downloadImages;
-       ProcessSalesChannel(request.listingType);
+    let salesChannelRequest = request as MessageRequest;
+     if (salesChannelRequest.salesChannel && salesChannelRequest.downloadImages !== undefined && salesChannelRequest.listingType) {
+       currentSalesChannel = salesChannelRequest.salesChannel;
+       downloadImages = salesChannelRequest.downloadImages;
+       ProcessSalesChannel(salesChannelRequest.listingType);
      }
      break;
    case "copyListing":
-     if (request.salesChannel && request.itemNumber) {
+     let copyRequest = request as MessageRequest;
+     if (copyRequest.salesChannel && request.itemNumber) {
        console.log("Copy Requested");
-       copyToSalesChannel = request.salesChannel;
+       copyToSalesChannel = copyRequest.salesChannel;
        await copyEbayListingDetails(request.itemNumber);
      }
      break;
    case "listingCopied": 
-     if (request.listing) {
+     let copiedRequest = request as MessageRequest;
+     if (copiedRequest.listing) {
        console.log("Copy Complete");
-       console.log(request.listing);
+       console.log(copiedRequest.listing);
        console.log("Retrieve Description Requested");
-       await retrieveDescription(request.listing);
+       await retrieveDescription(copiedRequest.listing);
      }
      break;
    case "descCopied":  
-     if (request.listing) {
+     let descCopiedRequest = request as MessageRequest;
+     if (descCopiedRequest.listing) {
        console.log("Description Copied");
-       console.log(request.listing);
+       console.log(descCopiedRequest.listing);
        console.log("Cross Post Requested");
        switch(copyToSalesChannel) {
         case "Mercari":
-         await copyListingToMercari(request.listing);
+         await copyListingToMercari(descCopiedRequest.listing);
          break;
         case "Facebook":
-          await copyListingToFacebook(request.listing);
+          await copyListingToFacebook(descCopiedRequest.listing);
           break;
        }
-       updateCrossPostList(request.listing.itemNumber);
+       updateCrossPostList(descCopiedRequest.listing.itemNumber);
      }
      break;
    case "mercariCreated":
-     if (request.listing) {
-       saveNewListing(request.listing);
+     let mercariRequest = request as MessageRequest;
+     if (mercariRequest.listing) {
+       saveNewListing(mercariRequest.listing);
        if(oldTab.length > 2){
         let tab = oldTab.shift();
         if(tab){
@@ -231,36 +245,6 @@ async function ProcessSalesChannel(listingType: string) {
      await retrieveEtsyData(listingType);
      break;
  } 
-}
-
-async function processQueue() {
- if (ebayImageQueue.length === 0 || isDownloading) {
-   return;
- }
-
- let itemNumber = ebayImageQueue.shift(); // dequeue the request  
- if (!itemNumber) return;
-
- isDownloading = true;
-
- delay(getRandomInt(5000, 10000));
- const tab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
- await new Promise<void>((resolve) => {
-   chrome.scripting.executeScript({
-     args: [itemNumber, downloadImages],
-     target: { tabId: tab.id as number },
-     func: scrapEbayImages,
-   }, () => {
-     if (tab.id !== undefined) {
-       oldTab.push(tab.id);
-     }
-     resolve();
-   });
- });
-
- isDownloading = false;
- await delay(getRandomInt(5000, 30000));
- processQueue(); // recursively process the next request in the queue
 }
 
 async function processShippingInfoQueue() {
@@ -480,8 +464,6 @@ async function retrieveEbayData(listingType: string, lastTimeInactive: string) {
            console.log('EbayLastInactive saved.');
        });
      }
-
-     processQueue(); // process the queue
    }
  } catch (error) {
    console.error("Error executing script:", error);

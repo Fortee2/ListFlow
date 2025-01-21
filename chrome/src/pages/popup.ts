@@ -1,5 +1,5 @@
 import ListItem from "../domain/IListItem";
-import IMessageRequest from "../domain/IMessageRequest";
+import MessageRequest from "../domain/MessageRequest";
 import IStorageData from "../domain/IStorageData";
 
 
@@ -22,7 +22,7 @@ retrieveButton.addEventListener('click', () => {
     salesChannel: selectedSalesChannel, 
     listingType: selectedStatus, 
     downloadImages: downloadImagesCheckbox.checked 
-  } as IMessageRequest);
+  } as MessageRequest);
 });
 
 optionsButton.addEventListener('click', () => {
@@ -36,7 +36,7 @@ copyButton.addEventListener('click', () => {
     action: 'copyListing', 
     itemNumber: itemNumber, 
     salesChannel: destinationSalesChannel
-  } as IMessageRequest);
+  } as MessageRequest);
 });
 
 function getSelectedStatusValue(): string {

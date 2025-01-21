@@ -1,7 +1,7 @@
-import ImgRequest from "../domain/imgRequest";
-import { loadTab, closeTab } from "../util/tabs";
-import { delay, getRandomInt } from "../util/utils";
-import scrapEbayImages from "./scrapEbayImages";
+import ImgRequest from "../../domain/ImgRequest";
+import { loadTab, closeTab } from "../../utils/tabs";
+import { delay, getRandomInt } from "../../utils/utils";
+import scrapImages from "./scrapImages";
 
 export default class ImageQueues {
     private readonly chrome: any;
@@ -24,10 +24,9 @@ export default class ImageQueues {
     }
 
     public addItemToDownloadQueue(url: string, filename: string, folderName?: string) {
-        this.imageQueue.push({ url, filename, folderName });
+        this.imageQueue.push( {action:"download",url: url, filename: filename, folderName: folderName } as ImgRequest);
         this.processImageQueue();
     }
-
 
     async processImageQueue() {
         if (this.imageQueue.length === 0 || this.isDownloadingImage) {
@@ -75,7 +74,7 @@ export default class ImageQueues {
           chrome.scripting.executeScript({
             args: [itemNumber],
             target: { tabId: tab.id as number },
-            func: scrapEbayImages,
+            func: scrapImages,
           }, () => {
             resolve();
           });

@@ -1,4 +1,4 @@
-export default function scrapEbayImages(itemNumber: string) {
+export default function scrapImages(itemNumber: string) {
   function checkReadyState(): Promise<void> {
     return new Promise((resolve, reject) => {
       let timeoutId = setTimeout(() => {
