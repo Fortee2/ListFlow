@@ -16,7 +16,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.js"
-, "src/functions/ebay/scrapDataEbay.ts" ],
+, "src/content/ebay/scrapData.ts" ],
   "exclude": [
     "node_modules",
     "static"

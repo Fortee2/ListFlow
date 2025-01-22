@@ -1,6 +1,8 @@
-export async function copyEbayListing(itemNumber) {
+import IListing from "../../domain/IListing";
+
+export async function copyEbayListing(itemNumber: string): Promise<void> {
   function checkReadyState() {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       let timeoutId = setTimeout(() => {
         clearTimeout(timeoutId);
         reject(new Error('Page load timed out after 10 seconds'));
@@ -23,9 +25,9 @@ export async function copyEbayListing(itemNumber) {
   }
 
   function copyListing() {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       try{
-        let listing = {
+        let listing: IListing = {
           itemNumber: itemNumber,
           itemTitle: '',
           price: '',
@@ -45,30 +47,30 @@ export async function copyEbayListing(itemNumber) {
         resolve();
       }catch(e){
         console.log(e);
-        reject();   
+        reject(e as Error);   
       }
     });
   }
 
-  function retrieveDetails(ebayListing) {
-    return new Promise((resolve, reject) => {
+  function retrieveDetails(ebayListing: IListing) {
+    return new Promise<void>((resolve, reject) => {
       function checkPostageElement() {
           try{
-              let majorElement = document.querySelector('input[name="majorWeight"]');
-              let minorElement = document.querySelector('input[name="minorWeight"]');
-              let packageLength = document.querySelector('input[name="packageLength"]');
-              let packageWidth = document.querySelector('input[name="packageWidth"]');
-              let packageHeight = document.querySelector('input[name="packageDepth"]');
-              let title = document.querySelector('input[name="title"]');
-              let price = document.querySelector('input[name="price"]');
+              let majorElement = document.querySelector('input[name="majorWeight"]') as HTMLInputElement;
+              let minorElement = document.querySelector('input[name="minorWeight"]') as HTMLInputElement;
+              let packageLength = document.querySelector('input[name="packageLength"]') as HTMLInputElement;
+              let packageWidth = document.querySelector('input[name="packageWidth"]') as HTMLInputElement;
+              let packageHeight = document.querySelector('input[name="packageDepth"]') as HTMLInputElement;
+              let title = document.querySelector('input[name="title"]') as HTMLInputElement;
+              let price = document.querySelector('input[name="price"]') as HTMLInputElement;
 
               ebayListing.itemTitle = title.value;
               ebayListing.price = price.value;  
-              ebayListing.shipping.majorWeight = majorElement.value === '' ? 0 : majorElement.value;
-              ebayListing.shipping.minorWeight = minorElement.value === '' ? 0 : minorElement.value;
-              ebayListing.shipping.packageLength = packageLength.value === '' ? 0 : packageLength.value;
-              ebayListing.shipping.packageWidth = packageWidth.value === '' ? 0 : packageWidth.value;
-              ebayListing.shipping.packageHeight = packageHeight.value === '' ? 0 : packageHeight.value;
+              ebayListing.shipping.majorWeight = majorElement.value === '' ? 0 : parseInt(majorElement.value);
+              ebayListing.shipping.minorWeight = minorElement.value === '' ? 0 : parseInt(minorElement.value);
+              ebayListing.shipping.packageLength = packageLength.value === '' ? 0 : parseInt(packageLength.value);
+              ebayListing.shipping.packageWidth = packageWidth.value === '' ? 0 : parseInt(packageWidth.value);
+              ebayListing.shipping.packageHeight = packageHeight.value === '' ? 0 : parseInt(packageHeight.value);
 
               if (majorElement) {
                   console.log('retrievePostage');
@@ -87,7 +89,7 @@ export async function copyEbayListing(itemNumber) {
               }
           }catch(e){
               console.log(e);
-              reject();   
+              reject(e as Error);   
           }
           
       }
@@ -95,19 +97,21 @@ export async function copyEbayListing(itemNumber) {
     })
   }
 
-  function retrieveImages(ebayListing) {
-    return new Promise((resolve, reject) => {
+  function retrieveImages(ebayListing: IListing) {
+    return new Promise<void>((resolve, reject) => {
       function checkImageElement() {
-        let imageElement = document.querySelectorAll('.uploader-thumbnails__inline-edit');
-        if (imageElement) {
-          imageElement.forEach((element) => {
-            const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style');
-
-            const startIdx = backgroundImageString.indexOf('url(') + 5;
-            const endIdx = backgroundImageString.indexOf('\')');
+        let imageElements = document.querySelectorAll('.uploader-thumbnails__inline-edit') ;
+        if (imageElements.length > 0) {
+          imageElements.forEach((element) => {
+            const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style') as string;
+/*             let imageName = element.getElementsByTagName('button')[0].getAttribute('aria-label') as string;
+            let imageTitleWords = imageName.split(' ');
+            let imageOrder = imageTitleWords[imageTitleWords.length - 1];  */
+            const startIdx = backgroundImageString.indexOf('url(') + 4;
+            const endIdx = backgroundImageString.indexOf(')');
 
             let imageUrl = backgroundImageString.substring(startIdx, endIdx);
-            imageUrl = imageUrl.replace("$_2", "$_57");
+            console.log(imageUrl);
             ebayListing.images.push(imageUrl);
           });
 
@@ -125,10 +129,10 @@ export async function copyEbayListing(itemNumber) {
   await checkReadyState();
 }
 
-export async function copyDescription(ebayListing) {
+export async function copyDescription(ebayListing: IListing) {
   
   function checkReadyState() {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       let timeoutId = setTimeout(() => {
         clearTimeout(timeoutId);
         reject(new Error('Page load timed out after 10 seconds'));
@@ -151,7 +155,7 @@ export async function copyDescription(ebayListing) {
     
   }
 
-  function retrieveDescription(listing) {
+  function retrieveDescription(listing: IListing) {
     return new Promise((resolve, reject) => {
       try{
         function checkDescElement() {
@@ -159,10 +163,10 @@ export async function copyDescription(ebayListing) {
             console.log('retrieveDescription');
             console.log(descElement); 
             if (descElement) {
-              listing.description = descElement.innerText.trim();
+              listing.description = descElement.textContent!.trim();
             
               chrome.runtime.sendMessage({ action: 'descCopied', listing: listing});
-              chrome.runtime.sendMessage({ action: 'updateDesc', desc: listing.desc, item: listing.itemNumber});
+              chrome.runtime.sendMessage({ action: 'updateDesc', desc: listing.description, item: listing.itemNumber});
               resolve(ebayListing);
           } else {
             setTimeout(checkDescElement, 1000); // wait for 1 second before checking again

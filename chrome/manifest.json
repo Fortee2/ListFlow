@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Listing Retrieval",
-  "version": "2025.01.20.28",
+  "version": "2025.01.22.1",
   "description": "Retrieve listing from a website",
   "web_accessible_resources": [
     {

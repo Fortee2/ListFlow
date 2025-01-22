@@ -1,5 +1,5 @@
-import { scrapDataEbay } from "./functions/ebay/scrapDataEbay";
-import scrapImages  from "./functions/ebay/scrapImages";
+import { scrapDataEbay } from "./content/ebay/scrapData";
+import scrapImages  from "./content/ebay/scrapImages";
 import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
 import { scrapEbayPostage } from "./functions/ebay/postage";
 import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
@@ -12,7 +12,7 @@ import { removeInactive } from "./functions/mercari/removeInactive";
 import { getRandomInt, delay } from "./utils/utils";
 import { getActiveTab, loadTab } from "./utils/tabs";
 import { createMercariListing } from "./functions/mercari/createMercariListing";
-import { copyDescription, copyEbayListing } from "./functions/ebay/copyListing";
+import { copyDescription, copyEbayListing } from "./content/ebay/copyListing";
 import { createDistrictListing } from "./functions/district/createDistrictListing";
 import OnInstall from "./events/onInstall";
 import PostageRequest from "./domain/postageRequest";
@@ -268,7 +268,8 @@ async function processShippingInfoQueue() {
 }
 
 async function copyListingToMercari(ebayListing: IListing) {
- let tab = await loadTab(mercariConstants.CreateListingUrl);
+ let createUrl = urlData.GetCreateUrl("mercari"); 
+ let tab = await loadTab(createUrl);
  oldTab.push(tab.id as number);
  await delay(getRandomInt(3000, 5000));
  chrome.scripting.executeScript({
@@ -281,7 +282,7 @@ async function copyListingToMercari(ebayListing: IListing) {
 }
 
 async function copyListingToFacebook(ebayListing: IListing) {
-  let createUrl = "https://www.facebook.com/marketplace/create/item"; // urlData.GetCreateUrl("Facebook");
+  let createUrl = urlData.GetCreateUrl("facebook");
   let tab = await loadTab(createUrl);
   oldTab.push(tab.id as number);
   await delay(getRandomInt(3000, 5000));

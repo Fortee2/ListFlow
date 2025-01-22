@@ -1,5 +1,8 @@
 [
     {"marketplace:": "facebook",
         "createUrl": "https://www.facebook.com/marketplace/create/item"
+    },
+    {"marketplace:": "mercari",
+        "createUrl": "https://www.mercari.com/sell/"
     }
 ]

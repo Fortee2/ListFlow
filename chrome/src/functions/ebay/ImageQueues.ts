@@ -1,7 +1,7 @@
 import ImgRequest from "../../domain/ImgRequest";
 import { loadTab, closeTab } from "../../utils/tabs";
 import { delay, getRandomInt } from "../../utils/utils";
-import scrapImages from "./scrapImages";
+import scrapImages from "../../content/ebay/scrapImages";
 
 export default class ImageQueues {
     private readonly chrome: any;
