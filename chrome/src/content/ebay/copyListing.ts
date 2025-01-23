@@ -41,7 +41,7 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
           images: [],
           description: ''
         };
-        retrieveDetails(listing); 
+        checkPostageElement(listing); 
         retrieveImages(listing);
         chrome.runtime.sendMessage({ action: 'listingCopied', listing: listing});
         resolve();
@@ -52,78 +52,61 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
     });
   }
 
-  function retrieveDetails(ebayListing: IListing) {
-    return new Promise<void>((resolve, reject) => {
-      function checkPostageElement() {
-          try{
-              let majorElement = document.querySelector('input[name="majorWeight"]') as HTMLInputElement;
-              let minorElement = document.querySelector('input[name="minorWeight"]') as HTMLInputElement;
-              let packageLength = document.querySelector('input[name="packageLength"]') as HTMLInputElement;
-              let packageWidth = document.querySelector('input[name="packageWidth"]') as HTMLInputElement;
-              let packageHeight = document.querySelector('input[name="packageDepth"]') as HTMLInputElement;
-              let title = document.querySelector('input[name="title"]') as HTMLInputElement;
-              let price = document.querySelector('input[name="price"]') as HTMLInputElement;
+  function checkPostageElement(ebayListing: IListing) {
+    try{
+        let majorElement = document.querySelector('input[name="majorWeight"]') as HTMLInputElement;
+        let minorElement = document.querySelector('input[name="minorWeight"]') as HTMLInputElement;
+        let packageLength = document.querySelector('input[name="packageLength"]') as HTMLInputElement;
+        let packageWidth = document.querySelector('input[name="packageWidth"]') as HTMLInputElement;
+        let packageHeight = document.querySelector('input[name="packageDepth"]') as HTMLInputElement;
+        let title = document.querySelector('input[name="title"]') as HTMLInputElement;
+        let price = document.querySelector('input[name="price"]') as HTMLInputElement;
 
-              ebayListing.itemTitle = title.value;
-              ebayListing.price = price.value;  
-              ebayListing.shipping.majorWeight = majorElement.value === '' ? 0 : parseInt(majorElement.value);
-              ebayListing.shipping.minorWeight = minorElement.value === '' ? 0 : parseInt(minorElement.value);
-              ebayListing.shipping.packageLength = packageLength.value === '' ? 0 : parseInt(packageLength.value);
-              ebayListing.shipping.packageWidth = packageWidth.value === '' ? 0 : parseInt(packageWidth.value);
-              ebayListing.shipping.packageHeight = packageHeight.value === '' ? 0 : parseInt(packageHeight.value);
+        ebayListing.itemTitle = title.value;
+        ebayListing.price = price.value;  
+        ebayListing.shipping.majorWeight = majorElement.value === '' ? 0 : parseInt(majorElement.value);
+        ebayListing.shipping.minorWeight = minorElement.value === '' ? 0 : parseInt(minorElement.value);
+        ebayListing.shipping.packageLength = packageLength.value === '' ? 0 : parseInt(packageLength.value);
+        ebayListing.shipping.packageWidth = packageWidth.value === '' ? 0 : parseInt(packageWidth.value);
+        ebayListing.shipping.packageHeight = packageHeight.value === '' ? 0 : parseInt(packageHeight.value);
 
-              if (majorElement) {
-                  console.log('retrievePostage');
-                  console.log(majorElement.innerText);
-                  chrome.runtime.sendMessage({ 
-                      action: 'queueEbayPostage', 
-                      majorElement: majorElement.value === '' ? 0 : majorElement.value, 
-                      minorElement: minorElement.value === '' ? 0 : minorElement.value,
-                      packageLength: packageLength.value === '' ? 0 : packageLength.value,
-                      packageWidth: packageWidth.value === '' ? 0 : packageWidth.value,
-                      packageHeight: packageHeight.value === '' ? 0 : packageHeight.value,
-                      item: itemNumber});
-                  resolve();
-              } else {
-                  setTimeout(checkPostageElement, 1000); // wait for 1 second before checking again
-              }
-          }catch(e){
-              console.log(e);
-              reject(e as Error);   
-          }
-          
-      }
-      checkPostageElement();
-    })
+        if (majorElement) {
+            console.log('retrievePostage');
+            console.log(majorElement.innerText);
+            chrome.runtime.sendMessage({ 
+                action: 'queueEbayPostage', 
+                majorElement: majorElement.value === '' ? 0 : majorElement.value, 
+                minorElement: minorElement.value === '' ? 0 : minorElement.value,
+                packageLength: packageLength.value === '' ? 0 : packageLength.value,
+                packageWidth: packageWidth.value === '' ? 0 : packageWidth.value,
+                packageHeight: packageHeight.value === '' ? 0 : packageHeight.value,
+                item: itemNumber});
+
+        } else {
+            setTimeout(checkPostageElement, 1000); // wait for 1 second before checking again
+        }
+    }catch(e){
+        console.log(e);
+    }
   }
 
   function retrieveImages(ebayListing: IListing) {
-    return new Promise<void>((resolve, reject) => {
-      function checkImageElement() {
-        let imageElements = document.querySelectorAll('.uploader-thumbnails__inline-edit') ;
-        if (imageElements.length > 0) {
-          imageElements.forEach((element) => {
-            const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style') as string;
-/*             let imageName = element.getElementsByTagName('button')[0].getAttribute('aria-label') as string;
-            let imageTitleWords = imageName.split(' ');
-            let imageOrder = imageTitleWords[imageTitleWords.length - 1];  */
-            const startIdx = backgroundImageString.indexOf('url(') + 4;
-            const endIdx = backgroundImageString.indexOf(')');
+    let imageElements = document.querySelectorAll('.uploader-thumbnails__inline-edit') ;
+    if (imageElements.length > 0) {
+      imageElements.forEach((element) => {
+        const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style') as string;
+        const startIdx = backgroundImageString.indexOf('url(') + 4;
+        const endIdx = backgroundImageString.indexOf(')');
 
-            let imageUrl = backgroundImageString.substring(startIdx, endIdx);
-            console.log(imageUrl);
-            ebayListing.images.push(imageUrl);
-          });
-
-          resolve();
-        } else {
-          setTimeout(checkImageElement, 1000); // wait for 1 second before checking again
-        }
-      }
-
-      checkImageElement();
-      
-    });
+        let imageUrl = backgroundImageString.substring(startIdx, endIdx);
+        console.log('retrieveImages');
+        console.log(imageUrl);
+        ebayListing.images.push(imageUrl);
+      });
+    } else {
+      setTimeout(retrieveImages(ebayListing), 1000); // wait for 1 second before checking again
+    }
+  }
   }
   
   await checkReadyState();

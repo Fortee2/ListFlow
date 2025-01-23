@@ -1,10 +1,8 @@
 import { scrapDataEbay } from "./content/ebay/scrapData";
-import scrapImages  from "./content/ebay/scrapImages";
 import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
 import { scrapEbayPostage } from "./functions/ebay/postage";
 import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
 import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL, Urls } from './utils/urls';
-import {mercariConstants} from "./functions/mercari/mercariConstants";
 import { retrieveItemDetails } from "./functions/mercari/itemPageDetails";
 import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy";
 import { endEbayListings } from "./functions/ebay/endListings";
