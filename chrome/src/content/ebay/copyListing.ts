@@ -90,25 +90,42 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
     }
   }
 
-  function retrieveImages(ebayListing: IListing) {
-    let imageElements = document.querySelectorAll('.uploader-thumbnails__inline-edit') ;
-    if (imageElements.length > 0) {
-      imageElements.forEach((element) => {
-        const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style') as string;
-        const startIdx = backgroundImageString.indexOf('url(') + 4;
-        const endIdx = backgroundImageString.indexOf(')');
+  function retrieveImages(ebayListing: IListing) : Promise<void> {
+    return new Promise((resolve, reject) => {
+      try{
+        function checkImageElement() {
+          console.log('Checking for image elements');
+          let imageElements = document.querySelectorAll('.uploader-thumbnails-ux__thumbnail');
+          if (imageElements.length > 0) {
+            imageElements.forEach((element) => {
+              const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style') as string;
+              let imageName = element.getElementsByTagName('button')[0].getAttribute('aria-label') as string;
+              let imageTitleWords = imageName.split(' ');
+              let imageOrder = imageTitleWords[imageTitleWords.length - 1]; 
+              const startIdx = backgroundImageString.indexOf('url(') + 4;
+              const endIdx = backgroundImageString.indexOf(')');
 
-        let imageUrl = backgroundImageString.substring(startIdx, endIdx);
-        console.log('retrieveImages');
-        console.log(imageUrl);
-        ebayListing.images.push(imageUrl);
-      });
-    } else {
-      setTimeout(retrieveImages(ebayListing), 1000); // wait for 1 second before checking again
-    }
+              let imageUrl = backgroundImageString.substring(startIdx, endIdx);
+              imageUrl = imageUrl.replace('_2', '_57');
+              console.log(imageUrl);
+
+              ebayListing.images.push(imageUrl);
+            });
+
+            resolve();
+          } else {
+            setTimeout(checkImageElement, 1000); // wait for 1 second before checking again
+          }
+        }
+        
+        checkImageElement();
+      } catch (error) {
+        console.error(error);
+        reject(error);
+      }
+    });
   }
-  }
-  
+
   await checkReadyState();
 }
 

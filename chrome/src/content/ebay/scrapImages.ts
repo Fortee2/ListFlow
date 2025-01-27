@@ -26,7 +26,7 @@ export default function scrapImages(itemNumber: string) {
       try{
         function checkImageElement() {
 
-          let imageElements = document.querySelectorAll('.uploader-thumbnails__inline-edit');
+          let imageElements = document.querySelectorAll('.uploader-thumbnails-ux__thumbnail');
           if (imageElements.length > 0) {
             imageElements.forEach((element) => {
               const backgroundImageString = element.getElementsByTagName('button')[0].getAttribute('style') as string;
@@ -37,6 +37,7 @@ export default function scrapImages(itemNumber: string) {
               const endIdx = backgroundImageString.indexOf(')');
 
               let imageUrl = backgroundImageString.substring(startIdx, endIdx);
+              imageUrl = imageUrl.replace('_2', '_57');
               console.log(imageUrl);
 
               let titleFolderName = extractTitle();

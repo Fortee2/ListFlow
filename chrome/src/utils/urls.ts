@@ -1,25 +1,15 @@
 import { ISiteUrls } from "../domain/ISiteUrls";
 import IUrlResult from "../domain/IUrlResult";
 
-export function getMercariURLs() {
-    const urls: IUrlResult[] = [
-      {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false}, 
-      {'type': 'complete', 'url':'https://www.mercari.com/mypage/listings/complete/?page=', 'activeListings': false}, 
-      {'type': 'active', 'url': 'https://www.mercari.com/mypage/listings/active/?page=', 'activeListings': true}, 
-      {'type':'inprogress','url':'https://www.mercari.com/mypage/listings/in_progress/?page=', 'activeListings': false}
-    ];
-  
-    return urls;
-  }
-
   export function getMercariItemURL(){
     return 'https://www.mercari.com/sell/edit/';
   }
   
   export function getEbayURLs() {
-    const urls: IUrlResult[] = [
+    const urls = [
       {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
-      {'type': 'complete', 'url': 'https://www.ebay.com/sh/lst/ended', 'activeListings': false},
+      {'type': 'complete', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&timePeriod=LAST_90_DAYS&source=filterpanel&action=search', 'activeListings': false},
+      {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD_NOT_RELISTED&timePeriod=LAST_90_DAYS&source=filterpanel&action=search', 'activeListings': false},
     ];  
   
     return urls;
@@ -53,15 +43,7 @@ export function getMercariURLs() {
     return etsyURLs.filter(x => x.type === searchTerm);
   }
 
-  export function searchMercariURLs(searchTerm:string) {
-    let mercariURLs = getMercariURLs();
 
-    if(searchTerm === 'all') {
-      return mercariURLs;
-    }
-    
-    return mercariURLs.filter(x => x.type === searchTerm);
-  }
 
   export function searchEbayURLs(searchTerm:string) {
     let ebayURLs = getEbayURLs();
@@ -83,12 +65,32 @@ export function getMercariURLs() {
   }
 
   export class Urls {
-    private urlData: ISiteUrls[] = [];
-   
-    constructor(siteUrls: ISiteUrls[]) {
-      this.urlData = siteUrls;
-    }
+    private readonly urlData: ISiteUrls[] = [
+        {marketplace: "facebook",
+            createUrl: "https://www.facebook.com/marketplace/create/item",
+            scrapUrls: []
+        },
+        {marketplace: "mercari",
+            createUrl: "https://www.mercari.com/sell/",
+            scrapUrls: [
+              {'type': 'inactive', 'url':'https://www.mercari.com/mypage/listings/inactive/?page=', 'activeListings': false}, 
+              {'type': 'complete', 'url':'https://www.mercari.com/mypage/listings/complete/?page=', 'activeListings': false}, 
+              {'type': 'active', 'url': 'https://www.mercari.com/mypage/listings/active/?page=', 'activeListings': true}, 
+              {'type':'inprogress','url':'https://www.mercari.com/mypage/listings/in_progress/?page=', 'activeListings': false}
+            ]
+        }
+    ];
 
+    public searchMercariURLs(searchTerm:string): IUrlResult[] {
+      let mercariURLs = this.urlData.find(x => x.marketplace === 'mercari')?.scrapUrls ?? [];
+  
+      if(searchTerm === 'all') {
+        return mercariURLs;
+      }
+      
+      return mercariURLs.filter(x => x.type === searchTerm);
+    }
+    
     public GetCreateUrl(marketplace: string): string { 
       return this.urlData.find(x => x.marketplace === marketplace)?.createUrl ?? '';
     }

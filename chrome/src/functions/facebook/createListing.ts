@@ -1,6 +1,6 @@
 import IListing from "../../domain/IListing";
 
-export async function createListing(ebayListing: IListing): Promise<void> {
+export async function createFacebookListing(ebayListing: IListing): Promise<void> {
     function checkReadyState(){
       return new Promise<void>(async (resolve, reject) => {
         if(document.readyState === 'complete'){

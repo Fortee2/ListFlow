@@ -2,7 +2,7 @@ import { scrapDataEbay } from "./content/ebay/scrapData";
 import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
 import { scrapEbayPostage } from "./functions/ebay/postage";
 import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
-import { searchEbayURLs, searchMercariURLs, searchEtsyURLs, getMercariItemURL, Urls } from './utils/urls';
+import { searchEbayURLs, searchEtsyURLs, getMercariItemURL, Urls } from './utils/urls';
 import { retrieveItemDetails } from "./functions/mercari/itemPageDetails";
 import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy";
 import { endEbayListings } from "./functions/ebay/endListings";
@@ -20,8 +20,7 @@ import MessageRequest from "./domain/MessageRequest";
 import { IScrapResult } from "./domain/IScrapResult";
 import IStorageData from "./domain/IStorageData";
 import IUrlResult from "./domain/IUrlResult";
-import { createListing as createFacebookListing } from "./functions/facebook/createListing";
-import { ISiteUrls } from "./domain/ISiteUrls";
+import { createFacebookListing } from "./functions/facebook/createListing";
 import ImageQueues from "./functions/ebay/ImageQueues";
 import ImgRequest from "./domain/ImgRequest";
 import IBaseRequest from "./domain/IBaseRequest";
@@ -35,8 +34,7 @@ let shippingInfoQueue:string[] = [];  // queue for shipping info updates
 let currentSalesChannel = '';
 let createExport = false;
 let zeroQtyQueue:string[] = [];
-let downloadImages = false;
-let urlData = new Urls([]);
+let urlData = new Urls();
 
 const priceChanges = new Map();
 
@@ -50,15 +48,6 @@ let removeInactiveListings = false;
 chrome.runtime.onInstalled.addListener(() => {
   let installer = new OnInstall(chrome);
   installer.create();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  let url = chrome.extension.getURL("data/urls.json");
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      urlData = new Urls(JSON.parse(data) as ISiteUrls[]);
-    })
 });
 
 // Load settings when the extension is loaded
@@ -141,7 +130,6 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
     let salesChannelRequest = request as MessageRequest;
      if (salesChannelRequest.salesChannel && salesChannelRequest.downloadImages !== undefined && salesChannelRequest.listingType) {
        currentSalesChannel = salesChannelRequest.salesChannel;
-       downloadImages = salesChannelRequest.downloadImages;
        ProcessSalesChannel(salesChannelRequest.listingType);
      }
      break;
@@ -220,7 +208,7 @@ async function copyEbayListingDetails(itemNumber: string) {
 async function ProcessSalesChannel(listingType: string) {
  switch(currentSalesChannel) {
    case "Mercari":
-     await retrieveMercariData(searchMercariURLs(listingType)).then(async () => {
+     await retrieveMercariData(urlData.searchMercariURLs(listingType)).then(async () => {
        if(removeInactiveListings){
          await removeInactiveItems();
        }
@@ -556,7 +544,7 @@ async function retrieveDescription(listing: IListing) {
 
 async function removeInactiveItems() {
  try {
-   const urls = searchMercariURLs('inactive')[0];
+   const urls = urlData.searchMercariURLs('inactive')[0];
 
    const tab = await loadTab(urls.url);
    await delay(getRandomInt(5000, 30000));

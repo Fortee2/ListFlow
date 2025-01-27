@@ -5,7 +5,8 @@
   "main": "./src/background.js",
   "scripts": {
     "prebuild": "node scripts/bump_version.js",
-    "build": "webpack --config webpack.config.js"
+    "build": "webpack --mode=development --watch",
+    "build-prod": "webpack --mode=production"
   },
   "author": "Randy Costner",
   "license": "ISC",
