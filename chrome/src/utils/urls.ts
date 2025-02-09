@@ -8,8 +8,8 @@ import IUrlResult from "../domain/IUrlResult";
   export function getEbayURLs() {
     const urls = [
       {'type': 'active', 'url': 'https://www.ebay.com/sh/lst/active', 'activeListings': true}, 
-      {'type': 'complete', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD&timePeriod=LAST_90_DAYS&source=filterpanel&action=search', 'activeListings': false},
-      {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD_NOT_RELISTED&timePeriod=LAST_90_DAYS&source=filterpanel&action=search', 'activeListings': false},
+      {'type': 'complete', 'url': 'https://www.ebay.com/sh/lst/ended?status=SOLD', 'activeListings': false},
+      {'type': 'inactive', 'url': 'https://www.ebay.com/sh/lst/ended?status=UNSOLD_NOT_RELISTED', 'activeListings': false},
     ];  
   
     return urls;

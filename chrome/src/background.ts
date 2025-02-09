@@ -427,7 +427,7 @@ async function retrieveEbayData(listingType: string, lastTimeInactive: string) {
      let totalPages = 0;
 
      do{
-       const tab = await getActiveTab(url.url, pageCount, "eBay");
+       const tab = await getActiveTab(url.url, pageCount, "eBay", url.activeListings);
        await delay(getRandomInt(5000, 30000));
        const result = await new Promise<IScrapResult>(resolve => {
          chrome.scripting.executeScript({
