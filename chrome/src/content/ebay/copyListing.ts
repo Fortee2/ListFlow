@@ -27,6 +27,8 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
   function copyListing() {
     return new Promise<void>((resolve, reject) => {
       try{
+
+
         let listing: IListing = {
           itemNumber: itemNumber,
           itemTitle: '',
@@ -109,7 +111,8 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
               imageUrl = imageUrl.replace('_2', '_57');
               console.log(imageUrl);
 
-              ebayListing.images.push(imageUrl);
+              let titleFolderName = extractTitle();
+              chrome.runtime.sendMessage({ action: 'downloadImage', url: imageUrl, filename: `${itemNumber}_${imageOrder}.jpg`, folderName: titleFolderName });
             });
 
             resolve();
@@ -126,6 +129,20 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
     });
   }
 
+  function extractTitle(): string {
+    let div = document.querySelector('input[name="title"]');
+    console.log(div);
+    if (div) {
+      let itemTitle = div.getAttribute('value') as string;
+      console.log(itemTitle);
+      itemTitle = itemTitle?.replace(/[^a-zA-Z0-9]/g, '_');
+      itemTitle = itemTitle?.replace(/_+/g, '_');
+      return itemTitle;
+    }
+
+    return '';
+  }
+  
   await checkReadyState();
 }
 

@@ -1,6 +1,8 @@
 import IListing from "../../domain/IListing";
 
 export async function createFacebookListing(ebayListing: IListing): Promise<void> {
+    // Local delay function to avoid module resolution issues
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     function checkReadyState(){
       return new Promise<void>(async (resolve, reject) => {
         if(document.readyState === 'complete'){
@@ -15,48 +17,36 @@ export async function createFacebookListing(ebayListing: IListing): Promise<void
         }
       }).catch(console.error);
     }
+
+    function setWeight(pounds:number, ounces: number) { 
+        let lbSpan = Array.from(document.querySelectorAll('span')).find(
+            span => span.textContent?.trim() === 'lb'
+        );
     
-/*     function setPrice(price) { 
-        const el = document.querySelector('input[name="sellPrice"]');
-        if (el) {
-            el.addEventListener('input', (e) => {
-                console.log('input event fired');
-                console.log(e.target.value);
-            });
-            el.addEventListener('change', (e) => {
-                console.log('change event fired');
-                console.log(e.target.value);
-            }); 
-            el.addEventListener('focus', (e) => {
-                console.log('focus event fired');
-                console.log(e.target.value);
-            });
-  
-            el.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
-            el.value = parseFloat(price);
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            let event = new KeyboardEvent('keydown', {bubbles: true,  key: 'Enter' });
-            el.dispatchEvent(event);
-            console.log(price);
-        } else {;
-            setTimeout(() => setPrice(price), 1000);
+        if (!lbSpan) {
+            setTimeout(() => setWeight(pounds, ounces), 1000);
+            return;
         }
-    }
-      
-    function setWeight(pounds, ounces) { 
-      const el = document.querySelector('input[name="weight_in_pounds"]');
-      
-      if (el) {
-          setElementValue(el, pounds);
-          const el2 = document.querySelector('input[name="weight_in_ounces"]');
-          setElementValue(el2, ounces);
-      } else {
-          setTimeout(() => setWeight(pounds, ounces), 1000);
-      }
+        
+        const lbInput = lbSpan.parentElement?.getElementsByTagName('input')[0] as HTMLInputElement;
+
+        let ozSpan = Array.from(document.querySelectorAll('span')).find(
+            span => span.textContent?.trim() === 'oz'
+        );
+
+        if (!ozSpan) {
+            return;
+        }
+
+        const ozInput = ozSpan.parentElement?.getElementsByTagName('input')[0] as HTMLInputElement;
+
+      if (lbInput) {
+          setElementValue(lbInput, pounds.toString());
+          setElementValue(ozInput, ounces.toString());
+      } 
     }
   
-    function setPackageDimensions(length, width, height) {
+    /*function setPackageDimensions(length, width, height) {
         const el = document.querySelector('input[data-testid="InputLength"]');
         const el2 = document.querySelector('input[data-testid="InputWidth"]');
         const el3 = document.querySelector('input[data-testid="InputHeight"]');
@@ -68,85 +58,65 @@ export async function createFacebookListing(ebayListing: IListing): Promise<void
         } else {
             setTimeout(() => setPackageDimensions(length, width, height), 1000);
         }
-      } */
-  
-      async function setDescription(listing: IListing) {
+      } 
+    */
+
+    async function setDescription(listing: IListing) {
         try{
+             // Find span with text "Title"
+            let titleSpan = Array.from(document.querySelectorAll('span')).find(
+                span => span.textContent?.trim() === 'Title'
+            );
+        
+            if (!titleSpan) {
+                throw new Error('Title span not found');
+            }
 
-            let titleLabel = document.querySelector('label[aria-label="Title"]') as HTMLLabelElement;
-            let titleId = titleLabel.getAttribute('for') ?? '';
-            let el = document.getElementById(titleId) as HTMLInputElement;
-            console.log(el);    
-            setElementValue(el, listing.itemTitle);
+            console.log('Title span found:', titleSpan);
+            
+            const titleInput = titleSpan.parentElement?.getElementsByTagName('input')[0] as HTMLInputElement;
+    
+            let descSpan = Array.from(document.querySelectorAll('span')).find(
+                span => span.textContent?.trim() === 'Description'
+            );
+
+            if (!descSpan) {
+                throw new Error('Title span not found');
+            }
+
+            const descInput = descSpan?.parentElement?.getElementsByTagName('textarea')[0] as HTMLTextAreaElement;
+
+            let priceSpan = Array.from(document.querySelectorAll('span')).find(
+                span => span.textContent?.trim() === 'Price'
+            );
+        
+            if (!priceSpan) {
+                throw new Error('Title span not found');
+            }
+
+            const priceInput = priceSpan.parentElement?.getElementsByTagName('input')[0] as HTMLInputElement;
+            
+            console.log('Title input found:', titleInput);
+            setElementValue(titleInput, listing.itemTitle);
             console.log(listing.itemTitle);
-
-            let descriptionLabel = document.querySelector('label[aria-label="Description"]') as HTMLLabelElement;
-            let descriptionId = descriptionLabel.getAttribute('for') ?? '';
-            let textContent = document.getElementById(descriptionId) as HTMLTextAreaElement;
            
             if (listing.description.length < 1000 - listing.itemNumber.length - 4) {
               listing.description = listing.description + '\n ['+listing.itemNumber+']';
             }
-            setElementValue(textContent, listing.description);
-  
-            let priceLabel = document.querySelector('label[aria-label="Price"]') as HTMLLabelElement;
-            let priceId = priceLabel.getAttribute('for') ?? '';
-            let priceText = document.getElementById(priceId) as HTMLInputElement;
+            setElementValue(descInput, listing.description);
 
-            setElementValue(priceText, listing.price);
+            setElementValue(priceInput, listing.price); 
 
-            uploadImages(listing.images);
-/*             setWeight(listing.shipping.majorWeight, listing.shipping.minorWeight);
-            setPackageDimensions(listing.shipping.packageLength, listing.shipping.packageWidth, listing.shipping.packageHeight);
-            setPrice(listing.price);
-            tagListButton(); */
+            setWeight(listing.shipping.majorWeight, listing.shipping.minorWeight);
+            //setPackageDimensions(listing.shipping.packageLength, listing.shipping.packageWidth, listing.shipping.packageHeight);
+            
+            //tagListButton(); 
         }catch(e){
           console.log(e);
         }    
       }
-  
-    async function uploadImages(imageUrls: string[]) {
-        imageUrls.forEach(async image => {
-            console.log(image);
-            console.log('Attempting Image Upload ');
-            let blob = await fetchImageAsBlob(image);
-            let file = new File([blob], "image.png", {type: "image/png"});
-            // Select the file input element
-            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-            if (!fileInput) {
-                console.error('File input not found');
-            }
-            // Create a new 'change' event
-            const event = new Event('change', { bubbles: true });
 
-            // Create a new DataTransfer object
-            let dt = new DataTransfer();
-
-            // Add the file to the DataTransfer object
-            dt.items.add(file);
-
-            // Assign the files property of the DataTransfer object to fileInput.files
-            fileInput.files = dt.files;
-
-            console.log('File added to input');
-            // Dispatch the 'change' event
-            fileInput.dispatchEvent(event);
-            console.log('change event dispatched file added to input');
-        }); 
-    }
-
-
-     async function fetchImageAsBlob(url: string): Promise<Blob> {
-        // Fetch the image
-        let response = await fetch(url).catch(console.error) as Response;
-    
-        // Get the response as a blob
-        let blob = await response.blob();
-        // Return the blob
-        return blob;
-      } 
-  
-      function setElementValue(el : HTMLInputElement | HTMLTextAreaElement, listingValue: string) {
+    function setElementValue(el : HTMLInputElement | HTMLTextAreaElement, listingValue: string) {
   
         if (el) {
             el.addEventListener('input', (e) => {
@@ -170,22 +140,6 @@ export async function createFacebookListing(ebayListing: IListing): Promise<void
             el.dispatchEvent(event);
         }
       }
-  
-/*       function tagListButton() {
-        const el = document.querySelector('button[data-testid="ListButton"]');
-        if (el) {
-            el.addEventListener('click', (e) => {
-                setTimeout(() => {
-                    let url = window.location.href;
-                    ebayListing.itemNumber = url.split('/')[5],
-                    console.log('Listing Created');
-                    chrome.runtime.sendMessage({ action: 'mercariCreated', listing: ebayListing});
-                }, 2000);
-            });
-        } else {
-            setTimeout(() => tagListButton(), 1000);
-        }
-      } */
   
       console.log('createMercariListing');
       await checkReadyState();
