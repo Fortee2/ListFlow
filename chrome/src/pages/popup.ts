@@ -12,6 +12,7 @@ const selectChannel = document.getElementById('selectChannel') as HTMLSelectElem
 const selectListing = document.getElementById('selectListing') as HTMLSelectElement;
 const selectDestination = document.getElementById('selectDestination') as HTMLSelectElement;
 const downloadImagesCheckbox = document.getElementById('downloadImages') as HTMLInputElement;
+const verifyButton = document.getElementById('verifyEbay') as HTMLButtonElement;
 
 // Event Listeners
 retrieveButton.addEventListener('click', () => {
@@ -39,6 +40,10 @@ copyButton.addEventListener('click', () => {
   } as MessageRequest);
 });
 
+verifyButton.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'VerifyEbayData' });
+});
+
 function getSelectedStatusValue(): string {
   return selectType.selectedOptions[0].value;
 }
@@ -60,7 +65,6 @@ function retrieveFromServer(): void {
       .then(response => response.json())
       .then((data: ListItem[]) => {
         // Store the fetched data in chrome.storage for future use
-        console.log(data);
         chrome.storage.sync.set({listData: data}, () => {
           console.log('Data saved to storage');
         });

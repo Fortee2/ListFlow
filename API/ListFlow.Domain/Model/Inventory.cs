@@ -17,6 +17,8 @@ namespace ListFlow.Domain.Model
         public int Quantity { get; set; }
         public decimal Cost { get; set; }
         public decimal Weight { get; set; }
+        
+        public string? Sku { get; set; }
     }
 
 }

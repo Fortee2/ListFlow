@@ -30,6 +30,9 @@ export async function copyEbayListing(itemNumber: string): Promise<void> {
 
 
         let listing: IListing = {
+          id: '',
+          active: true,
+          salesChannelId: '',
           itemNumber: itemNumber,
           itemTitle: '',
           price: '',

@@ -8,6 +8,8 @@ namespace ListFlow.Business.DTO
         public int Quantity { get; set; }
         public decimal Cost { get; set; }
         public decimal Weight { get; set; }
+        
+        public string? Sku { get; set; }
 
     }
 }

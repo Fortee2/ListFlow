@@ -45,7 +45,8 @@ namespace ListFlow.API.Controllers
                 Name = item.Name,
                 Quantity = item.Quantity,
                 Cost = item.Cost,
-                Weight = item.Weight
+                Weight = item.Weight,
+                Sku = item.Sku
             };
 
 			var result = await _inventoryService.Create(inventory);

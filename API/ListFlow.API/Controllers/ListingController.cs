@@ -34,6 +34,12 @@ namespace ListFlow.API.Controllers;
             return NoContent();
         }
 
+        [HttpPut("{itemNumber}/inactive")]
+        public IActionResult MarkInactive(string itemNumber )
+        {
+            _listingService.MarkInactive(itemNumber);
+            return NoContent();
+        }
         /// <summary>
         /// Gets the matching crossposted listing for the item number passed in.
         /// </summary>

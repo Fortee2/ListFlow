@@ -52,7 +52,7 @@ export async function scrapData(activeListings, listingType) {
         console.log('Unable to parse date');
         return null;
       }
-    
+
       return new Date(dateString).toISOString();
     }
 
@@ -74,6 +74,9 @@ export async function scrapData(activeListings, listingType) {
           let viewsColumn = 5;
           
           switch(listingType) {
+            case 'inactive':
+              dateColumn = 5;
+              break;
             case 'inprogress':
             case 'complete':
               titleColumn = 1;
@@ -84,17 +87,20 @@ export async function scrapData(activeListings, listingType) {
           }
         
           lis.forEach(f => {
-            const ele = f.getElementsByTagName('td')[titleColumn].getElementsByTagName('div')[0];
+            const tds = f.getElementsByTagName('td');
+            const ele = tds[titleColumn].getElementsByTagName('div')[0];
             const titleLink = ele.getElementsByTagName('a')[0];
             const itmNumber = titleLink.href.split('/')[5]
             const itemTitle = titleLink.innerText;
             const price = f.getElementsByTagName('p')[0].innerText.replace('$', '').trim();
   
-            const eleDate = f.getElementsByTagName('td')[dateColumn].innerText;
+            const eleDate = tds[dateColumn].innerText;
+            console.log(dateColumn);
+            console.log( tds);
             const parsedDate = parseDate(eleDate);
   
-            const eleLikes = f.getElementsByTagName('td')[likesColumn].innerText;
-            const eleViews = f.getElementsByTagName('td')[viewsColumn].innerText;
+            const eleLikes = tds[likesColumn].innerText;
+            const eleViews = tds[viewsColumn].innerText;
   
             var itm = {  
               itemTitle: itemTitle,
@@ -140,11 +146,11 @@ export async function scrapData(activeListings, listingType) {
             const itemTitle = titleLink.innerText;
             const price = f.querySelector('input[name="price"]').value.replace('$', '').trim();
   
-            const eleDate = f.getElementsByTagName('td')[6].innerText;
+            const eleDate = f.getElementsByTagName('td')[5].innerText;
             const parsedDate = parseDate(eleDate);
-  
-            const eleLikes = f.getElementsByTagName('td')[4].innerText;
-            const eleViews = f.getElementsByTagName('td')[5].innerText;
+            
+            const eleLikes = f.getElementsByTagName('td')[3].innerText;
+            const eleViews = f.getElementsByTagName('td')[4].innerText;
   
             var itm = {  
               itemTitle: itemTitle,

@@ -25,6 +25,7 @@ import ImageQueues from "./functions/ebay/ImageQueues";
 import ImgRequest from "./domain/ImgRequest";
 import IBaseRequest from "./domain/IBaseRequest";
 import IPostageRequest from "./domain/IPostageRequest";
+import { setSkuInDescription } from "./content/mercari/setSku";
 
 const imageQueues = new ImageQueues(chrome);
 
@@ -44,6 +45,8 @@ let oldTab: number[] = [];
 let serverURI = "http://demo.api.com";
 let lastTimeInactive = "2024-01-01";
 let removeInactiveListings = false;
+let tabId; // The ID of the tab you"re interested in
+let isChromeRunning = true;
 
 chrome.runtime.onInstalled.addListener(() => {
   let installer = new OnInstall(chrome);
@@ -75,11 +78,6 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
     let imgRequest = request as ImgRequest;
     imageQueues.addItemToDownloadQueue(imgRequest.url, imgRequest.filename, imgRequest.folderName);
     break;
-   case "downloadEbayDesc":
-     if (request.itemNumber) {
-       descQueue.push(request.itemNumber); // enqueue the request
-     }
-     break;
    case "saveToListingAPI":
      let saveRequest = request as MessageRequest;
      if (saveRequest.item && Array.isArray(saveRequest.item)) {
@@ -179,8 +177,56 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
        }
      }
      break;
+  case "setSkuMercari":
+      setSkuMercari();
+      break;
+  case "VerifyEbayData":
+    verifyEbayData();
+    break;
  }
 });
+
+async function verifyEbayData() {
+  fetch(`${serverURI}/api/Listing?SalesChannel=28e91dfe-9a9d-482d-4aed-08db50d0bd42`)
+        .then(response => response.json())
+        .then(async (data: IListing[]) => {
+            for (const listing of data) {
+                if(!listing.active){
+                  continue;
+                }
+
+                try {
+                  const response = await fetch(`https://www.ebay.com/itm/${listing.itemNumber}`);
+                  if(response.status === 404){
+                    console.log('Item Not Found');
+                    let item: IListingRequest = {
+                      itemNumber: listing.itemNumber,
+                      itemTitle: listing.itemTitle,
+                      description: listing.description,
+                      salesChannel: "eBay",
+                      active: false,
+                      listingDate: new Date().toISOString(),
+                      listingDateType: 1,
+                      views: "0",
+                      likes: "0",
+                      price: listing.price.toString(),
+                    };
+
+                    await saveItemToDatabase([item]);
+                  }
+                  else{
+                    await copyEbayListingDetails(listing.itemNumber);
+                  }
+                } catch (error) {
+                  console.error('Error checking listing:', listing.itemNumber, error);
+                }
+
+                await delay(getRandomInt(15000, 30000));
+            }
+       
+        })
+        .catch(error => console.error('Error:', error));
+}
 
 async function getEbayShippingDetails(itemNumber: string) {
  await delay(getRandomInt(5000, 30000));
@@ -208,12 +254,21 @@ async function copyEbayListingDetails(itemNumber: string) {
 async function ProcessSalesChannel(listingType: string) {
  switch(currentSalesChannel) {
    case "Mercari":
-     await retrieveMercariData(urlData.searchMercariURLs(listingType)).then(async () => {
-       if(removeInactiveListings){
-         await removeInactiveItems();
-       }
-     }); 
-     break;
+     await retrieveMercariData(urlData.searchMercariURLs(listingType))
+      .then(
+        async () => {
+          if(removeInactiveListings){
+            await removeInactiveItems();
+          }
+        }
+     ).then(
+        () => {
+          getMispricedItems().then(() => {
+            setSkuMercari();
+          });
+        }
+     ); 
+    break;
    case "eBay":
      await endEbayInactive(listingType)
      .then(async () => {
@@ -231,6 +286,53 @@ async function ProcessSalesChannel(listingType: string) {
      await retrieveEtsyData(listingType);
      break;
  } 
+}
+
+async function setSkuMercari() {
+  console.log("setSku");
+  if(priceChanges.size > 0 && isChromeRunning){
+    let keyValIterator = priceChanges.entries();
+    let keyVal = keyValIterator.next().value;
+    if (keyVal) {
+      let url = getMercariItemURL() + keyVal[0];
+      let itemNumber = keyVal[1];
+
+      const tab = await loadTab(url);
+      tabId = tab.id;
+
+      await delay(getRandomInt(10000, 15000));
+
+      chrome.scripting.executeScript({
+          args: [itemNumber, keyVal[0]],
+          target: { tabId: tab.id as number},
+          func: setSkuInDescription,
+      }).then( () =>{
+        console.log("Price Changed for " + keyVal[0] + " to " + itemNumber);
+        delay(10000).then(() => {
+          chrome.tabs.remove(tab.id as number);
+        });
+      }).catch((error) => {
+        console.error("Error executing script:", error);
+      });
+      
+      priceChanges.delete(keyVal[0]);
+    }
+  }
+}
+
+function getMispricedItems() {
+  return new Promise<void>(resolve => {
+    fetch(`${serverURI}/api/Listing/mispriced`).then(response => response.json()).then(data => {
+        if(data.success  ){
+          for(const item of data.data){
+            if(item.itemNumber.startsWith("m")){
+                priceChanges.set(item.itemNumber, item.crossPostItemNumber);
+            }
+          }
+          resolve(); 
+        }
+    });
+  });
 }
 
 async function processShippingInfoQueue() {
@@ -499,16 +601,20 @@ async function retrieveEtsyData(listingType: string) {
        const tab = await loadTab(url);
        await delay(getRandomInt(3000, 5000));
 
-       const result = await new Promise<IScrapResult[]>(resolve => {
+       const result = await new Promise<IScrapResult>(resolve => {
          chrome.scripting.executeScript({
            args: [activeListings, link.type],
            target: { tabId: tab.id as number },
            func: scrapDataEtsy,
-         }, (results) => resolve(results as unknown as IScrapResult[]));
+         }, (results) => resolve(results[0].result as unknown as IScrapResult));
        });
 
-       if(result[0].count) {
-         totalPages = result[0].count;   // Pager can add pages as we scroll forward
+       console.log('Etsy Result');
+       console.log(result);
+
+       if(result.count) {
+         totalPages = result.count;   // Pager can add pages as we scroll forward
+         console.log(totalPages); 
        }
 
        pageCount++;

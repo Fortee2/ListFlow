@@ -32,7 +32,7 @@ export async function scrapEbayDescriptions(itemNumber) {
               console.log('retrieveDescription');
               console.log(descElement); 
               if (descElement) {
-                chrome.runtime.sendMessage({ action: 'updateDesc', desc: descElement.innerText, item: itemNumber});
+                chrome.runtime.sendMessage({ action: 'updateDesc', desc: descElement.innerText, itemNumber: itemNumber});
                 resolve();
             } else {
               setTimeout(checkDescElement, 1000); // wait for 1 second before checking again
