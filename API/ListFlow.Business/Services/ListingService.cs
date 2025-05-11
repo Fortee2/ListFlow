@@ -1,343 +1,427 @@
 using ListFlow.Business.DTO;
+using ListFlow.Business.Services.Interfaces;
+using ListFlow.Domain.DTO;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 using ListFlow.Infrastructure.Repository;
 using ListFlow.Infrastructure.Repository.Interface;
-using ListFlow.Business.Services.Interfaces;
-using ListFlow.Domain.DTO;
-using ListFlow.Business.Enums;
-using System.Reflection.Metadata;
 
-namespace ListFlow.Business.Services
+namespace ListFlow.Business.Services;
+
+public class ListingService : IListingService
 {
+    private readonly IInventoryService _inventoryService;
+    private readonly IListingMetricRepository _listingMetrics;
+    private readonly IListingRepository _listings;
+    private readonly ISalesChannelRepository _salesChannels;
 
-    public class ListingService : IListingService
+    public ListingService(IListingRepository listingRepository,
+        ISalesChannelRepository salesChannelRepository,
+        IListingMetricRepository listingMetricRepository,
+        IInventoryService inventoryService)
     {
-        private readonly IListingRepository _listings;
-        private readonly ISalesChannelRepository _salesChannels;
-        private readonly IListingMetricRepository _listingMetrics;
+        _listings = listingRepository;
+        _listingMetrics = listingMetricRepository;
+        _salesChannels = salesChannelRepository;
+        _inventoryService = inventoryService;
+    }
 
-        public ListingService(IListingRepository listingRepository, ISalesChannelRepository salesChannelRepository, IListingMetricRepository listingMetricRepository){
-            _listings = listingRepository;
-            _listingMetrics = listingMetricRepository;
-            _salesChannels = salesChannelRepository;
+    public async Task<ServiceResult<Listing>> Create(ListingDTO listing)
+    {
+        var existing =  _listings.FindByItemNumberAsync(listing.ItemNumber);
+        if (existing != null)
+        {
+            await UpdateListingData(existing, listing).ConfigureAwait(false);
+            return new ServiceResult<Listing>(existing);
         }
 
-        public async Task<ServiceResult<Listing>> Create(ListingDTO listing)
+        var salesChannel = GetSalesChannel(listing);
+
+        if (salesChannel == null)
+            return new ServiceResult<Listing>("The Sales Channel associated with this listing does not exist.");
+
+        var newListing = new Listing
         {
-            // Check if a channel with the same name already exists
-            var existing = _listings.FindByTitle(listing.ItemTitle.ToLower());
-            if ( existing != null)
-            {
-                existing.ItemNumber = listing.ItemNumber;
-                UpdateListing(existing, listing);
-                return new ServiceResult<Listing>(existing);
-            }
+            Id = Guid.NewGuid(),
+            ItemTitle = listing.ItemTitle,
+            ItemNumber = listing.ItemNumber,
+            Description = listing.Description,
+            SalesChannelId = salesChannel.Id, // Only set the ID, not the navigation property
+            Active = listing.Active,
+            Price = listing.ConvertedPrice,
+            LastUpdated = DateTime.Now
+        };
 
-            var salesChannel = _salesChannels.FindByName(listing.SalesChannel);
+        await _listings.AddAsync(newListing);
 
-            if (salesChannel == null)
-            {
-                return new ServiceResult<Listing>("The Sales Channel associated with this listing does not exist.");
-            }
+        return new ServiceResult<Listing>(newListing);
+    }
 
-            var newListing = new Listing
-            {
-                Id = Guid.NewGuid(),
-                ItemTitle = listing.ItemTitle,
-                ItemNumber = listing.ItemNumber,
-                Description = listing.Description,
-                SalesChannel = salesChannel,
-                Active = listing.Active,
-                Price = listing.ConvertedPrice
-            };
+    public async Task CreateListings(ListingDTO[] listings)
+    {
+        const int batchSize = 5;
+        List<Listing> newListings = new();
+        List<Listing> updateListings = new();
 
-            await _listings.AddAsync(newListing);
+        if (!listings.Any()) return;
 
-            return new ServiceResult<Listing>(newListing);
-        }
-
-        public async Task CreateListings(ListingDTO[] listings)
+        foreach (var listingDto in listings)
         {
-            List<Listing> newListings = new();
-
-            if (!listings.Any())
+            try
             {
-                return;
-            }
+                var salesChannel = GetSalesChannel(listingDto);
+                if (salesChannel == null)
+                {
+                    throw new Exception($"Sales channel not found for listing {listingDto.ItemNumber}");
+                }
 
-            //Listings are grouped by sales channel, so we only need to check the first one
-            var salesChannel = _salesChannels.FindByName(listings[0].SalesChannel);
-
-            if (salesChannel == null)
-            {
-                return; // new ServiceResult<Listing[]>("The Sales Channel associated with these listings does not exist.");
-            }
-
-            foreach (var listingDto in listings)
-            {
-                var existing = _listings.FindByItemNumber(listingDto.ItemNumber);
+                var existing =  _listings.FindByItemNumberAsync(listingDto.ItemNumber);
 
                 if (existing == null)
                 {
+                    var inventory = listingDto.Sku != null
+                        ? await CreateInventoryItem(listingDto).ConfigureAwait(false)
+                        : null;
+
                     var newListing = new Listing
                     {
                         Id = Guid.NewGuid(),
-                        ItemTitle = listingDto.ItemTitle,
+                        ItemTitle = listingDto.ItemTitle.Replace("  ", " ").Replace("&amp;", "&"),
                         ItemNumber = listingDto.ItemNumber,
                         Description = listingDto.Description,
-                        SalesChannel = salesChannel,
+                        SalesChannelId = salesChannel.Id,
                         Active = listingDto.Active,
                         DateSold = listingDto.SoldDate,
                         DateListed = listingDto.ListedDate,
                         DateEnded = listingDto.EndedDate,
                         Price = listingDto.ConvertedPrice,
-                        LastUpdated = DateTime.Now
+                        LastUpdated = DateTime.Now,
+                        CrossPostId = inventory?.Data.Id
                     };
 
                     newListings.Add(newListing);
-                    continue;
-                }
-                
-                UpdateListing(existing, listingDto);
-            }
-            
-            await _listings.AddRangeAsync(newListings);
 
-
-            return; // new ServiceResult<Listing[]>(newListings.ToArray());
-        }
-
-        public async Task CreateMetrics(ListingDTO[] listingDtos){
-            List<ListingMetric> newMetrics = new List<ListingMetric>();
-
-            foreach (var listingDto in listingDtos){
-                var existing = _listings.FindByItemNumber(listingDto.ItemNumber);
-                if ( existing == null)
-                {
-                    continue;
-                }
-
-                var existingMetric = _listingMetrics.FindByItemNumber(listingDto.ItemNumber);
-
-                if(existingMetric == null){
-                    newMetrics.Add(new ListingMetric
+                    if (newListings.Count >= batchSize)
                     {
-                        Id = Guid.NewGuid(),
-                        Listing = existing,
-                        Views = listingDto.ConvertedViews,
-                        Likes = listingDto.ConvertedLikes,
-                        LastUpdated = DateTime.Now,
-                    });
-
-                    continue;
+                        await _listings.AddRangeAsync(newListings).ConfigureAwait(false);
+                        newListings.Clear();
+                    }
                 }
-
-                UpdateMeteric(listingDto, existingMetric);
-            }
-
-            await _listingMetrics.AddRangeAsync(newMetrics);
-        }
-
-        private void UpdateMeteric(ListingDTO listingDto, ListingMetric existingMetric)
-        {
-            existingMetric.Views = listingDto.ConvertedViews;
-            existingMetric.Likes = listingDto.ConvertedLikes;
-            existingMetric.LastUpdated = DateTime.Now;
-
-            _listingMetrics.Update(existingMetric);
-        }
-
-        public ServiceResult<Listing> Delete(Guid id)
-        {
-            try{
-                var listing = _listings.FindById(id);
-
-                if (listing == null)
+                else if (!CompareListing(existing, listingDto))
                 {
-                    return new ServiceResult<Listing>("Sales channel not found.");
+                    await UpdateListingData(existing, listingDto);
+                    updateListings.Add(existing);
+
+                    if (updateListings.Count >= batchSize)
+                    {
+                        await _listings.UpdateRangeAsync(updateListings).ConfigureAwait(false);
+                        updateListings.Clear();
+                    }
                 }
-
-                _listings.Delete(listing);
-
-                return new ServiceResult<Listing>(listing);
-
-            }catch(Exception ex){
-                return new ServiceResult<Listing>(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error processing listing {listingDto.ItemNumber}: {ex.Message}", ex);
             }
         }
 
-        public ServiceResult<Listing> FindListingsByItemNumber(string itemNumber)
+        // Save any remaining listings
+        if (newListings.Any())
         {
-             var listing = _listings.FindByItemNumber(itemNumber);
+            await _listings.AddRangeAsync(newListings).ConfigureAwait(false);
+        }
 
-            if(listing == null){
-                return new ServiceResult<Listing>("Listing not found.");
+        if (updateListings.Any())
+        {
+            await _listings.UpdateRangeAsync(updateListings).ConfigureAwait(false);
+        }
+    }
+
+    public async Task CreateMetrics(ListingDTO[] listingDtos)
+    {
+        List<ListingMetric> newMetrics = new();
+
+        foreach (var listingDto in listingDtos)
+        {
+            var existing =  _listings.FindByItemNumberAsync(listingDto.ItemNumber);
+            if (existing == null) continue;
+
+            var existingMetric = _listingMetrics.FindByItemNumber(listingDto.ItemNumber);
+
+            if (existingMetric == null)
+            {
+                newMetrics.Add(new ListingMetric
+                {
+                    Id = Guid.NewGuid(),
+                    Listing = existing,
+                    Views = listingDto.ConvertedViews,
+                    Likes = listingDto.ConvertedLikes,
+                    LastUpdated = DateTime.Now
+                });
+
+                continue;
             }
+
+            UpdateMeteric(listingDto, existingMetric);
+        }
+
+        await _listingMetrics.AddRangeAsync(newMetrics);
+    }
+
+    public ServiceResult<Listing> Delete(Guid id)
+    {
+        try
+        {
+            var listing = _listings.FindById(id);
+
+            if (listing == null) return new ServiceResult<Listing>("Sales channel not found.");
+
+            _listings.Delete(listing);
 
             return new ServiceResult<Listing>(listing);
         }
-
-        public ServiceResult<Listing> FindListingsByTitle(string Title)
+        catch (Exception ex)
         {
-            var listing = _listings.FindByTitle(Title);
-
-            if(listing == null){
-                return new ServiceResult<Listing>("Listing not found.");
-            }
-
-            return new ServiceResult<Listing>(listing);
+            return new ServiceResult<Listing>(ex.Message);
         }
+    }
 
-        public ServiceResult<IEnumerable<Listing>> GetAll()
+    public ServiceResult<Listing> FindListingsByItemNumber(string itemNumber)
+    {
+        var listing =  _listings.FindByItemNumberAsync(itemNumber);
+
+        if (listing == null) return new ServiceResult<Listing>("Listing not found.");
+
+        return new ServiceResult<Listing>(listing);
+    }
+
+    public ServiceResult<Listing> FindListingsByTitle(string Title)
+    {
+        var listing = _listings.FindByTitle(Title);
+
+        if (listing == null) return new ServiceResult<Listing>("Listing not found.");
+
+        return new ServiceResult<Listing>(listing);
+    }
+
+    public ServiceResult<IEnumerable<Listing>> GetAll()
+    {
+        return new ServiceResult<IEnumerable<Listing>>(_listings.GetAll());
+    }
+
+    public ServiceResult<Listing> GetById(Guid id)
+    {
+        var channel = _listings.FindById(id);
+
+        if (channel == null) return new ServiceResult<Listing>("Sales channel not found.");
+
+        return new ServiceResult<Listing>(channel);
+    }
+
+    public async Task<ServiceResult<Listing>> Update(Listing item)
+    {
+        await _listings.UpdateAsync(item).ConfigureAwait(false);
+
+        return new ServiceResult<Listing>(item);
+    }
+
+    /// <summary>
+    ///     Retrieves all listings that match the specified filter criteria.
+    /// </summary>
+    /// <param name="filter">The filter criteria to apply.</param>
+    /// <returns>A collection of listings that match the filter criteria.</returns>
+    public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
+    {
+        var listings = await _listings.GetAllListingsAsync(filter);
+
+        return listings;
+    }
+
+    /// <summary>
+    ///     Retrieves the cross posted listing that matches the specified item number.
+    /// </summary>
+    /// <param name="itemNumber">The item number to find its corresponding listing for.</param>
+    /// <returns>The matching listing to the one searched</returns>
+    public  ServiceResult<List<Listing>> GetCrossPostByItem(string itemNumber)
+    {
+        var listing =  _listings.FindCrossPostListingByItemNumberAsync(itemNumber);
+
+        if (listing == null) return new ServiceResult<List<Listing>>("Listing not found.");
+
+        return new ServiceResult<List<Listing>>(new List<Listing>());
+    }
+
+    public async Task MarkSold(string itemNumber, string? soldDate)
+    {
+        var listing =  _listings.FindByItemNumberAsync(itemNumber);
+
+        if (listing == null) throw new Exception("Listing not found.");
+
+        DateTime parsedDate;
+
+        if (!DateTime.TryParse(soldDate, out parsedDate)) parsedDate = DateTime.Now;
+
+        listing.DateSold = parsedDate;
+        listing.Active = false;
+        listing.LastUpdated = DateTime.Now;
+
+        await _listings.UpdateAsync(listing).ConfigureAwait(false);
+    }
+
+    public async Task MarkInactive(string itemNumber)
+    {
+        var listing =  _listings.FindByItemNumberAsync(itemNumber);
+
+        if (listing == null) throw new Exception("Listing not found.");
+
+        listing.DateEnded = DateTime.Now;
+        listing.Active = false;
+        listing.LastUpdated = DateTime.Now;
+
+        await _listings.UpdateAsync(listing).ConfigureAwait(false);
+    }
+
+
+    public ServiceResult<List<ItemNumberResponse>> GetCrossPostSold()
+    {
+        var result = _listings.GetSoldListings();
+
+        return new ServiceResult<List<ItemNumberResponse>>(result
+            .Select(x => new ItemNumberResponse { ItemNumber = x.Key, SalesChannel = x.Value }).ToList());
+    }
+
+    public async Task<ServiceResult<string>> UpdateDescription(string itemNumber, string description)
+    {
+        var listing =  _listings.FindByItemNumberAsync(itemNumber);
+
+        if (listing == null) return new ServiceResult<string>("Listing not found.");
+
+        listing.Description = description;
+        listing.LastUpdated = DateTime.Now;
+
+        await _listings.UpdateAsync(listing).ConfigureAwait(false);
+
+        return new ServiceResult<string>(data: "Saved successfully.");
+    }
+
+    public List<CrossListingResult> GetListingsToCrossPost(string salesChannelName)
+    {
+        var salesChannel = _salesChannels.FindByName(salesChannelName);
+        if (salesChannel == null) throw new Exception("Sales channel not found.");
+        return _listings.ItemsToCrossList(salesChannel.Id).Take(20).ToList();
+    }
+
+    public List<CrossListingResult> GetListingsToVerify(string salesChannelName)
+    {
+        var salesChannel = _salesChannels.FindByName(salesChannelName);
+        if (salesChannel == null) throw new Exception("Sales channel not found.");
+        return _listings.ItemsNotUpdated(salesChannel.Id).ToList();
+    }
+
+    private SalesChannel? GetSalesChannel(ListingDTO listing)
+    {
+        try
         {
-            return new ServiceResult<IEnumerable<Listing>>(_listings.GetAll());
+            //Listings are grouped by sales channel, so we only need to check the first one
+            var salesChannel = _salesChannels.FindByName(listing.SalesChannel);
+
+            return salesChannel;
         }
-
-        public ServiceResult<IEnumerable<PriceMismatchDto>> MispricedListings()
+        catch (Exception)
         {
-            return new ServiceResult<IEnumerable<PriceMismatchDto>>(_listings.MispricedListings(SalesChannelConstants.eBay));
+            return null;
         }
+    }
 
-        public ServiceResult<Listing> GetById(Guid id)
+    private void UpdateMeteric(ListingDTO listingDto, ListingMetric existingMetric)
+    {
+        existingMetric.Views = listingDto.ConvertedViews;
+        existingMetric.Likes = listingDto.ConvertedLikes;
+        existingMetric.LastUpdated = DateTime.Now;
+
+        _listingMetrics.Update(existingMetric);
+    }
+
+    private async Task<ServiceResult<Inventory>> CreateInventoryItem(ListingDTO listingDto)
+    {
+        return await _inventoryService.Create(new Inventory
         {
-            var channel = _listings.FindById(id);
+            Name = listingDto.ItemTitle,
+            Quantity = listingDto.Quantity,
+            Cost = 0,
+            Weight = 0,
+            Sku = listingDto.Sku
+        }).ConfigureAwait(false);
+    }
 
-            if (channel == null)
+    private async Task UpdateListingData(Listing existing, ListingDTO listingDto)
+    {
+        existing.ItemTitle = listingDto.ItemTitle.Replace("  ", " ").Replace("&amp;", "&");
+        //TOOO: Ebay Descriptions are coming from a separate endpoint because of how they have to be retrieved.
+        //Commenting this out for now to prevent overwriting them
+        //existing.Description = listingDto.Description;
+        existing.Active = listingDto.Active;
+        existing.Price = listingDto.ConvertedPrice;
+        existing.LastUpdated = DateTime.Now;
+
+        if (listingDto.EndedDate != null)
+            existing.DateEnded = listingDto.EndedDate;
+        if (listingDto.SoldDate != null)
+            existing.DateSold = listingDto.SoldDate;
+        if (listingDto.ListedDate != null)
+            existing.DateListed = listingDto.ListedDate;
+
+        if (listingDto.Sku != null)
+        {
+            var inventory = await CreateInventoryItem(listingDto).ConfigureAwait(false);
+
+            if (existing.CrossPostId != inventory.Data.Id) //migrate old crossposts to new inventory item
             {
-                return new ServiceResult<Listing>("Sales channel not found.");
+                var items = GetCrossPostByItem(existing.ItemNumber);
+
+                if (items.Success)
+                {
+                    var crossPostUpdates = items.Data.Select(item =>
+                    {
+                        item.CrossPostId = inventory.Data.Id;
+                        return item;
+                    }).ToList();
+
+                    if (crossPostUpdates.Any())
+                    {
+                        await _listings.UpdateRangeAsync(crossPostUpdates).ConfigureAwait(false);
+                    }
+
+                    existing.CrossPostId = inventory.Data.Id;
+                }
             }
-
-            return new ServiceResult<Listing>(channel);
         }
-
-        public ServiceResult<Listing> Update(Listing item)
+        else if (existing.CrossPostId == null)
         {
-            _listings.Update(item);
-
-            return new ServiceResult<Listing>(item);
-        }
-
-        private void UpdateListing(Listing existing, ListingDTO listingDto)
-        {
-            if(CompareListing(existing, listingDto))
-                return;
-                
-            existing.ItemTitle = listingDto.ItemTitle.Replace("  ", " ");
-            existing.ItemNumber = listingDto.ItemNumber;
-            //TOOO: Ebay Descriptions are coming from a sperate endpoint because of how they have to be retrieved.
-            //Commenting this out for now to prevent overwriting them
-            //existing.Description = (listingDto.Description 
-            existing.Active = listingDto.Active;
-            existing.Price = listingDto.ConvertedPrice;
-
-            if(listingDto.EndedDate != null)
-                existing.DateEnded = listingDto.EndedDate;
-            if(listingDto.SoldDate != null)
-                existing.DateSold = listingDto.SoldDate;
-            if(listingDto.ListedDate != null)
-                existing.DateListed = listingDto.ListedDate;
-
-            existing.LastUpdated = DateTime.Now;
-
-            Update(existing);
-        }
-
-        /// <summary>
-        /// Compare listing and listingDto to see if they are the same
-        /// </summary>
-        /// <param name="existing">Listing Object from the database</param>
-        /// <param name="listingDto">DTO from UI</param>
-        /// <returns>True if objects are the same</returns>
-        private bool CompareListing(Listing existing, ListingDTO listingDto)
-        {
-            return existing.ItemTitle == listingDto.ItemTitle &&
-                existing.ItemNumber == listingDto.ItemNumber &&
-                existing.Active == listingDto.Active &&
-                existing.Price == listingDto.ConvertedPrice &&
-                existing.DateEnded == listingDto.EndedDate &&
-                existing.DateSold == listingDto.SoldDate &&
-                existing.DateListed == listingDto.ListedDate;
-        }
-
-        /// <summary>
-        /// Retrieves all listings that match the specified filter criteria.
-        /// </summary>
-        /// <param name="filter">The filter criteria to apply.</param>
-        /// <returns>A collection of listings that match the filter criteria.</returns>
-        public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
-        {
-            var listings = await _listings.GetAllListingsAsync(filter);
-
-            return listings;
-        }
-
-        /// <summary>
-        /// Retrieves the cross posted listing that matches the specified item number.
-        /// </summary>
-        /// <param name="itemNumber">The item number to find its corresponding listing for.</param>
-        /// <returns>The matching listing to the one searched</returns>
-        public ServiceResult<Listing> GetCrossPostByItem(string itemNumber)
-        {
-            var listing = _listings.FindCrossPostListingByItemNumber(itemNumber);
-
-            if(listing == null){
-                return new ServiceResult<Listing>("Listing not found.");
-            }
-
-            return new ServiceResult<Listing>(listing);
-        }
-    
-        public void MarkSold(string itemNumber, string soldDate)
-        {
-            var listing = _listings.FindByItemNumber(itemNumber);
-
-            if (listing == null)
+            var desc = existing.Description?.Trim();
+            if (!string.IsNullOrEmpty(desc) && desc.EndsWith(']'))
             {
-                throw new Exception("Listing not found.");
+                var itemNumber = desc.Substring(desc.LastIndexOf('[') + 1);
+                itemNumber = itemNumber.Substring(0, itemNumber.Length - 1).Trim();
+                var inv = _inventoryService.FindBySku(itemNumber);
+                if (inv != null) existing.CrossPostId = inv.Id;
             }
-
-            DateTime parsedDate;
-
-            if (!DateTime.TryParse(soldDate, out parsedDate))
-            {
-                parsedDate = DateTime.Now;
-            }
-
-            listing.DateSold = parsedDate;
-            listing.Active = false;
-            listing.LastUpdated = DateTime.Now;
-
-            _listings.Update(listing);
         }
+    }
 
-        public ServiceResult<List<ItemNumberResponse>> GetCrossPostSold()
-        {
-            var result = _listings.GetSoldListings();
-            
-            return new ServiceResult<List<ItemNumberResponse>>(result.Select(x => new ItemNumberResponse { ItemNumber = x.Key, SalesChannel = x.Value }).ToList());
-        }
-        
-        public ServiceResult<string> UpdateDescription(string itemNumber, string description)
-        {
-            var listing = _listings.FindByItemNumber(itemNumber);
-
-            if (listing == null)
-            {
-                return new ServiceResult<string>("Listing not found.");
-            }
-
-            listing.Description = description;
-            listing.LastUpdated = DateTime.Now;
-
-            _listings.Update(listing);
-
-            return new ServiceResult<string>(data:"Saved successfully.");
-        }
-
-        public List<CrossListingResult> GetListingsToCrossPost()
-        {
-            return _listings.ItemsToCrossList(Guid.Parse("28e91dfe-9a9d-482d-4aed-08db50d0bd42")).Take(20).ToList();
-        }
+    /// <summary>
+    ///     Compare listing and listingDto to see if they are the same
+    /// </summary>
+    /// <param name="existing">Listing Object from the database</param>
+    /// <param name="listingDto">DTO from UI</param>
+    /// <returns>True if objects are the same</returns>
+    private bool CompareListing(Listing existing, ListingDTO listingDto)
+    {
+        return existing.ItemTitle == listingDto.ItemTitle &&
+               existing.Active == listingDto.Active &&
+               existing.Price == listingDto.ConvertedPrice &&
+               existing.DateEnded == listingDto.EndedDate &&
+               existing.DateSold == listingDto.SoldDate &&
+               existing.DateListed == listingDto.ListedDate;
     }
 }

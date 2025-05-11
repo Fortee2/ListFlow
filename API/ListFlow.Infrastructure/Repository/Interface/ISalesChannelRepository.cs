@@ -1,9 +1,8 @@
-using System;
 using ListFlow.Domain.Model;
 
-namespace ListFlow.Infrastructure.Repository.Interface
+namespace ListFlow.Infrastructure.Repository.Interface;
+
+public interface ISalesChannelRepository : ICRUDRepo<SalesChannel>, IRespository<SalesChannel>
 {
-    public interface ISalesChannelRepository: ICRUDRepo<SalesChannel>, IRespository<SalesChannel>{
-        SalesChannel? FindByName(string saleChannelName);
-    }
+    SalesChannel? FindByName(string saleChannelName);
 }

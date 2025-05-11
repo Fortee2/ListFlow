@@ -4,7 +4,7 @@ using ListFlow.Email;
 
 var mailClient = new EmailDownloader(
     "sales.parser@fenchurch.tech",
-    "*9RZYBW_G69yx8f",
+    "DtF2Y2qykGrVvCA",
     "mail.privateemail.com", 
     "You made the sale for");
 

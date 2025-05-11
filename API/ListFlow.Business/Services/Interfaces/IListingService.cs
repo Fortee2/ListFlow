@@ -1,43 +1,39 @@
-using ListFlow.Business;
 using ListFlow.Business.DTO;
 using ListFlow.Domain.DTO;
 using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Filters;
 
-namespace  ListFlow.Business.Services.Interfaces{
-    public interface IListingService
-    {
-        Task<ServiceResult<Listing>> Create(ListingDTO listing);
+namespace ListFlow.Business.Services.Interfaces;
 
-        Task CreateListings(ListingDTO[] listings);
+public interface IListingService
+{
+    Task<ServiceResult<Listing>> Create(ListingDTO listing);
 
-        ServiceResult<Listing> Delete(Guid id);
+    Task CreateListings(ListingDTO[] listings);
 
-        ServiceResult<IEnumerable<Listing>> GetAll();
+    ServiceResult<Listing> Delete(Guid id);
 
-        ServiceResult<Listing> GetById(Guid id);
+    ServiceResult<IEnumerable<Listing>> GetAll();
 
-        ServiceResult<Listing> GetCrossPostByItem(string itemNumber);
+    ServiceResult<Listing> GetById(Guid id);
 
-        ServiceResult<Listing> Update(Listing item);
+    ServiceResult<List<Listing>> GetCrossPostByItem(string itemNumber);
 
-        ServiceResult<Listing> FindListingsByTitle(string Title);
+    Task<ServiceResult<Listing>> Update(Listing item);
 
-        ServiceResult<Listing> FindListingsByItemNumber(string itemNumber);
+    ServiceResult<Listing> FindListingsByTitle(string Title);
 
-        ServiceResult<IEnumerable<PriceMismatchDto>> MispricedListings();
+    ServiceResult<Listing> FindListingsByItemNumber(string itemNumber);
 
-        Task CreateMetrics(ListingDTO[] listingDtos);
+    Task CreateMetrics(ListingDTO[] listingDtos);
 
-        Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
+    Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter);
 
-        void MarkSold(string itemNumber, string soldDate);
-        ServiceResult<List<ItemNumberResponse>> GetCrossPostSold();
-        ServiceResult<string> UpdateDescription(string itemNumber, string description);
+    Task MarkSold(string itemNumber, string? soldDate);
+    ServiceResult<List<ItemNumberResponse>> GetCrossPostSold();
+    Task<ServiceResult<string>> UpdateDescription(string itemNumber, string description);
 
-        List<CrossListingResult> GetListingsToCrossPost();
-
-        void MarkInactive(string itemNumber);
-
-    }
+    List<CrossListingResult> GetListingsToCrossPost(string salesChannelName);
+    List<CrossListingResult> GetListingsToVerify(string salesChannelName);
+    Task MarkInactive(string itemNumber);
 }

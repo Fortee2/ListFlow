@@ -1,14 +1,10 @@
-﻿using System;
-using ListFlow.Domain.Model;
+﻿using ListFlow.Domain.Model;
 
-namespace ListFlow.Infrastructure.Repository
+namespace ListFlow.Infrastructure.Repository;
+
+public class MasterAccountRepository : BaseRepository<MasterAccount>
 {
-    public partial class MasterAccountRepository : BaseRepository<MasterAccount>
+    public MasterAccountRepository(ApplicationDbContext context) : base(context)
     {
-        public MasterAccountRepository(ApplicationDbContext context) : base(context)
-        {
-        }
     }
-
 }
-

@@ -1,12 +1,21 @@
-select concat('INSERT INTO listflow.Inventory (Id, Name, Quantity, Cost, Weight, FirstListed) VALUES (''',
- CrossPostId, 
- ''', ''Inventoy Item'', 0, 0, 0,''', 
- min(DateListed), 
+select * 
+from listflow.Listing list 
+	left join listflow.Inventory invent on list.CrosspostId = invent.id
+where invent.Id is null;
+
+select * from listflow.SalesChannel;
+select 
+	concat('INSERT INTO listflow.Inventory ( Name, Quantity, Cost, Weight, FirstListed, Sku) VALUES ( ''', 
+    itemTitle, 
+    ''', 0, 0, 0,''', 
+	dateListed,
+ ''', ''',
+ itemNumber,
  ''');'  
 )
-from listflow.Listing
-where CrossPostId is not null
-	and DateListed is not null
-group by CrossPostId
-order by CrossPostId;
+from listflow.Listing list 
+	left join listflow.Inventory invent on list.CrosspostId = invent.id
+where 
+	invent.Id is null
+	and salesChannelId = '28e91dfe-9a9d-482d-4aed-08db50d0bd42';
 

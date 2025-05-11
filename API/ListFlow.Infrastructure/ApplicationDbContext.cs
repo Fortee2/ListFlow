@@ -1,7 +1,7 @@
-﻿namespace ListFlow.Infrastructure;
-
-using ListFlow.Domain.Model;
+﻿using ListFlow.Domain.Model;
 using Microsoft.EntityFrameworkCore;
+
+namespace ListFlow.Infrastructure;
 
 public class ApplicationDbContext : DbContext
 {
@@ -31,12 +31,16 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<ListingMetric>().ToTable("ListingMetric");
         modelBuilder.Entity<Postage>().ToTable("Postage");
         modelBuilder.Entity<Images>().ToTable("Images");
-        
-        modelBuilder.Entity<Listing>()
-            .HasOne(l => l.SalesChannel)
-            .WithMany()
-            .HasForeignKey(l => l.SalesChannelId);
-        
+
+        modelBuilder.Entity<Listing>(entity =>
+        {
+            entity.ToTable("Listing");
+            entity.HasOne(l => l.SalesChannel)
+                .WithMany()
+                .HasForeignKey(l => l.SalesChannelId)
+                .IsRequired();
+        });
+
         modelBuilder.Entity<ListingMetric>()
             .HasOne(l => l.Listing)
             .WithMany()

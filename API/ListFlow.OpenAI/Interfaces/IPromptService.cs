@@ -1,12 +1,8 @@
-﻿using System;
-using ListFlow.OpenAI.Dto;
+﻿using ListFlow.OpenAI.Dto;
 
-namespace ListFlow.OpenAI.Interfaces
+namespace ListFlow.OpenAI.Interfaces;
+
+public interface IPromptService
 {
-	public interface IPromptService
-	{
-        Task<ChatCompletion> Submit(string PromptData);
-
-    }
+    Task<ChatCompletion> Submit(string PromptData);
 }
-

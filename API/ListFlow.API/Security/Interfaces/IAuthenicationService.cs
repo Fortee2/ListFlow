@@ -1,7 +1,6 @@
-namespace ListFlow.API.Security
+namespace ListFlow.API.Security;
+
+public interface IAuthenicationService
 {
-    public interface IAuthenicationService
-    {
-        AuthenticateResponse? Authenticate(AuthenticateRequest model);
-    }
+    AuthenticateResponse? Authenticate(AuthenticateRequest model);
 }

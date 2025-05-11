@@ -1,79 +1,64 @@
-using System.Collections.Generic;
-using ListFlow.Domain.Model;
 using ListFlow.Business.SalesChannels;
-using ListFlow.Infrastructure.Repository;
+using ListFlow.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ListFlow.Controllers
+namespace ListFlow.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class SalesChannelController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class SalesChannelController : ControllerBase
+    private readonly ISalesChannelService _salesChannelService;
+
+    public SalesChannelController(ISalesChannelService salesChannelService)
     {
-        private readonly ISalesChannelService _salesChannelService;
+        _salesChannelService = salesChannelService;
+    }
 
-        public SalesChannelController(ISalesChannelService salesChannelService)
-        {
-            _salesChannelService = salesChannelService;
-        }
+    [HttpGet]
+    public ActionResult<IEnumerable<SalesChannel>> Get()
+    {
+        var salesChannels = _salesChannelService.GetAll();
+        return Ok(salesChannels);
+    }
 
-        [HttpGet]
-        public ActionResult<IEnumerable<SalesChannel>> Get()
-        {
-            var salesChannels = _salesChannelService.GetAll();
-            return Ok(salesChannels);
-        }
+    [HttpGet("{id}")]
+    public ActionResult<SalesChannel> GetById(Guid id)
+    {
+        var salesChannel = _salesChannelService.GetById(id);
 
-        [HttpGet("{id}")]
-        public ActionResult<SalesChannel> GetById(Guid id)
-        {
-            var salesChannel = _salesChannelService.GetById(id);
+        if (salesChannel == null) return NotFound();
 
-            if (salesChannel == null)
-            {
-                return NotFound();
-            }
+        return Ok(salesChannel);
+    }
 
-            return Ok(salesChannel);
-        }
+    [HttpPost]
+    public IActionResult Create(string salesChannel)
+    {
+        var result = _salesChannelService.Create(salesChannel);
 
-        [HttpPost]
-        public IActionResult Create(string salesChannel)
-        {
-            var result = _salesChannelService.Create(salesChannel);
+        if (!result.Success) return BadRequest(result.ErrorMessage);
 
-            if (!result.Success)
-            {
-                return BadRequest(result.ErrorMessage);
-            }
+        return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
+    }
 
-            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
-        }
+    [HttpPut("{id}")]
+    public IActionResult Update(SalesChannel updatedSalesChannel)
+    {
+        var result = _salesChannelService.Update(updatedSalesChannel);
 
-        [HttpPut("{id}")]
-        public IActionResult Update(SalesChannel updatedSalesChannel)
-        {
-            var result = _salesChannelService.Update(updatedSalesChannel);
+        if (!result.Success) return BadRequest(result.ErrorMessage);
 
-            if (!result.Success)
-            {
-                return BadRequest(result.ErrorMessage);
-            }
+        return NoContent();
+    }
 
-            return NoContent();
-        }
+    [HttpDelete("{id}")]
+    public IActionResult Delete(Guid id)
+    {
+        var result = _salesChannelService.Delete(id);
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id)
-        {
-            var result = _salesChannelService.Delete(id);
+        if (!result.Success) return NotFound(result.ErrorMessage);
 
-            if (!result.Success)
-            {
-                return NotFound(result.ErrorMessage);
-            }
-
-            return NoContent();
-        }
+        return NoContent();
     }
 }

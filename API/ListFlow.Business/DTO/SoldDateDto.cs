@@ -1,5 +1,6 @@
 namespace ListFlow.Business.DTO;
+
 public class SoldDateDto
 {
-    public string SoldDate { get; set; }
+    public string? SoldDate { get; set; }
 }

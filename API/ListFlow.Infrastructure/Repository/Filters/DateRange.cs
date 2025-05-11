@@ -1,9 +1,7 @@
-using System;
+namespace ListFlow.Infrastructure.Filters;
 
-namespace ListFlow.Infrastructure.Filters{
-    public class DateRange
-    {
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-    }
+public class DateRange
+{
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
 }

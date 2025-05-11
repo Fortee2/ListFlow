@@ -1,9 +1,8 @@
-using System;
 using ListFlow.Domain.Model;
 
-namespace ListFlow.Infrastructure.Repository.Interface
+namespace ListFlow.Infrastructure.Repository.Interface;
+
+public interface IUserRepository : ICRUDRepo<User>, IRespository<User>
 {
-    public interface IUserRepository: ICRUDRepo<User>, IRespository<User>{
-        User? FindByUserName(string userName);
-    }
+    User? FindByUserName(string userName);
 }

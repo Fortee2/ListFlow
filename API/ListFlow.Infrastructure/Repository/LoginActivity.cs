@@ -1,13 +1,10 @@
 ﻿using ListFlow.Domain.Model;
 
-namespace ListFlow.Infrastructure.Repository
+namespace ListFlow.Infrastructure.Repository;
+
+public class LoginActivityRepository : BaseRepository<LoginActivity>
 {
-    public partial class LoginActivityRepository : BaseRepository<LoginActivity>
+    public LoginActivityRepository(ApplicationDbContext context) : base(context)
     {
-        public LoginActivityRepository(ApplicationDbContext context) : base(context)
-        {
-        }
     }
-
 }
-

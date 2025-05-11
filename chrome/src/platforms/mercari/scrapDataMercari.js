@@ -80,7 +80,7 @@ export async function scrapData(activeListings, listingType) {
             case 'inprogress':
             case 'complete':
               titleColumn = 1;
-              dateColumn = 5;
+              dateColumn = 4;
               likesColumn = 3;
               viewsColumn = 4;
               break;

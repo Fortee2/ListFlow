@@ -1,12 +1,9 @@
-﻿using System;
-namespace ListFlow.Infrastructure.Repository.Interface
+﻿namespace ListFlow.Infrastructure.Repository.Interface;
+
+public interface IRespository<T>
 {
-    public interface IRespository<T>
-    {
-        ApplicationDbContext GetDbContext();
+    ApplicationDbContext GetDbContext();
 
-        T? FindById(Guid Id);
-        IEnumerable<T> GetAll();
-    }
+    T? FindById(Guid Id);
+    IEnumerable<T> GetAll();
 }
-

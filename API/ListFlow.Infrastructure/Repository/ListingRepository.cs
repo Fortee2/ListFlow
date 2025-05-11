@@ -1,158 +1,132 @@
-﻿using System.ComponentModel.Design.Serialization;
+﻿using ListFlow.Domain.DTO;
 using ListFlow.Domain.Model;
-using ListFlow.Domain.DTO;
-using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.Infrastructure.Filters;
+using ListFlow.Infrastructure.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
-using System.Xml.Schema;
-using System.Linq;
 
-namespace ListFlow.Infrastructure.Repository
+namespace ListFlow.Infrastructure.Repository;
+
+public class ListingRepository(ApplicationDbContext context)
+    : BaseRepository<Listing>(context), IListingRepository
 {
-    public partial class ListingRepository : BaseRepository<Listing>, IListingRepository
+    public Listing? FindByItemNumberAsync(string itemNumber)
     {
-        public ListingRepository(ApplicationDbContext context) : base(context)
+        try
         {
-        }
-
-        public Listing? FindByItemNumber(string ItemNumber)
-        {
-            var listing = (from list in this._dbContext.Listings
-                       where list.ItemNumber.ToLower() == ItemNumber.ToLower()
-                       select list).FirstOrDefault();
-
+            var listing =  _dbContext.Listings.Where(w => w.ItemNumber == itemNumber).FirstOrDefault();
             return listing;
         }
-
-        public Listing? FindByTitle(string ListingTitle)
+        catch (Exception e)
         {
-            var listing = (from list in this._dbContext.Listings
-                           where list.ItemTitle.ToLower() == ListingTitle.ToLower()
-                           select list).FirstOrDefault();
-
-            return listing;
+            Console.WriteLine(itemNumber);
+            Console.WriteLine(e);
+            throw;
         }
+    }
 
-        /// <summary>
-        /// Finds the crossposted listing associated with the item number passed in.
-        /// </summary>
-        /// <param name="ItemNumber">The item number to find its corresponding listing for.</param>
-        /// <returns>The matching listing to the one searched</returns>
-        public Listing? FindCrossPostListingByItemNumber(string ItemNumber)
+    public Listing? FindByTitle(string listingTitle)
+    {
+        var listing = (from list in _dbContext.Listings
+            where list.ItemTitle.ToLower() == listingTitle.ToLower()
+            select list).FirstOrDefault();
+
+        return listing;
+    }
+
+    /// <summary>
+    ///     Finds the crossposted listing associated with the item number passed in.
+    /// </summary>
+    /// <param name="itemNumber">The item number to find its corresponding listing for.</param>
+    /// <returns>The matching listing to the one searched</returns>
+    public  List<Listing>? FindCrossPostListingByItemNumberAsync(string itemNumber)
+    {
+        var listing = FindByItemNumberAsync(itemNumber);
+
+        if (listing != null)
         {
-             var listing = FindByItemNumber(ItemNumber);
-
-            if (listing != null)                
-            {
-                listing = (from list in this._dbContext.Listings.Include(l => l.SalesChannel)
-                           where list.ItemNumber.ToLower() != ItemNumber.ToLower()
-                                && list.CrossPostId == listing.CrossPostId
-                                && list.CrossPostId != null
-                           select list).FirstOrDefault();
-            }
-
-            return listing;
-        }
-
-        public IEnumerable<Listing> GetAll()
-        {
-            var listing = (from list in this._dbContext.Listings
-                           where list.Active
-                           orderby list.DateListed descending
-                           select list).AsEnumerable();
-
-            return listing;
-        }
-
-        /// <summary>
-        /// Returns a list of listings that are mispriced.  The anchor sales channel is the sales channel that has the correct price.
-        /// </summary>
-        /// <param name="anchorSalesChannel">The GUID for the Sales Channel that has the correct price</param>
-        /// <returns>JSON Object of misprices items</returns>
-        public IEnumerable<PriceMismatchDto> MispricedListings(Guid anchorSalesChannel)
-        {
-            var listing = (from list in this._dbContext.Listings
-                             join  scList in this._dbContext.Listings on list.CrossPostId equals scList.CrossPostId
-                           where list.Active
-                            && scList.Active
-                            && list.Price > scList.Price
-                            && scList.SalesChannel.Id == anchorSalesChannel
-                            && list.SalesChannel.Id != scList.SalesChannel.Id
-                           orderby list.Price descending
-                           select new PriceMismatchDto(
-                                list.ItemNumber,
-                                list.ItemTitle,
-                                list.Price,
-                                scList.Price,
-                                scList.ItemNumber,
-                                list.SalesChannel.Id.ToString(),
-                                scList.SalesChannel.Id.ToString()
-                           )).AsEnumerable();
-
-            return listing;
-        }
-
-        public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
-        {
-            var query = _dbContext.Listings.AsQueryable();
-
-            if (filter != null)
-            {
-              
-                if (!string.IsNullOrEmpty(filter.SalesChannel))
-                {
-                    query = query.Where(l => l.SalesChannel.Id.ToString() == filter.SalesChannel);
-                }
-
-                if (!string.IsNullOrEmpty(filter.ItemNumber))
-                {
-                    query = query.Where(l => l.ItemNumber == filter.ItemNumber);
-                }
-
-                if (!string.IsNullOrEmpty(filter.ItemTitle))
-                {
-                    query = query.Where(l => l.ItemTitle.Contains(filter.ItemTitle));
-                }
-
-                if (filter.DateRange != null)
-                {
-                    query = query.Where(l => l.DateListed >= filter.DateRange.StartDate && l.DateListed <= filter.DateRange.EndDate);
-                }
-            }
-
-            var listings = await query.ToListAsync();
+            var listings = (from list in _dbContext.Listings.Include(l => l.SalesChannel)
+                where list.ItemNumber.ToLower() != itemNumber.ToLower()
+                      && list.CrossPostId == listing.CrossPostId
+                      && list.CrossPostId != null
+                select list).ToList();
 
             return listings;
         }
 
-        public Dictionary<string, string> GetSoldListings()
-        {
-            var listing = (from list in this._dbContext.Listings
-                join  scList in this._dbContext.Listings on list.CrossPostId equals scList.CrossPostId
-                where list.DateSold != null
-                      && scList.Active 
-                      && list.SalesChannel.Id != scList.SalesChannel.Id
-                orderby list.Price descending
-                select new
-                {
-                    scList.SalesChannel.Name,
-                    scList.ItemNumber
-                }).ToDictionary(x => x.ItemNumber, x => x.Name);
+        return null;
+    }
 
-            return listing;
-        }
-        
-        public IEnumerable<CrossListingResult> ItemsToCrossList(Guid anchorSalesChannel)
-        {
-            var listing = (from list in this._dbContext.Listings
-                where list.Active
-                      && list.SalesChannel.Id == anchorSalesChannel
-                      && list.CrossPostId == null
-                orderby list.Price descending
-                select new CrossListingResult(){ItemNumber = list.ItemNumber, Title = list.ItemTitle}).AsEnumerable();
+    public IEnumerable<Listing> GetAll()
+    {
+        var listing = (from list in _dbContext.Listings
+            where list.Active
+            orderby list.DateListed descending
+            select list).AsEnumerable();
 
-            return listing;
-        }
+        return listing;
+    }
+
+    public async Task<IEnumerable<Listing>> GetAllListingsAsync(ListingFilter filter)
+    {
+        var query = _dbContext.Listings.AsQueryable();
+
+        if (!string.IsNullOrEmpty(filter.SalesChannel))
+            query = query.Where(l => l.SalesChannel.Id.ToString() == filter.SalesChannel);
+
+        if (!string.IsNullOrEmpty(filter.ItemNumber)) query = query.Where(l => l.ItemNumber == filter.ItemNumber);
+
+        if (!string.IsNullOrEmpty(filter.ItemTitle)) query = query.Where(l => l.ItemTitle.Contains(filter.ItemTitle));
+
+        if (filter.DateRange != null)
+            query = query.Where(l =>
+                l.DateListed >= filter.DateRange.StartDate && l.DateListed <= filter.DateRange.EndDate);
+
+        var listings = await query.ToListAsync();
+
+        return listings;
+    }
+
+    public Dictionary<string, string> GetSoldListings()
+    {
+        var listing = (from list in _dbContext.Listings
+            join scList in _dbContext.Listings on list.CrossPostId equals scList.CrossPostId
+            where list.DateSold != null
+                  && scList.Active
+                  && list.SalesChannel.Id != scList.SalesChannel.Id
+            orderby list.Price descending
+            select new
+            {
+                scList.SalesChannel.Name,
+                scList.ItemNumber
+            }).ToDictionary(x => x.ItemNumber, x => x.Name);
+
+        return listing;
+    }
+
+    public IEnumerable<CrossListingResult> ItemsToCrossList(Guid anchorSalesChannel)
+    {
+        var listing = (from list in _dbContext.Listings
+            join channels in _dbContext.SalesChannels on list.SalesChannel.Id equals channels.Id
+            where list.Active
+                  && list.SalesChannel.Id == anchorSalesChannel
+                  && list.CrossPostId == null
+            orderby list.LastUpdated
+            select new CrossListingResult
+                { SalesChannel = channels, ItemNumber = list.ItemNumber, Title = list.ItemTitle }).AsEnumerable();
+
+        return listing;
+    }
+
+    public IEnumerable<CrossListingResult> ItemsNotUpdated(Guid salesChannel)
+    {
+        var listing = (from list in _dbContext.Listings
+            join channels in _dbContext.SalesChannels on list.SalesChannel.Id equals channels.Id
+            where list.Active
+                  && list.SalesChannel.Id == salesChannel
+            orderby list.LastUpdated
+            select new CrossListingResult
+                { SalesChannel = channels, ItemNumber = list.ItemNumber, Title = list.ItemTitle }).AsEnumerable();
+
+        return listing;
     }
 }
-

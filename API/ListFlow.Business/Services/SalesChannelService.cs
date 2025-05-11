@@ -1,72 +1,60 @@
-using System.Collections.Generic;
-using ListFlow.Domain.Model;
-using System.Linq;
 using ListFlow.Business.SalesChannels;
+using ListFlow.Domain.Model;
 using ListFlow.Infrastructure.Repository.Interface;
 
-namespace ListFlow.Business.Services
+namespace ListFlow.Business.Services;
+
+public class SalesChannelService : ISalesChannelService
 {
+    private readonly ISalesChannelRepository _salesChannels;
 
-    public class SalesChannelService : ISalesChannelService
+    public SalesChannelService(ISalesChannelRepository salesChannelService)
     {
-        private readonly ISalesChannelRepository _salesChannels;
+        _salesChannels = salesChannelService;
+    }
 
-        public SalesChannelService(ISalesChannelRepository salesChannelService){
-            _salesChannels = salesChannelService;
-        }
+    public ServiceResult<SalesChannel> Create(string name)
+    {
+        // Check if a channel with the same name already exists
+        if (_salesChannels.FindByName(name.ToLower()) != null)
+            return new ServiceResult<SalesChannel>("A sales channel with this name already exists.");
 
-        public ServiceResult<SalesChannel> Create(string name)
+        var newChannel = new SalesChannel
         {
-            // Check if a channel with the same name already exists
-            if (_salesChannels.FindByName(name.ToLower()) != null)
-            {
-                return new ServiceResult<SalesChannel>("A sales channel with this name already exists.");
-            }
+            Name = name
+        };
 
-            var newChannel = new SalesChannel
-            {
-                Name = name
-            };
+        _salesChannels.Add(newChannel);
 
-            _salesChannels.Add(newChannel);
+        return new ServiceResult<SalesChannel>(newChannel);
+    }
 
-            return new ServiceResult<SalesChannel>(newChannel);
-        }
+    public ServiceResult<SalesChannel> Delete(Guid id)
+    {
+        var channel = _salesChannels.FindById(id);
 
-        public ServiceResult<SalesChannel> Delete(Guid id)
-        {
-             var channel = _salesChannels.FindById(id);
+        if (channel == null) return new ServiceResult<SalesChannel>("Sales channel not found.");
 
-            if (channel == null)
-            {
-                return new ServiceResult<SalesChannel>("Sales channel not found.");
-            }
 
-            
+        return new ServiceResult<SalesChannel>(channel);
+    }
 
-            return new ServiceResult<SalesChannel>(channel);
-        }
+    public ServiceResult<IEnumerable<SalesChannel>> GetAll()
+    {
+        return new ServiceResult<IEnumerable<SalesChannel>>(_salesChannels.GetAll());
+    }
 
-        public ServiceResult<IEnumerable<SalesChannel>> GetAll()
-        {
-            return new ServiceResult<IEnumerable<SalesChannel>>(_salesChannels.GetAll());
-        }
+    public ServiceResult<SalesChannel> GetById(Guid id)
+    {
+        var channel = _salesChannels.FindById(id);
 
-        public ServiceResult<SalesChannel> GetById(Guid id)
-        {
-            var channel = _salesChannels.FindById(id);
+        if (channel == null) return new ServiceResult<SalesChannel>("Sales channel not found.");
 
-            if (channel == null)
-            {
-                return new ServiceResult<SalesChannel>("Sales channel not found.");
-            }
+        return new ServiceResult<SalesChannel>(channel);
+    }
 
-            return new ServiceResult<SalesChannel>(channel);
-        }
-
-        public ServiceResult<SalesChannel> Update(SalesChannel channel)
-        {
-            throw new NotImplementedException();
-        }
+    public ServiceResult<SalesChannel> Update(SalesChannel channel)
+    {
+        throw new NotImplementedException();
     }
 }

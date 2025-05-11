@@ -72,8 +72,10 @@ export async function createMercariListing(ebayListing){
       try{
           listing.images.forEach(async image => {
             console.log('Attempting Image Upload ');
+            console.log(image);
             let blob = await fetchImageAsBlob(image);
-            let file = new File([blob], "image.png", {type: "image/png"});
+            console.log(blob.type);
+            let file = new File([blob], "image.jpg", {type: blob.type});
             // Select the file input element
             const fileInput = document.querySelector('input[type="file"]');
             if (!fileInput) {
@@ -117,10 +119,14 @@ export async function createMercariListing(ebayListing){
 
     async function fetchImageAsBlob(url) {
       // Fetch the image
+      console.log('Fetching Image');
       let response = await fetch(url).catch(console.error);
-  
+      console.log('Image Fetched');
       // Get the response as a blob
       let blob = await response.blob();
+      console.log('Blob Created');
+      console.log(blob.size);
+
       // Return the blob
       return blob;
     }

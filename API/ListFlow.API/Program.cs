@@ -8,8 +8,6 @@ using ListFlow.Infrastructure.Repository.Interface;
 using ListFlow.OpenAI;
 using ListFlow.OpenAI.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Swashbuckle.AspNetCore.Swagger;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,25 +17,21 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ListFlow", Version = "v1" });
-});
+builder.Services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "ListFlow", Version = "v1" }); });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DBConnection");
-    if (connectionString != null)
-    {
-        options.UseMySQL(connectionString);
-    }
+    if (connectionString != null) options.UseMySQL(connectionString);
+    options.EnableSensitiveDataLogging().LogTo(Console.WriteLine, LogLevel.Debug);
+    
 });
 
 builder.Services.AddSingleton<IPromptService>(new PromptService(
     builder.Configuration.GetValue<string>("OpenAI:ApiKey") ?? ""
 ));
 
-builder.Services.AddScoped<ISalesChannelRepository,SalesChannelRepository>();
+builder.Services.AddScoped<ISalesChannelRepository, SalesChannelRepository>();
 builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
@@ -53,6 +47,8 @@ builder.Services.AddScoped<IBasicService<Postage>, PostageService>();
 builder.Services.AddScoped<IListingMetricService, ListingMetricService>();
 builder.Services.AddScoped<IBasicService<Postage>, PostageService>();
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddCors(options =>
 {
@@ -80,16 +76,13 @@ app.UseFileServer();
 
 app.UseRouting();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-});
+app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
 //app.UseHttpsRedirection();
+app.UseResponseCaching();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
-

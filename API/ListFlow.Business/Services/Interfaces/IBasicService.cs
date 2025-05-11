@@ -1,20 +1,14 @@
-﻿using System;
-using ListFlow.Business.DTO;
-using ListFlow.Domain.Model;
+﻿namespace ListFlow.Business.Services.Interfaces;
 
-namespace ListFlow.Business.Services.Interfaces
+public interface IBasicService<T>
 {
-	public interface IBasicService<T>
-	{
-        Task<ServiceResult<T>> Create(T obj);
+    Task<ServiceResult<T>> Create(T obj);
 
-        ServiceResult<T> Delete(Guid id);
+    void Delete(Guid id);
 
-        ServiceResult<IEnumerable<T>> GetAll();
+    ServiceResult<IEnumerable<T>> GetAll();
 
-        ServiceResult<T> GetById(Guid id);
+    ServiceResult<T> GetById(Guid id);
 
-        ServiceResult<T> Update(T obj);
-    }
+    ServiceResult<T> Update(T obj);
 }
-

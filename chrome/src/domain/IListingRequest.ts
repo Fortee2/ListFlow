@@ -9,6 +9,7 @@ export default interface IListingRequest
     views: string,
     price: string,
     listingDate: string,
-    listingDateType: number
-
+    listingDateType: number,
+    sku: string,    
+    quantity: string,
 }

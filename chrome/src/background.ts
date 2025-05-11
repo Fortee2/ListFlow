@@ -1,17 +1,16 @@
 import { scrapDataEbay } from "./content/ebay/scrapData";
-import { scrapEbayDescriptions } from "./functions/ebay/scrapDescription";
-import { scrapEbayPostage } from "./functions/ebay/postage";
-import { scrapData, retrievePageCount } from "./functions/mercari/scrapDataMercari";
+import { scrapEbayDescriptions } from "./platforms/ebay/scrapDescription";
+import { scrapEbayPostage } from "./platforms/ebay/postage";
+import { scrapData, retrievePageCount } from "./platforms/mercari/scrapDataMercari";
 import { searchEbayURLs, searchEtsyURLs, getMercariItemURL, Urls } from './utils/urls';
-import { retrieveItemDetails } from "./functions/mercari/itemPageDetails";
-import { scrapDataEtsy } from "./functions/etsy/scrapDataEtsy";
-import { endEbayListings } from "./functions/ebay/endListings";
-import { removeInactive } from "./functions/mercari/removeInactive";
+import { checkItemActive } from "./content/mercari/checkItemActive";
+import { scrapDataEtsy } from "./platforms/etsy/scrapDataEtsy";
+import { endEbayListings } from "./platforms/ebay/endListings";
+import { removeInactive } from "./platforms/mercari/removeInactive";
 import { getRandomInt, delay } from "./utils/utils";
-import { getActiveTab, loadTab } from "./utils/tabs";
-import { createMercariListing } from "./functions/mercari/createMercariListing";
+import { closeTab, getActiveTab, loadTab } from "./utils/tabs";
+import { createMercariListing } from "./platforms/mercari/createMercariListing";
 import { copyDescription, copyEbayListing } from "./content/ebay/copyListing";
-import { createDistrictListing } from "./functions/district/createDistrictListing";
 import OnInstall from "./events/onInstall";
 import PostageRequest from "./domain/postageRequest";
 import IListing from "./domain/IListing";
@@ -20,12 +19,14 @@ import MessageRequest from "./domain/MessageRequest";
 import { IScrapResult } from "./domain/IScrapResult";
 import IStorageData from "./domain/IStorageData";
 import IUrlResult from "./domain/IUrlResult";
-import { createFacebookListing } from "./functions/facebook/createListing";
-import ImageQueues from "./functions/ebay/ImageQueues";
+import { createFacebookListing } from "./platforms/facebook/createListing";
+import ImageQueues from "./platforms/ebay/ImageQueues";
 import ImgRequest from "./domain/ImgRequest";
 import IBaseRequest from "./domain/IBaseRequest";
 import IPostageRequest from "./domain/IPostageRequest";
 import { setSkuInDescription } from "./content/mercari/setSku";
+import ListingApi from "./api/listingApi";
+import ListItem from "./domain/IListItem";
 
 const imageQueues = new ImageQueues(chrome);
 
@@ -45,8 +46,10 @@ let oldTab: number[] = [];
 let serverURI = "http://demo.api.com";
 let lastTimeInactive = "2024-01-01";
 let removeInactiveListings = false;
-let tabId; // The ID of the tab you"re interested in
 let isChromeRunning = true;
+let tabId = 0;
+let listingApi: ListingApi;
+
 
 chrome.runtime.onInstalled.addListener(() => {
   let installer = new OnInstall(chrome);
@@ -60,7 +63,10 @@ chrome.storage.sync.get({
  removeInactiveListings: false,
  lastTimeInactive: "2024-01-01",
 }, function(data: IStorageData) {
- if (data.serverURI) serverURI = data.serverURI;
+ if (data.serverURI){
+   serverURI = data.serverURI;
+   listingApi = new ListingApi(serverURI);
+ } 
  if (data.createExport !== undefined) createExport = data.createExport;
  if (data.removeInactiveListings !== undefined) removeInactiveListings = data.removeInactiveListings;
  if (data.lastTimeInactive) lastTimeInactive = data.lastTimeInactive;
@@ -81,7 +87,7 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
    case "saveToListingAPI":
      let saveRequest = request as MessageRequest;
      if (saveRequest.item && Array.isArray(saveRequest.item)) {
-       saveItemToDatabase(saveRequest.item);
+       listingApi.saveItemToDatabase(saveRequest.item);
      }
      break;
    case "queueEbayNoQty":
@@ -121,7 +127,7 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
     let updateRequest = request as MessageRequest;
 
      if (updateRequest.desc && typeof updateRequest.itemNumber === 'string') {
-       saveDescToDatabase(updateRequest.desc, updateRequest.itemNumber);
+       listingApi.saveDescToDatabase(updateRequest.desc, updateRequest.itemNumber);
      }
      break; 
    case "retrieveSalesChannel":
@@ -162,7 +168,6 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
           await copyListingToFacebook(descCopiedRequest.listing);
           break;
        }
-       updateCrossPostList(descCopiedRequest.listing.itemNumber);
      }
      break;
    case "mercariCreated":
@@ -181,52 +186,27 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
       setSkuMercari();
       break;
   case "VerifyEbayData":
-    verifyEbayData();
+    //verifyUnmatchedEbay();
+    verifyUnmatchedMercari();
     break;
- }
-});
-
-async function verifyEbayData() {
-  fetch(`${serverURI}/api/Listing?SalesChannel=28e91dfe-9a9d-482d-4aed-08db50d0bd42`)
-        .then(response => response.json())
-        .then(async (data: IListing[]) => {
-            for (const listing of data) {
-                if(!listing.active){
-                  continue;
-                }
-
-                try {
-                  const response = await fetch(`https://www.ebay.com/itm/${listing.itemNumber}`);
-                  if(response.status === 404){
-                    console.log('Item Not Found');
-                    let item: IListingRequest = {
-                      itemNumber: listing.itemNumber,
-                      itemTitle: listing.itemTitle,
-                      description: listing.description,
-                      salesChannel: "eBay",
-                      active: false,
-                      listingDate: new Date().toISOString(),
-                      listingDateType: 1,
-                      views: "0",
-                      likes: "0",
-                      price: listing.price.toString(),
-                    };
-
-                    await saveItemToDatabase([item]);
-                  }
-                  else{
-                    await copyEbayListingDetails(listing.itemNumber);
-                  }
-                } catch (error) {
-                  console.error('Error checking listing:', listing.itemNumber, error);
-                }
-
-                await delay(getRandomInt(15000, 30000));
-            }
-       
+  case "SetInactive":
+    // Handle marking items as inactive
+    if (request.itemNumber) {
+      listingApi.markAsInactive(request.itemNumber)
+        .then(() => {
+          console.log(`Marked ${request.itemNumber} as inactive`);
         })
-        .catch(error => console.error('Error:', error));
-}
+        .catch((error) => {
+          console.error(`Error marking ${request.itemNumber} as inactive:`, error);
+        });
+    }
+    break;
+   default:
+     console.error("Unknown action:", request.action);
+     break;
+  }
+ }
+);
 
 async function getEbayShippingDetails(itemNumber: string) {
  await delay(getRandomInt(5000, 30000));
@@ -241,13 +221,39 @@ async function getEbayShippingDetails(itemNumber: string) {
 }
 
 async function copyEbayListingDetails(itemNumber: string) {
- const newTab = await loadTab(`https://www.ebay.com/sl/list?mode=ReviseItem&itemId=${itemNumber}&ReturnURL=https%3A%2F%2Fwww.ebay.com%2Fsh%2Flst%2Factive%3Foffset%3D600%26limit%3D200%26sort%3DavailableQuantity`);
- chrome.scripting.executeScript({
-   args: [itemNumber],
-   target: { tabId: newTab.id as number},
-   func: copyEbayListing,
- }).then(() => {
-   oldTab.push(newTab.id as number);
+ const newTab = await loadTab(`https://www.ebay.com/sl/list?itemId=${itemNumber}&mode=ReviseItem`);
+ 
+ // Add listener for URL changes
+ chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, tab) {
+   if (tabId === newTab.id && changeInfo.url) {
+     // Check if redirected to error page
+     if (changeInfo.url.includes('ebay.com/lstng/error')) {
+       console.log('Detected error page redirect for item:', itemNumber);
+       listingApi.markAsInactive(itemNumber)
+         .then(() => {
+           console.log(`Marked ${itemNumber} as inactive`);
+         })
+         .catch((error) => {
+           console.error(`Error marking ${itemNumber} as inactive:`, error);
+         });
+       
+       // Remove the listener since we don't need it anymore
+       chrome.tabs.onUpdated.removeListener(listener);
+       return;
+     }
+   }
+   
+   // If we reach the final URL and it's not an error page, execute the content script
+   if (tabId === newTab.id && changeInfo.status === 'complete' && !tab.url?.includes('ebay.com/lstng/error')) {
+     chrome.tabs.onUpdated.removeListener(listener);
+     chrome.scripting.executeScript({
+       args: [itemNumber],
+       target: { tabId: newTab.id as number},
+       func: copyEbayListing,
+     }).then(() => {
+       oldTab.push(newTab.id as number);
+     });
+   }
  });
 }
 
@@ -261,13 +267,7 @@ async function ProcessSalesChannel(listingType: string) {
             await removeInactiveItems();
           }
         }
-     ).then(
-        () => {
-          getMispricedItems().then(() => {
-            setSkuMercari();
-          });
-        }
-     ); 
+     );
     break;
    case "eBay":
      await endEbayInactive(listingType)
@@ -286,6 +286,7 @@ async function ProcessSalesChannel(listingType: string) {
      await retrieveEtsyData(listingType);
      break;
  } 
+// Update the cross-post list to check for any items that may have been removed or changed
 }
 
 async function setSkuMercari() {
@@ -298,7 +299,7 @@ async function setSkuMercari() {
       let itemNumber = keyVal[1];
 
       const tab = await loadTab(url);
-      tabId = tab.id;
+      tabId = tab.id as number;
 
       await delay(getRandomInt(10000, 15000));
 
@@ -318,21 +319,6 @@ async function setSkuMercari() {
       priceChanges.delete(keyVal[0]);
     }
   }
-}
-
-function getMispricedItems() {
-  return new Promise<void>(resolve => {
-    fetch(`${serverURI}/api/Listing/mispriced`).then(response => response.json()).then(data => {
-        if(data.success  ){
-          for(const item of data.data){
-            if(item.itemNumber.startsWith("m")){
-                priceChanges.set(item.itemNumber, item.crossPostItemNumber);
-            }
-          }
-          resolve(); 
-        }
-    });
-  });
 }
 
 async function processShippingInfoQueue() {
@@ -383,39 +369,26 @@ async function copyListingToFacebook(ebayListing: IListing) {
   });
 }
 
-async function saveListingToDistrict(ebayListing:IListing) {
- let tab = await loadTab("https://district.net/admin/listings?createProductIn=niknax");
- oldTab.push(tab.id as number);
-
- await delay(getRandomInt(3000, 5000));
-
- chrome.scripting.executeScript({
-   args: [ebayListing],
-   target: { tabId: tab.id as number },
-   func: createDistrictListing,
- }).catch((error) => {
-   console.error("Error executing script:", error);
- });
-}
-
 async function saveNewListing(ebayListing: IListing) {
- console.log(ebayListing.itemNumber);
- let bulkData:IListingRequest[] = [];
- bulkData.push({
-   itemTitle: ebayListing.itemTitle,
-   itemNumber: ebayListing.itemNumber,
-   description: ebayListing.description,
-   salesChannel: "Mercari",
-   active: true,
-   listingDate: new Date().toISOString(),
-   listingDateType: 0,
-   views: "0",
-   likes: "0",
-   price: ebayListing.price,
- });
+  console.log(ebayListing.itemNumber);
+  let bulkData:IListingRequest[] = [];
+  bulkData.push({
+    itemTitle: ebayListing.itemTitle,
+    itemNumber: ebayListing.itemNumber,
+    description: ebayListing.description,
+    salesChannel: "Mercari",
+    active: true,
+    listingDate: new Date().toISOString(),
+    listingDateType: 0,
+    views: "0",
+    likes: "0",
+    price: ebayListing.price,
+    sku: ebayListing.itemNumber,
+    quantity: "1",
+  });
 
- await saveItemToDatabase(bulkData);
-}
+  await listingApi.saveItemToDatabase(bulkData);
+ }
 
 async function processDescQueue() {
  if(oldTab.length > 5){
@@ -479,44 +452,6 @@ async function processPostageQueue() {
    processPostageQueue(); // recursively process the next request in the queue
  } catch (error) {
    console.error("Error saving postage to the database:", error);
- }
-}
-
-async function saveDescToDatabase(desc: string, itemNumber: string) {
- try {
-   const response = await fetch(`${serverURI}/api/listing/${itemNumber}/description`, {
-     method: "Put",
-     headers: {
-       "Content-Type": "application/json",
-     },
-     body: JSON.stringify({description:desc}),
-   });
-
-   if (!response.ok) {
-     console.error("Failed to save item to the database:", desc);
-   }
- } catch (error) {
-   console.error("Error saving item to the database:", error);
- }
-}
-
-async function saveItemToDatabase(item: IListingRequest[]) {
- try {
-   let jsonItem = JSON.stringify(item, null, 2); // Pretty print the JSON
-   
-   const response = await fetch(`${serverURI}/api/BulkListing`, {
-     method: "POST",
-     headers: {
-       "Content-Type": "application/json",
-     },
-     body: jsonItem,
-   });
-
-   if (!response.ok) {
-     console.error("Failed to save item to the database:", item);
-   }
- } catch (error) {
-   console.error("Error saving item to the database:", error);
  }
 }
 
@@ -687,19 +622,12 @@ async function retrieveMercariData(mercariURLs: IUrlResult[]) {
          totalPages = await retrievePageCount(link.type, tab);
        }
 
-       let result = await new Promise<IScrapResult[]>(resolve => {
-         chrome.scripting.executeScript({
-           args: [activeListings, link.type],
-           target: { tabId: tab.id as number },
-           func: scrapData,
-         }, (results) => resolve(results as unknown as IScrapResult[]));
-       });
+      var result = await parseMercari(tab, activeListings, link.type);
 
-       if(result[0].result) {
-         titles.push(...result[0].result);
-       }
-
-       pageCount++;
+      if(result[0].result) {
+        titles.push(...result[0].result);
+      }
+      pageCount++;
      } while (pageCount <= totalPages);
      // Loop through each page
    }
@@ -711,6 +639,18 @@ async function retrieveMercariData(mercariURLs: IUrlResult[]) {
  } catch (error) {
    console.error("Error executing script:", error);
  }
+}
+
+async function parseMercari(tab: chrome.tabs.Tab, activeListings: boolean, linkType: string): Promise<IScrapResult[]> {
+  let result = await new Promise<IScrapResult[]>(resolve => {
+    chrome.scripting.executeScript({
+      args: [activeListings, linkType],
+      target: { tabId: tab.id as number },
+      func: scrapData,
+    }, (results) => resolve(results as unknown as IScrapResult[]));
+  });
+
+  return result;
 }
 
 async function downloadData(data: Array<IListingRequest | string>, createExport: boolean, currentSalesChannel: string): Promise<void> {
@@ -753,8 +693,8 @@ async function downloadData(data: Array<IListingRequest | string>, createExport:
 
 async function retrieveMercariDetails(data: Array<IListingRequest | string>): Promise<Array<IListingRequest | string>> {
  //Enhance Data for download
- for(let i = 0; i < data.length; i++) {
-   const item = data[i];
+ for(const element of data) {
+   const item = element;
    if (typeof item === 'string') {
      continue; // Skip string items
    }
@@ -767,37 +707,61 @@ async function retrieveMercariDetails(data: Array<IListingRequest | string>): Pr
 
    const link = getMercariItemURL() + item.itemNumber;
    const tab = await loadTab(link);
-   await delay(getRandomInt(3000, 5000));
+   await delay(getRandomInt(3000, 10000));
 
-   const shipping = await new Promise<any>(resolve => {
+   await new Promise<any>(resolve => {
      chrome.scripting.executeScript({
        target: { tabId: tab.id as number },
-       func: retrieveItemDetails,
+       args: [item.itemNumber],
+       func: checkItemActive,
      }, (result) => resolve(result));
-   });
-
-   if (shipping && shipping[0] && shipping[0].result) {
-     (item as any).shipping = shipping[0].result;
-     console.log('Shipping: ' + shipping);
-   }
-
+   }).then((shipping) => {
+    if (shipping && shipping[0]?.result) {
+      (item as any).shipping = shipping[0].result;
+      console.log('Shipping: ' + shipping);
+    }}
+  );
    chrome.tabs.remove(tab.id as number);
  }
  
  return data;
 }
 
-function updateCrossPostList(itemNumber: string) {
- chrome.storage.sync.get(['listData'], function(result: IStorageData) {
-   if (result.listData) {
-     let data = result.listData;
-     let item = data.find((x: { itemNumber: string }) => x.itemNumber === itemNumber);
-     if (item) {
-       data.splice(data.indexOf(item), 1);
-       chrome.storage.sync.set({ listData: data }, function() {
-         console.log('Data is updated in Chrome storage');
-       });
-     }
-   }
- }); 
+async function verifyUnmatchedEbay() {
+  listingApi.getUnmatchedItems('eBay')
+    .then(async (unmatchedItems: ListItem[] | null) => {
+      if (unmatchedItems) {
+        for (const listing of unmatchedItems) {
+            // If the item is found, copy the listing details
+            await copyEbayListingDetails(listing.itemNumber).then(async () => {
+              await delay(getRandomInt(15000, 30000));
+            })            
+        }
+    }
+  });
+}
+
+  async function verifyUnmatchedMercari() {
+    listingApi.getUnmatchedItems('Mercari')
+      .then(async (unmatchedItems: ListItem[] | null) => {
+        if (unmatchedItems) {
+          for (const listing of unmatchedItems) {
+            const link = getMercariItemURL() + listing.itemNumber;
+            const tab = await loadTab(link);
+
+            oldTab.push(tab.id as number);
+           
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id as number },
+                args: [listing.itemNumber],
+                func: checkItemActive,
+              }).then(() => {
+                if(oldTab.length > 5){
+                  closeTab(oldTab.shift() as number);
+                }
+              });
+              await delay(getRandomInt(3000, 15000));
+          }
+      }
+    });
 }

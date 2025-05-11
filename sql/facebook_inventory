@@ -1,0 +1,17 @@
+SELECT l.Id, ItemTitle as Title, `description`, 
+    if(`Active`, 'in stock', 'out of stock') as 'availability',
+    'used' as `condition`,    
+    concat(price, ' USD') as price,
+    concat('https://www.mercari.com/us/item/', ItemNumber) as link,
+    concat('https://u-mercari-images.mercdn.net/photos/', ItemNumber, '_1.jpg') as image_link,
+    'Moondoor' as 'brand',
+    1 as 'quantity_to_sell_on_facebook',
+    p.*
+from Listing l
+inner join Postage p on p.Id = l.Id
+where 
+SalesChannelId = '1411f7bd-3872-4543-812c-f1b81569be89'
+and `active` = 1
+and ItemTitle <> `Description`
+and not `description` like '%...'
+

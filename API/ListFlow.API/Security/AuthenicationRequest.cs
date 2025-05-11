@@ -1,15 +1,10 @@
-﻿using System;
-namespace ListFlow.API.Security
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ListFlow.API.Security;
+
+public class AuthenticateRequest
 {
-    using System.ComponentModel.DataAnnotations;
+    [Required] public string Username { get; set; }
 
-    public class AuthenticateRequest
-    {
-        [Required]
-        public string Username { get; set; }
-
-        [Required]
-        public string Password { get; set; }
-    }
+    [Required] public string Password { get; set; }
 }
-

@@ -1,15 +1,8 @@
-﻿using System;
-namespace ListFlow.OpenAI.Dto
+﻿namespace ListFlow.OpenAI.Dto;
+
+public class ChatUsage
 {
-	public class ChatUsage
-	{
-		public ChatUsage()
-		{
-		}
-
-        public int prompt_tokens { get; set; }
-        public int completion_tokens { get; set; }
-        public int total_tokens { get; set; }
-    }
+    public int prompt_tokens { get; set; }
+    public int completion_tokens { get; set; }
+    public int total_tokens { get; set; }
 }
-

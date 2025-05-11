@@ -52,7 +52,7 @@ export default function scrapImages(itemNumber: string) {
         }
         
         checkImageElement();
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
         reject(error);
       }

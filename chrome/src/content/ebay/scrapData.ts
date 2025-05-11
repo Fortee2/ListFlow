@@ -89,13 +89,14 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
         let listPrice;
         let qty = '1';
         let listStatus = activeListings;
+        let sku = f.querySelector('td[class="shui-dt-column__listingSKU shui-dt--left editable inline-editable"]')?.querySelector('div[class="shui-dt--text-column"]')?.querySelector('span')?.innerHTML ?? "";
 
         if(activeListings){
           divDate = parseEbayDateFromElement(f);
           views = parseEbayViewsFromElement(f);
           watchers = parseEbayWatchersFromElement(f);
           listPrice = parseEbayPrice(f);
-          //qty = parseAvailableQuantity(f);
+          qty = parseAvailableQuantity(f);
         }else{
           divDate = f.querySelector('td[class="shui-dt-column__actualEndDate shui-dt--left"]')?.querySelector('div[class="shui-dt--text-column"]')?.querySelectorAll('div')[0].innerHTML;
           endedStatus = parseEbayEndedStatus(f);
@@ -139,7 +140,9 @@ export async function scrapDataEbay(activeListings: boolean,lastTimeInactive: st
           listingDateType: listingType,
           views: views,
           likes: watchers,
-          price: listPrice
+          price: listPrice,
+          sku: sku,
+          quantity: qty,
         });  
       }
       
