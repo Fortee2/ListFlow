@@ -129,4 +129,15 @@ public class ListingRepository(ApplicationDbContext context)
 
         return listing;
     }
+    
+    public IEnumerable<SkuResult> AssociateSku(string salesChannelName)
+    {
+        var listing = (from list in _dbContext.Listings
+            join inven in _dbContext.Inventories on list.CrossPostId equals inven.Id
+            where list.Active
+                  && list.SalesChannel.Name == salesChannelName
+            select new SkuResult(){ItemNumber = list.ItemNumber, Sku = inven.Sku} ).AsEnumerable();
+
+        return listing;
+    }
 }

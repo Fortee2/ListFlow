@@ -79,9 +79,9 @@ public class ListingService : IListingService
 
                 if (existing == null)
                 {
-                    var inventory = listingDto.Sku != null
+                    var inventory = (! string.IsNullOrEmpty(listingDto.Sku)
                         ? await CreateInventoryItem(listingDto).ConfigureAwait(false)
-                        : null;
+                        : null);
 
                     var newListing = new Listing
                     {
@@ -423,5 +423,16 @@ public class ListingService : IListingService
                existing.DateEnded == listingDto.EndedDate &&
                existing.DateSold == listingDto.SoldDate &&
                existing.DateListed == listingDto.ListedDate;
+    }
+
+    /// <summary>
+    /// Get the assigned Sku from inventory
+    /// for the chrome extension to use
+    /// </summary>
+    /// <param name="salesChannelName">Sells channel to retrieve listings for</param>
+    /// <returns>A list of Skus and Item Numbers</returns>
+    public IEnumerable<SkuResult> AssociateSku(string salesChannelName)
+    {
+        return _listings.AssociateSku(salesChannelName);
     }
 }

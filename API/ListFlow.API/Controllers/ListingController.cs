@@ -147,4 +147,11 @@ public class ListingController : ControllerBase
         var listing = _listingService.GetListingsToVerify(saleChannelName);
         return Ok(listing);
     }
+    
+    [HttpGet("{salesChannelName}/skuToAssign")]
+    public ActionResult<IEnumerable<SkuResult>> GetSkusToAssign(string salesChannelName)
+    {
+        var listing = _listingService.AssociateSku(salesChannelName);
+        return Ok(listing);
+    }
 }

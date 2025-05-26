@@ -13,4 +13,6 @@ public interface IListingRepository : ICRUDRepo<Listing>, IRespository<Listing>
     Dictionary<string, string> GetSoldListings();
     IEnumerable<CrossListingResult> ItemsToCrossList(Guid anchorSalesChannel);
     IEnumerable<CrossListingResult> ItemsNotUpdated(Guid salesChannel);
+
+    IEnumerable<SkuResult> AssociateSku(string salesChannelName);
 }

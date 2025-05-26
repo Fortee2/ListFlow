@@ -1,3 +1,4 @@
+import IAssignSku from "../domain/IAssignSku";
 import IListingRequest from "../domain/IListingRequest";
 import ListItem from "../domain/IListItem";
 
@@ -91,6 +92,25 @@ export default class ListingApi {
 
       const response = await fetch(`${result.serverURI}/api/Listing/${salesChannel}/verifyPosts`);
       const data: ListItem[] = await response.json();
+      return data;
+    } catch (error) {
+        console.error('Error:', error);
+      return null;
+    }
+  }
+
+  async getSkuToAssign(salesChannel: string): Promise<IAssignSku[] | null> {
+    try {
+      const result = await new Promise<{ serverURI?: string }>((resolve) => {
+        chrome.storage.sync.get(['serverURI'], (items) => resolve(items));
+      });
+
+      if (!result.serverURI) {
+        return null;
+      }
+
+      const response = await fetch(`${result.serverURI}/api/Listing/Mercari/skuToAssign`);
+      const data: IAssignSku[] = await response.json();
       return data;
     } catch (error) {
         console.error('Error:', error);

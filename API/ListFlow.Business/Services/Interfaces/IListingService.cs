@@ -36,4 +36,5 @@ public interface IListingService
     List<CrossListingResult> GetListingsToCrossPost(string salesChannelName);
     List<CrossListingResult> GetListingsToVerify(string salesChannelName);
     Task MarkInactive(string itemNumber);
+    IEnumerable<SkuResult> AssociateSku(string salesChannelName);
 }

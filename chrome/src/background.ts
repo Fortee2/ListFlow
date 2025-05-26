@@ -27,6 +27,7 @@ import IPostageRequest from "./domain/IPostageRequest";
 import { setSkuInDescription } from "./content/mercari/setSku";
 import ListingApi from "./api/listingApi";
 import ListItem from "./domain/IListItem";
+import IAssignSku from "./domain/IAssignSku";
 
 const imageQueues = new ImageQueues(chrome);
 
@@ -187,7 +188,8 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
       break;
   case "VerifyEbayData":
     //verifyUnmatchedEbay();
-    verifyUnmatchedMercari();
+    //verifyUnmatchedMercari();
+    setSkuMercari();
     break;
   case "SetInactive":
     // Handle marking items as inactive
@@ -290,35 +292,37 @@ async function ProcessSalesChannel(listingType: string) {
 }
 
 async function setSkuMercari() {
-  console.log("setSku");
-  if(priceChanges.size > 0 && isChromeRunning){
-    let keyValIterator = priceChanges.entries();
-    let keyVal = keyValIterator.next().value;
-    if (keyVal) {
-      let url = getMercariItemURL() + keyVal[0];
-      let itemNumber = keyVal[1];
+  listingApi.getSkuToAssign(currentSalesChannel)
+    .then(async (skuList: IAssignSku[] | null) => {
+      if (skuList) {
+        for (const sku of skuList) {
+          if (sku.sku && sku.itemNumber) {
+            
+            let url = getMercariItemURL() + sku.itemNumber;
 
-      const tab = await loadTab(url);
-      tabId = tab.id as number;
+            const tab = await loadTab(url);
+            tabId = tab.id as number;
 
-      await delay(getRandomInt(10000, 15000));
+            await delay(getRandomInt(15000, 30000));
 
-      chrome.scripting.executeScript({
-          args: [itemNumber, keyVal[0]],
-          target: { tabId: tab.id as number},
-          func: setSkuInDescription,
-      }).then( () =>{
-        console.log("Price Changed for " + keyVal[0] + " to " + itemNumber);
-        delay(10000).then(() => {
-          chrome.tabs.remove(tab.id as number);
-        });
-      }).catch((error) => {
-        console.error("Error executing script:", error);
-      });
+            chrome.scripting.executeScript({
+                args: [sku.sku, sku.itemNumber],
+                target: { tabId: tab.id as number},
+                func: setSkuInDescription,
+            }).then( () =>{
+              console.log("Sku Changed for " + sku.itemNumber + " to " + sku.sku);
+              delay(10000).then(() => {
+                chrome.tabs.remove(tab.id as number);
+              });
+            }).catch((error) => {
+              console.error("Error executing script:", error);
+            });
       
-      priceChanges.delete(keyVal[0]);
+          }
+        }
+      }
     }
-  }
+  );
 }
 
 async function processShippingInfoQueue() {
@@ -741,7 +745,7 @@ async function verifyUnmatchedEbay() {
   });
 }
 
-  async function verifyUnmatchedMercari() {
+async function verifyUnmatchedMercari() {
     listingApi.getUnmatchedItems('Mercari')
       .then(async (unmatchedItems: ListItem[] | null) => {
         if (unmatchedItems) {

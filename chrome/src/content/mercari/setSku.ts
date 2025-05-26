@@ -1,4 +1,4 @@
-export async function setSkuInDescription(itemNumber: string, mercariItem: string){
+export async function setSkuInDescription(sku: string, mercariItem: string){
     function checkReadyState() {
       return new Promise<void>((resolve, reject) => {
         if(document.readyState === 'complete') {
@@ -17,14 +17,24 @@ export async function setSkuInDescription(itemNumber: string, mercariItem: strin
       
       if (el) {
         let description = el.value;
-        if (description.length < 1000 - itemNumber.length - 4) {
+        if (description.length < 1000 - sku.length - 4) {
 
-          if(description.trimEnd().endsWith('['+ itemNumber +']')){
-            chrome.runtime.sendMessage({ action: 'setSkuMercari'});
+          if(description.trimEnd().endsWith('['+ sku +']')){
+            chrome.runtime.sendMessage({ action: 'updateDesc', desc: description, itemNumber: mercariItem});
             return;
           }
 
-          description = description + '\n ['+ itemNumber +']';
+          //We want to remove any previous item numbers
+          let endWithBracket = false;
+
+          do{
+            endWithBracket = description.endsWith(']') 
+            if(endWithBracket){
+              description = description.substring(0, description.lastIndexOf('[')).trimEnd();
+            }
+          }while(endWithBracket );
+          
+          description = description + '\n ['+ sku +']';
           
           // Focus the element first
           el.focus();
@@ -42,7 +52,6 @@ export async function setSkuInDescription(itemNumber: string, mercariItem: strin
         }
       
         chrome.runtime.sendMessage({ action: 'updateDesc', desc: description, itemNumber: mercariItem});
-        chrome.runtime.sendMessage({ action: 'setSkuMercari'});
       } else {
           console.error('Input field not found');
       }
