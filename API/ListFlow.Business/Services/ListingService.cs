@@ -59,10 +59,7 @@ public class ListingService : IListingService
 
     public async Task CreateListings(ListingDTO[] listings)
     {
-        const int batchSize = 5;
-        List<Listing> newListings = new();
-        List<Listing> updateListings = new();
-
+        
         if (!listings.Any()) return;
 
         foreach (var listingDto in listings)
@@ -79,7 +76,7 @@ public class ListingService : IListingService
 
                 if (existing == null)
                 {
-                    var inventory = (! string.IsNullOrEmpty(listingDto.Sku)
+                    var inventory = (! string.IsNullOrWhiteSpace(listingDto.Sku)
                         ? await CreateInventoryItem(listingDto).ConfigureAwait(false)
                         : null);
 
@@ -98,42 +95,21 @@ public class ListingService : IListingService
                         LastUpdated = DateTime.Now,
                         CrossPostId = inventory?.Data.Id
                     };
-
-                    newListings.Add(newListing);
-
-                    if (newListings.Count >= batchSize)
-                    {
-                        await _listings.AddRangeAsync(newListings).ConfigureAwait(false);
-                        newListings.Clear();
-                    }
+                    
+                    _listings.Add(newListing);;
+                    
                 }
                 else if (!CompareListing(existing, listingDto))
                 {
                     await UpdateListingData(existing, listingDto);
-                    updateListings.Add(existing);
 
-                    if (updateListings.Count >= batchSize)
-                    {
-                        await _listings.UpdateRangeAsync(updateListings).ConfigureAwait(false);
-                        updateListings.Clear();
-                    }
+                    await _listings.UpdateAsync(existing);
                 }
             }
             catch (Exception ex)
             {
                 throw new Exception($"Error processing listing {listingDto.ItemNumber}: {ex.Message}", ex);
             }
-        }
-
-        // Save any remaining listings
-        if (newListings.Any())
-        {
-            await _listings.AddRangeAsync(newListings).ConfigureAwait(false);
-        }
-
-        if (updateListings.Any())
-        {
-            await _listings.UpdateRangeAsync(updateListings).ConfigureAwait(false);
         }
     }
 
@@ -248,7 +224,7 @@ public class ListingService : IListingService
 
         if (listing == null) return new ServiceResult<List<Listing>>("Listing not found.");
 
-        return new ServiceResult<List<Listing>>(new List<Listing>());
+        return new ServiceResult<List<Listing>>(listing);
     }
 
     public async Task MarkSold(string itemNumber, string? soldDate)

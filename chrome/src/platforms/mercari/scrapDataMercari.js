@@ -25,35 +25,40 @@ export async function scrapData(activeListings, listingType) {
     }
   
     function parseDate(dateString) {
-      if (dateString.includes('ago')) {
-        let timePortion = dateString.split('ago')[0].trim();
+      try{
+          if (dateString.includes('ago')) {
+          let timePortion = dateString.split('ago')[0].trim();
+        
+          if (timePortion.includes('h')) {
+            let hours = timePortion.split('h')[0].trim();
+            let date = new Date();
+            date.setHours(date.getHours() - hours);
+            return date.toISOString();
+          }
       
-        if (timePortion.includes('h')) {
-          let hours = timePortion.split('h')[0].trim();
-          let date = new Date();
-          date.setHours(date.getHours() - hours);
-          return date.toISOString();
+          if (timePortion.includes('d')) {  
+            let days = timePortion.split('d')[0].trim();
+            let date = new Date();
+            date.setDate(date.getDate() - days);
+            return date.toISOString();
+          }
+      
+          if (timePortion.includes('m')) {
+            let minutes = timePortion.split('m')[0].trim();
+            let date = new Date();
+            date.setMinutes(date.getMinutes() - minutes);
+            return date.toISOString();
+          }
+      
+          console.log('Unable to parse date');
+          return new Date().toISOString();
         }
-    
-        if (timePortion.includes('d')) {  
-          let days = timePortion.split('d')[0].trim();
-          let date = new Date();
-          date.setDate(date.getDate() - days);
-          return date.toISOString();
-        }
-    
-        if (timePortion.includes('m')) {
-          let minutes = timePortion.split('m')[0].trim();
-          let date = new Date();
-          date.setMinutes(date.getMinutes() - minutes);
-          return date.toISOString();
-        }
-    
-        console.log('Unable to parse date');
-        return null;
-      }
 
-      return new Date(dateString).toISOString();
+        return new Date(dateString).toISOString();
+      }
+      catch{
+        return new Date().toISOString();
+      }
     }
 
     function retrieveMercari() {
@@ -64,27 +69,84 @@ export async function scrapData(activeListings, listingType) {
       }
     }
 
-    function parseSoldListings() {
+    async function getDetailPageDate(relativeUrl, testId, stripPrefix = null) {
+      return new Promise((resolve, reject) => {
+        let checkInterval = null;
+        let timeoutId = null;
+        
+        const cleanup = (window) => {
+          if (checkInterval) clearInterval(checkInterval);
+          if (timeoutId) clearTimeout(timeoutId);
+          if (window && !window.closed) window.close();
+        };
+
+        try {
+          // Open listing page in new window
+          const listingWindow = window.open(window.location.origin + relativeUrl, '_blank');
+          
+          if (!listingWindow) {
+            throw new Error('Failed to open listing window');
+          }
+
+          // Wait for page to load and extract date
+          checkInterval = setInterval(() => {
+            try {
+              if (listingWindow.document.readyState === 'complete') {
+                cleanup(listingWindow);
+                
+                // Find the date element using data-testid
+                const dateElement = listingWindow.document.querySelector(`p[data-testid="${testId}"]`);
+                
+                if (dateElement) {
+                  let dateText = dateElement.innerText || dateElement.textContent;
+                  // Strip prefix if provided (e.g., "Updated " from "Updated 2d ago")
+                  if (stripPrefix) {
+                    dateText = dateText.replace(stripPrefix, '');
+                  }
+                  listingWindow.close();
+                  resolve(dateText);
+                } else {
+                  listingWindow.close();
+                  reject(new Error(`${testId} element not found`));
+                }
+              }
+            } catch (error) {
+              cleanup(listingWindow);
+              reject(error);
+            }
+          }, 500);
+
+          // Timeout after 10 seconds
+          timeoutId = setTimeout(() => {
+            cleanup(listingWindow);
+            reject(new Error('Timeout waiting for listing page to load'));
+          }, 10000);
+
+        } catch (error) {
+          cleanup(null);
+          reject(error);
+        }
+      });
+    }
+
+    async function getInactiveListingDate(relativeUrl) {
+      return getDetailPageDate(relativeUrl, 'UpdatedOn', /^Updated\s+/i);
+    }
+
+    async function parseSoldListings() {
+      // For inactive listings, use the new approach to open detail pages
+      if (listingType === 'inactive') {
+        return parseInactiveListings();
+      }
+
+      // For inprogress and complete, use the original approach
       return new Promise((resolve, reject) => {
         try{
           const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
-          let titleColumn = 2;
-          let dateColumn = 6;
-          let likesColumn = 4;
-          let viewsColumn = 5;
-          
-          switch(listingType) {
-            case 'inactive':
-              dateColumn = 5;
-              break;
-            case 'inprogress':
-            case 'complete':
-              titleColumn = 1;
-              dateColumn = 4;
-              likesColumn = 3;
-              viewsColumn = 4;
-              break;
-          }
+          let titleColumn = 1;
+          let dateColumn = 4;
+          let likesColumn = 3;
+          let viewsColumn = 4;
         
           lis.forEach(f => {
             const tds = f.getElementsByTagName('td');
@@ -109,7 +171,7 @@ export async function scrapData(activeListings, listingType) {
               salesChannel: 'Mercari',
               active: activeListings,
               listingDate: parsedDate,
-              listingDateType: listingType == "inactive" ? 1 : 2,
+              listingDateType: 2,
               views: eleViews,
               likes: eleLikes,
               price: price
@@ -134,53 +196,162 @@ export async function scrapData(activeListings, listingType) {
       });
     }
 
-    function parseListings() {
-      return new Promise((resolve, reject) => {
+    async function parseInactiveListings() {
+      const lis = document.querySelectorAll('tr[data-testid="ListingRow"]');
+      let failedListings = [];
+      
+      console.log(`Starting to scrape ${lis.length} inactive listings...`);
+      
+      for (const [index, row] of Array.from(lis).entries()) {
         try {
-          const lis = document.querySelectorAll('tr[data-testid="ListingRow"]')
-        
-          lis.forEach(f => {
-            const ele = f.getElementsByTagName('td')[2].getElementsByTagName('div')[0];
-            const titleLink = ele.getElementsByTagName('a')[0];
-            const itmNumber = titleLink.href.split('/')[5]
-            const itemTitle = titleLink.innerText;
-            const price = f.querySelector('input[name="price"]').value.replace('$', '').trim();
-  
-            const eleDate = f.getElementsByTagName('td')[5].innerText;
-            const parsedDate = parseDate(eleDate);
-            
-            const eleLikes = f.getElementsByTagName('td')[3].innerText;
-            const eleViews = f.getElementsByTagName('td')[4].innerText;
-  
-            var itm = {  
-              itemTitle: itemTitle,
-              itemNumber: itmNumber,
-              description: itemTitle,
-              salesChannel: 'Mercari',
-              active: activeListings,
-              listingDate: parsedDate,
-              listingDateType: 0,
-              views: eleViews,
-              likes: eleLikes,
-              price: price
-            };  
-  
-            console.log(itm);
-  
-            bulkData.push(itm);
-          });
+          // Extract basic info from table row
+          const tds = row.getElementsByTagName('td');
+          const ele = tds[2].getElementsByTagName('div')[0];
+          const titleLink = ele.getElementsByTagName('a')[0];
+          const itmNumber = titleLink.href.split('/')[5];
+          const itemTitle = titleLink.innerText;
+          const price = row.getElementsByTagName('p')[0].innerText.replace('$', '').trim();
+          
+          const eleLikes = tds[4].innerText;
+          const eleViews = tds[5].innerText;
 
-          console.log('bulkData', bulkData);
-          chrome.runtime.sendMessage({ 
-            action: 'saveToListingAPI',
-            item: bulkData
-          });
+          // Find the ItemLink to get the relative URL
+          const itemLink = row.querySelector('a[data-testid="ItemLink"]');
+          if (!itemLink) {
+            throw new Error('ItemLink not found');
+          }
+          
+          const relativeUrl = itemLink.getAttribute('href');
+          
+          // Add random delay before opening detail page
+          if (index > 0) {
+            await randomDelay(1500, 3500);
+          }
+          
+          // Get the updated date from detail page
+          const dateText = await getInactiveListingDate(relativeUrl);
+          const parsedDate = parseDate(dateText);
+          
+          var itm = {  
+            itemTitle: itemTitle,
+            itemNumber: itmNumber,
+            description: itemTitle,
+            salesChannel: 'Mercari',
+            active: activeListings,
+            listingDate: parsedDate,
+            listingDateType: 1,
+            views: eleViews,
+            likes: eleLikes,
+            price: price
+          };  
 
-          resolve(bulkData);
+          console.log(`Scraped item ${index + 1}/${lis.length}:`, itm);
+          bulkData.push(itm);
+
         } catch (error) {
-          reject(error);
+          const itmNumber = row.getElementsByTagName('td')[2]?.getElementsByTagName('a')[0]?.href.split('/')[5] || 'unknown';
+          console.error(`Failed to scrape listing ${itmNumber}:`, error.message);
+          failedListings.push(itmNumber);
         }
+      }
+
+      // Log summary
+      console.log(`Scraping complete. Successfully scraped ${bulkData.length} listings.`);
+      if (failedListings.length > 0) {
+        console.error(`Failed to scrape ${failedListings.length} listing(s):`, failedListings);
+      }
+
+      console.log('bulkData', bulkData);
+      chrome.runtime.sendMessage({ 
+        action: 'saveToListingAPI',
+        item: bulkData
       });
+
+      return bulkData;
+    }
+
+    function randomDelay(min = 1000, max = 3000) {
+      return new Promise(resolve => {
+        const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+        setTimeout(resolve, delay);
+      });
+    }
+
+    async function getListingDate(relativeUrl) {
+      return getDetailPageDate(relativeUrl, 'ItemDetailsPosted');
+    }
+
+    async function parseListings() {
+      const lis = document.querySelectorAll('tr[data-testid="ListingRow"]');
+      let failedListings = [];
+      
+      console.log(`Starting to scrape ${lis.length} active listings...`);
+      
+      for (const [index, row] of Array.from(lis).entries()) {
+        try {
+          // Extract basic info from table row
+          const ele = row.getElementsByTagName('td')[2].getElementsByTagName('div')[0];
+          const titleLink = ele.getElementsByTagName('a')[0];
+          const itmNumber = titleLink.href.split('/')[5];
+          const itemTitle = titleLink.innerText;
+          const price = row.querySelector('input[name="price"]').value.replace('$', '').trim();
+          
+          const eleLikes = row.getElementsByTagName('td')[3].innerText;
+          const eleViews = row.getElementsByTagName('td')[4].innerText;
+
+          // Find the ItemLink to get the relative URL
+          const itemLink = row.querySelector('a[data-testid="ItemLink"]');
+          if (!itemLink) {
+            throw new Error('ItemLink not found');
+          }
+          
+          const relativeUrl = itemLink.getAttribute('href');
+          
+          // Add random delay before opening detail page
+          if (index > 0) {
+            await randomDelay(1500, 3500);
+          }
+          
+          // Get the listing date from detail page
+          const dateText = await getListingDate(relativeUrl);
+          const parsedDate = parseDate(dateText);
+          
+          var itm = {  
+            itemTitle: itemTitle,
+            itemNumber: itmNumber,
+            description: itemTitle,
+            salesChannel: 'Mercari',
+            active: activeListings,
+            listingDate: parsedDate,
+            listingDateType: 0,
+            views: eleViews,
+            likes: eleLikes,
+            price: price
+          };  
+
+          console.log(`Scraped item ${index + 1}/${lis.length}:`, itm);
+          bulkData.push(itm);
+
+        } catch (error) {
+          const itmNumber = row.getElementsByTagName('td')[2]?.getElementsByTagName('a')[0]?.href.split('/')[5] || 'unknown';
+          console.error(`Failed to scrape listing ${itmNumber}:`, error.message);
+          failedListings.push(itmNumber);
+        }
+      }
+
+      // Log summary
+      console.log(`Scraping complete. Successfully scraped ${bulkData.length} listings.`);
+      if (failedListings.length > 0) {
+        console.error(`Failed to scrape ${failedListings.length} listing(s):`, failedListings);
+      }
+
+      console.log('bulkData', bulkData);
+      chrome.runtime.sendMessage({ 
+        action: 'saveToListingAPI',
+        item: bulkData
+      });
+
+      return bulkData;
     }
 
     await checkReadyState(); 

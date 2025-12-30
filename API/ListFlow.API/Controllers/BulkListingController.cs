@@ -14,7 +14,7 @@ public class BulkListingController(ILogger<BulkListingController> logger, IListi
     {
         try
         {
-            await listingService.CreateListings(listingDtos);
+            await listingService.CreateListings(listingDtos).ConfigureAwait(false);
             return Ok();
         }
         catch (Exception ex)

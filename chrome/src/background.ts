@@ -183,15 +183,15 @@ chrome.runtime.onMessage.addListener(async (request: IBaseRequest) => {
        }
      }
      break;
-  case "setSkuMercari":
+   case "setSkuMercari":
+        setSkuMercari();
+        break;
+   case "VerifyEbayData":
+      //verifyUnmatchedEbay();
+      //verifyUnmatchedMercari();
       setSkuMercari();
       break;
-  case "VerifyEbayData":
-    //verifyUnmatchedEbay();
-    //verifyUnmatchedMercari();
-    setSkuMercari();
-    break;
-  case "SetInactive":
+   case "SetInactive":
     // Handle marking items as inactive
     if (request.itemNumber) {
       listingApi.markAsInactive(request.itemNumber)

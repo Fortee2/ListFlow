@@ -42,12 +42,11 @@ public class ListingRepository(ApplicationDbContext context)
     {
         var listing = FindByItemNumberAsync(itemNumber);
 
-        if (listing != null)
+        if (listing != null && listing.CrossPostId != null)
         {
             var listings = (from list in _dbContext.Listings.Include(l => l.SalesChannel)
                 where list.ItemNumber.ToLower() != itemNumber.ToLower()
                       && list.CrossPostId == listing.CrossPostId
-                      && list.CrossPostId != null
                 select list).ToList();
 
             return listings;
